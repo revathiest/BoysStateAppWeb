@@ -44,8 +44,7 @@ This repository contains the **web-based admin portal** for Boys State App. The 
 ## Deployment
 
 This site is designed to be hosted on **Netlify**. The `public` directory contains
-the static HTML pages served by Netlify. Simply connect your GitHub repository to
-Netlify and set the publish directory to `public`. No build step is required.
+the static HTML pages served by Netlify. 
 
 ## Agent Specification
 
