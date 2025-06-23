@@ -1,21 +1,35 @@
 const http = require('node:http');
+const fs = require('node:fs');
+const path = require('node:path');
 
-const API_URL = process.env.API_URL || 'http://localhost:3000';
+const publicDir = path.join(__dirname, '..', 'public');
 
 const server = http.createServer(async (req, res) => {
-  if (req.url === '/') {
-    try {
-      const apiRes = await fetch(`${API_URL}/health`);
-      const body = await apiRes.text();
-      res.writeHead(200, { 'Content-Type': 'text/html' });
-      res.end(`<html><body><h1>API Health</h1><pre>${body}</pre></body></html>`);
-    } catch (err) {
-      res.writeHead(500, { 'Content-Type': 'text/html' });
-      res.end(`<html><body><h1>Error connecting to API</h1><pre>${err.message}</pre></body></html>`);
+  let filePath = req.url === '/' ? 'index.html' : req.url.slice(1);
+  filePath = path.normalize(path.join(publicDir, filePath));
+
+  // prevent directory traversal attacks
+  if (!filePath.startsWith(publicDir)) {
+    res.writeHead(400);
+    return res.end('Bad Request');
+  }
+
+  try {
+    const data = await fs.promises.readFile(filePath);
+    const ext = path.extname(filePath);
+    const type = ext === '.html' ? 'text/html' :
+                 ext === '.css' ? 'text/css' :
+                 ext === '.js' ? 'application/javascript' : 'application/octet-stream';
+    res.writeHead(200, { 'Content-Type': type });
+    res.end(data);
+  } catch (err) {
+    if (err.code === 'ENOENT') {
+      res.writeHead(404);
+      res.end('Not Found');
+    } else {
+      res.writeHead(500);
+      res.end('Server Error');
     }
-  } else {
-    res.writeHead(404);
-    res.end();
   }
 });
 

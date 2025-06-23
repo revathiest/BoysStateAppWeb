@@ -2,13 +2,6 @@ const http = require('node:http');
 const { once } = require('node:events');
 const assert = require('node:assert');
 
-const apiServer = http.createServer((req, res) => {
-  if (req.url === '/health') {
-    res.writeHead(200, { 'Content-Type': 'text/plain' });
-    res.end('ok');
-  }
-});
-
 async function startServer(server) {
   server.listen(0);
   await once(server, 'listening');
@@ -21,9 +14,7 @@ async function stopServer(server) {
 
 const test = require('node:test');
 
-test('GET / returns API health data', async () => {
-  const apiPort = await startServer(apiServer);
-  process.env.API_URL = `http://127.0.0.1:${apiPort}`;
+test('GET / returns index page', async () => {
   process.env.NODE_ENV = 'test';
   const app = require('../src/index');
   const appPort = await startServer(app);
@@ -32,8 +23,7 @@ test('GET / returns API health data', async () => {
   const text = await res.text();
 
   assert.strictEqual(res.status, 200);
-  assert.ok(text.includes('ok'));
+  assert.ok(text.includes('Boys State App Admin Portal'));
 
   await stopServer(app);
-  await stopServer(apiServer);
 });
