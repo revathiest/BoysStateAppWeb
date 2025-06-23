@@ -41,6 +41,11 @@ This repository contains the **web-based admin portal** for Boys State App. The 
 
    * Ensure [Backend Services](https://github.com/yourorg/boysstate-backend) API is running and configured.
 
+## Using the Portal
+
+* Navigate to `index.html` and choose **Register** to create an admin account.
+* After registering or logging in, you will be redirected to the **Customize Program** page to set your program name, color, and logo URL.
+
 ## Deployment
 
 This site is designed to be hosted on **Netlify**. The `public` directory contains
