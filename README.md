@@ -8,7 +8,7 @@
 
 This repository contains the **web-based admin portal** for Boys State App. The portal enables staff and administrators to manage programs, schedules, users, elections, integrations, logs, and resources securely via the web.
 
-* Modern web stack (React / Angular / \[replace with stack])
+* Simple static HTML pages served by a lightweight Node server for local development
 * Admin login, program and user management
 * Schedule, notifications, and resource editing
 * Branding, integrations, and election management
@@ -40,6 +40,12 @@ This repository contains the **web-based admin portal** for Boys State App. The 
 4. **Connect to backend:**
 
    * Ensure [Backend Services](https://github.com/yourorg/boysstate-backend) API is running and configured.
+
+## Deployment
+
+This site is designed to be hosted on **Netlify**. The `public` directory contains
+the static HTML pages served by Netlify. Simply connect your GitHub repository to
+Netlify and set the publish directory to `public`. No build step is required.
 
 ## Agent Specification
 
