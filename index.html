@@ -4,24 +4,142 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Boys State App Admin Portal</title>
-</head>
-<body>
-  <h1>Boys State App Admin Portal</h1>
-  <nav>
-    <a href="/public/login.html">Login</a> |
-    <a href="/public/register.html">Register</a>
-  </nav>
-  <p id="status">Loading API status...</p>
+  <script src="https://cdn.tailwindcss.com"></script>
   <script>
-    fetch((window.API_URL || 'http://localhost:3000') + '/health')
-      .then(res => res.text())
-      .then(text => {
-        document.getElementById('status').textContent = text;
-      })
-      .catch(err => {
-        document.getElementById('status').textContent = 'Error: ' + err.message;
-      });
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            legion: {
+              blue: '#1B3D6D',
+              red: '#D72131',
+              gold: '#FFD700',
+            },
+          },
+        },
+      },
+    }
   </script>
-  <p><strong>Disclaimer:</strong> This project is being developed to support Boys State &amp; Girls State programs affiliated with the American Legion, but is <strong>not</strong> created, funded, or officially supported by the American Legion. No endorsement or sponsorship is implied.</p>
+</head>
+<body class="bg-gray-50 font-sans min-h-screen flex flex-col">
+
+  <!-- Top Navbar (always visible) -->
+  <nav class="bg-legion-blue text-white px-6 py-4 flex items-center justify-between shadow">
+    <div class="flex items-center gap-3">
+      <img src="logo.png" alt="Logo" class="w-8 h-8 rounded-full border border-white" />
+      <span class="text-xl font-semibold">Boys State App <span class="text-sm font-normal text-gray-200 ml-2">Admin Portal</span></span>
+    </div>
+    <div id="nav-actions"></div>
+  </nav>
+
+  <div class="flex flex-1 min-h-0">
+
+    <!-- Sidebar (hidden by default; shown as md:flex after login) -->
+    <aside id="sidebar" class="hidden flex-col w-64 bg-legion-blue text-blue-100 py-8 px-4 shadow-lg">
+      <nav class="flex flex-col gap-2">
+        <a href="#" class="py-2 px-3 rounded-lg font-medium hover:bg-gray-900 hover:text-legion-gold transition">🏠 Dashboard</a>
+        <a href="#" class="py-2 px-3 rounded-lg font-medium hover:bg-gray-900 hover:text-legion-gold transition">👥 User Management</a>
+        <a href="#" class="py-2 px-3 rounded-lg font-medium hover:bg-gray-900 hover:text-legion-gold transition">⚙️ Program Configuration</a>
+        <a href="#" class="py-2 px-3 rounded-lg font-medium hover:bg-gray-900 hover:text-legion-gold transition">🗂️ Content Management</a>
+        <a href="#" class="py-2 px-3 rounded-lg font-medium hover:bg-gray-900 hover:text-legion-gold transition">🗳️ Elections</a>
+        <a href="#" class="py-2 px-3 rounded-lg font-medium hover:bg-gray-900 hover:text-legion-gold transition">📜 Audit Logs</a>
+      </nav>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main id="main-content" class="flex-1 p-6 lg:p-10 bg-gray-50 hidden">
+      <h1 class="text-3xl font-extrabold text-legion-blue mb-8">Admin Dashboard</h1>
+      <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+        <!-- User Management Card -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 border-t-4 border-legion-gold">
+          <h2 class="text-lg font-semibold mb-2 text-legion-blue">User Management</h2>
+          <p class="text-gray-700 mb-4">Manage users, roles, and permissions.</p>
+          <a href="#" class="text-legion-blue font-semibold hover:text-legion-gold transition">Go to User Management &rarr;</a>
+        </div>
+        <!-- Program Configuration Card -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 border-t-4 border-legion-gold">
+          <h2 class="text-lg font-semibold mb-2 text-legion-blue">Program Configuration</h2>
+          <p class="text-gray-700 mb-4">Customize branding and manage integrations.</p>
+          <a href="#" class="text-legion-blue font-semibold hover:text-legion-gold transition">Configure Program &rarr;</a>
+        </div>
+        <!-- Content Management Card -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 border-t-4 border-legion-gold">
+          <h2 class="text-lg font-semibold mb-2 text-legion-blue">Content Management</h2>
+          <p class="text-gray-700 mb-4">Manage schedules, announcements, and resources.</p>
+          <a href="#" class="text-legion-blue font-semibold hover:text-legion-gold transition">Manage Content &rarr;</a>
+        </div>
+        <!-- Elections Card -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 border-t-4 border-legion-gold">
+          <h2 class="text-lg font-semibold mb-2 text-legion-blue">Elections</h2>
+          <p class="text-gray-700 mb-4">Set up and manage elections.</p>
+          <a href="#" class="text-legion-blue font-semibold hover:text-legion-gold transition">Manage Elections &rarr;</a>
+        </div>
+        <!-- Audit Logs Card -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 border-t-4 border-legion-gold">
+          <h2 class="text-lg font-semibold mb-2 text-legion-blue">Audit Logs</h2>
+          <p class="text-gray-700 mb-4">View user activity and system changes.</p>
+          <a href="#" class="text-legion-blue font-semibold hover:text-legion-gold transition">View Audit Logs &rarr;</a>
+        </div>
+      </div>
+    </main>
+
+    <!-- Login Form (shown only when logged out) -->
+    <main id="login-content" class="flex-1 flex flex-col items-center justify-center p-6 lg:p-10 bg-gray-50">
+      <div class="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full flex flex-col items-center">
+        <img src="logo.png" alt="Logo" class="w-14 h-14 mb-6 rounded-full border border-legion-blue" />
+        <h1 class="text-2xl font-extrabold text-legion-blue mb-4">Admin Portal Login</h1>
+        <form onsubmit="login(event)" class="w-full">
+          <input type="text" placeholder="Username" required class="mb-3 w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-legion-gold" />
+          <input type="password" placeholder="Password" required class="mb-6 w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-legion-gold" />
+          <button type="submit" class="w-full bg-legion-blue text-white font-semibold py-2 rounded-lg hover:bg-blue-900 transition">Login</button>
+        </form>
+        <p class="text-xs text-gray-500 mt-6">Not affiliated with or endorsed by the American Legion.</p>
+      </div>
+    </main>
+  </div>
+
+  <!-- Footer (always visible) -->
+  <footer class="bg-legion-blue text-white border-t mt-8 py-4 text-center text-xs">
+    © 2025 Boys State App Admin Portal. Not affiliated with or endorsed by the American Legion.
+  </footer>
+
+  <!-- Auth State Script -->
+  <script>
+    function updateHeaderButton() {
+      const actions = document.getElementById('nav-actions');
+      if (localStorage.getItem('admin_logged_in') === 'true') {
+        actions.innerHTML = `<button onclick="logout()" class="bg-legion-red text-white px-4 py-2 rounded-lg font-semibold hover:bg-red-700 transition w-28">Logout</button>`;
+      } else {
+        actions.innerHTML = `<button class="bg-legion-gold text-legion-blue px-4 py-2 rounded-lg font-semibold w-28 cursor-default opacity-0 select-none" tabindex="-1" aria-hidden="true">Login</button>`;
+      }
+    }
+    function showDashboard() {
+      document.getElementById('sidebar').classList.remove('hidden');
+      document.getElementById('main-content').classList.remove('hidden');
+      document.getElementById('login-content').classList.add('hidden');
+      updateHeaderButton();
+    }
+    function showLogin() {
+      document.getElementById('sidebar').classList.add('hidden');
+      document.getElementById('main-content').classList.add('hidden');
+      document.getElementById('login-content').classList.remove('hidden');
+      updateHeaderButton();
+    }
+    function login(e) {
+      e.preventDefault();
+      localStorage.setItem('admin_logged_in', 'true');
+      showDashboard();
+    }
+    function logout() {
+      localStorage.removeItem('admin_logged_in');
+      showLogin();
+    }
+    // On load: check login state
+    if (localStorage.getItem('admin_logged_in') === 'true') {
+      showDashboard();
+    } else {
+      showLogin();
+    }
+  </script>
 </body>
 </html>
