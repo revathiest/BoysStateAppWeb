@@ -47,6 +47,8 @@ document.addEventListener('DOMContentLoaded', () => {
       debugger;
       if (resp.status === 200 && data.token) {
         jwtToken = data.token;
+        localStorage.setItem('jwtToken', data.token);
+        console.log("JWT stored:", data.token); // Add this
         msg.textContent = 'Login successful!';
         msg.classList.remove('text-red-600');
         msg.classList.add('text-green-700');
