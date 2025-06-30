@@ -1,0 +1,70 @@
+document.addEventListener('DOMContentLoaded', () => {
+  const apiBase = window.API_URL || 'https://boysstateappservices.up.railway.app';
+
+  const cancelLogin = document.getElementById('cancelLogin');
+  if (cancelLogin) {
+    cancelLogin.addEventListener('click', () => {
+      window.location.href = '/';
+    });
+  }
+
+  const cancelRegister = document.getElementById('cancelRegister');
+  if (cancelRegister) {
+    cancelRegister.addEventListener('click', () => {
+      window.location.href = '/';
+    });
+  }
+
+  const loginForm = document.getElementById('loginForm');
+  if (loginForm) {
+    loginForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('loginEmail').value;
+      const password = document.getElementById('loginPassword').value;
+      const resp = await fetch(`${apiBase}/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      const data = await resp.json();
+      const msg = document.getElementById('loginMessage');
+      if (resp.status === 200) {
+        msg.textContent = 'Login successful!';
+        msg.classList.remove('text-red-600');
+        msg.classList.add('text-green-700');
+        setTimeout(() => {
+          window.location.href = '/';
+        }, 1000);
+      } else {
+        msg.textContent = data.error || 'Login failed.';
+        msg.classList.remove('text-green-700');
+        msg.classList.add('text-red-600');
+      }
+    });
+  }
+
+  const registerForm = document.getElementById('registerForm');
+  if (registerForm) {
+    registerForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('regEmail').value;
+      const password = document.getElementById('regPassword').value;
+      const resp = await fetch(`${apiBase}/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      const data = await resp.json();
+      const msg = document.getElementById('registerMessage');
+      if (resp.status === 201) {
+        msg.textContent = 'Registration successful! You can now log in.';
+        msg.classList.remove('text-red-600');
+        msg.classList.add('text-green-700');
+      } else {
+        msg.textContent = data.error || 'Registration failed.';
+        msg.classList.remove('text-green-700');
+        msg.classList.add('text-red-600');
+      }
+    });
+  }
+});

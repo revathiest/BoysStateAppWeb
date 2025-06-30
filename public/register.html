@@ -36,35 +36,12 @@
     <p class="mt-4 text-center text-sm text-gray-600">
       Already have an account?
       <a href="login.html" class="text-blue-700 hover:underline font-semibold">Log in</a>
-      <button type="button"
-        onclick="window.location.href='/'"
+      <button type="button" id="cancelRegister"
         class="w-full mt-2 bg-gray-100 hover:bg-gray-200 text-blue-900 font-semibold py-2 rounded-lg transition shadow border border-gray-300">
         Cancel
       </button>
     </p>
   </div>
-  <script>
-    document.getElementById('registerForm').addEventListener('submit', async function(e) {
-      e.preventDefault();
-      const email = document.getElementById('regEmail').value;
-      const password = document.getElementById('regPassword').value;
-      const resp = await fetch('https://boysstateappservices.up.railway.app/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
-      });
-      const data = await resp.json();
-      const msg = document.getElementById('registerMessage');
-      if (resp.status === 201) {
-        msg.textContent = "Registration successful! You can now log in.";
-        msg.classList.remove("text-red-600");
-        msg.classList.add("text-green-700");
-      } else {
-        msg.textContent = data.error || 'Registration failed.';
-        msg.classList.remove("text-green-700");
-        msg.classList.add("text-red-600");
-      }
-    });
-  </script>
+  <script src="auth.js"></script>
 </body>
 </html>
