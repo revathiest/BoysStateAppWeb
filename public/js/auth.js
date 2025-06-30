@@ -1,5 +1,15 @@
 document.addEventListener('DOMContentLoaded', () => {
-  const apiBase = window.API_URL || 'https://boysstateappservices.up.railway.app';
+  const apiBase = typeof window.API_URL === 'string' && window.API_URL.trim()
+  ? window.API_URL
+  : null;
+
+  if (!apiBase) {
+    // Show an error to the user and prevent further action
+    alert("Configuration error: API_URL is not set. Please contact the site administrator.");
+    // Optionally, you could also disable forms so they can't submit:
+    document.querySelectorAll('form').forEach(f => f.querySelectorAll('button, input[type="submit"]').forEach(btn => btn.disabled = true));
+    return; // Stop further script execution
+  }
 
   const cancelLogin = document.getElementById('cancelLogin');
   if (cancelLogin) {
