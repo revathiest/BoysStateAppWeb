@@ -50,17 +50,36 @@
   <!-- HOW IT WORKS -->
   <section class="w-full max-w-4xl mx-auto px-4 py-8">
     <h2 class="text-xl font-bold text-blue-900 mb-4 text-center">How It Works</h2>
-    <ol class="flex flex-col md:flex-row items-center justify-center gap-6 md:gap-8 text-blue-900 font-medium">
+    <ol class="hidden md:grid grid-cols-5 gap-4 text-blue-900 font-medium text-center max-w-3xl mx-auto">
+      <li class="flex flex-col items-center col-span-1">
+        <span class="rounded-full bg-blue-700 text-white w-10 h-10 flex items-center justify-center mb-2 font-bold text-xl">1</span>
+        <span>Create your account</span>
+      </li>
+      <li class="flex items-center justify-center col-span-1">
+        <span class="text-3xl text-blue-700">&rarr;</span>
+      </li>
+      <li class="flex flex-col items-center col-span-1">
+        <span class="rounded-full bg-blue-700 text-white w-10 h-10 flex items-center justify-center mb-2 font-bold text-xl">2</span>
+        <span>Register your program</span>
+      </li>
+      <li class="flex items-center justify-center col-span-1">
+        <span class="text-3xl text-blue-700">&rarr;</span>
+      </li>
+      <li class="flex flex-col items-center col-span-1">
+        <span class="rounded-full bg-blue-700 text-white w-10 h-10 flex items-center justify-center mb-2 font-bold text-xl">3</span>
+        <span>Invite staff, delegates, & parents</span>
+      </li>
+    </ol>
+    <!-- For mobile, show steps in a vertical list -->
+    <ol class="md:hidden grid grid-cols-1 gap-8 text-blue-900 font-medium text-center max-w-xs mx-auto">
       <li class="flex flex-col items-center">
         <span class="rounded-full bg-blue-700 text-white w-10 h-10 flex items-center justify-center mb-2 font-bold text-xl">1</span>
         <span>Create your account</span>
       </li>
-      <span class="hidden md:block text-2xl">→</span>
       <li class="flex flex-col items-center">
         <span class="rounded-full bg-blue-700 text-white w-10 h-10 flex items-center justify-center mb-2 font-bold text-xl">2</span>
         <span>Register your program</span>
       </li>
-      <span class="hidden md:block text-2xl">→</span>
       <li class="flex flex-col items-center">
         <span class="rounded-full bg-blue-700 text-white w-10 h-10 flex items-center justify-center mb-2 font-bold text-xl">3</span>
         <span>Invite staff, delegates, & parents</span>
