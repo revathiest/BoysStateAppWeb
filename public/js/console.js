@@ -9,13 +9,16 @@ tailwind.config = {
   }
 };
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', () => {console.log("On console.html, jwtToken:", localStorage.getItem('jwtToken'));
+if (!localStorage.getItem('jwtToken')) {
+  window.location.href = 'login.html';
+}
+
   const logoutBtn = document.getElementById('logoutBtn');
   if (logoutBtn) {
     logoutBtn.addEventListener('click', () => {
       localStorage.removeItem('jwtToken');
-      // Optionally, clear any in-memory variable too
-      // jwtToken = null;
+      jwtToken = null;
       window.location.href = 'login.html'; // Redirect to login or home
     });
   }
