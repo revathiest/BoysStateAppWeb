@@ -2,144 +2,91 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <title>Boys State App – Secure Platform for Boys & Girls State</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Boys State App Admin Portal</title>
+  <meta name="description" content="The secure, modern, mobile-first app for Boys State and Girls State delegates, staff, and parents.">
   <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            legion: {
-              blue: '#1B3D6D',
-              red: '#D72131',
-              gold: '#FFD700',
-            },
-          },
-        },
-      },
-    }
-  </script>
 </head>
-<body class="bg-gray-50 font-sans min-h-screen flex flex-col">
+<body class="bg-gradient-to-br from-blue-50 to-blue-100 text-gray-800 min-h-screen flex flex-col">
 
-  <!-- Top Navbar (always visible) -->
-  <nav class="bg-legion-blue text-white px-6 py-4 flex items-center justify-between shadow">
-    <div class="flex items-center gap-3">
-      <img src="Boys State Shield White on Blue.png" alt="Logo" class="w-8 h-8 p-1 rounded-full" />
-      <span class="text-xl font-semibold">Boys State App <span class="text-sm font-normal text-gray-200 ml-2">Admin Portal</span></span>
+  <!-- HERO / HEADER -->
+  <header class="w-full max-w-3xl mx-auto pt-12 pb-6 px-4 flex flex-col items-center">
+    <img src="Boys State App Blue on Transparent.png" alt="Boys State App Logo" class="w-32 max-w-xs mb-4 drop-shadow-md" />
+    <h2 class="text-lg text-blue-800 mb-4 text-center max-w-xl">
+      The secure, mobile-first platform for managing your American Legion Boys State and Girls State experience.
+    </h2>
+    <div class="flex flex-wrap gap-4 mb-4 justify-center">
+      <a href="login.html" class="px-7 py-3 rounded-lg bg-blue-700 text-white font-bold text-lg hover:bg-blue-900 transition">Login</a>
+      <a href="register.html" class="px-7 py-3 rounded-lg bg-white border border-blue-700 text-blue-700 font-bold text-lg hover:bg-blue-50 transition">Register</a>
     </div>
-    <div id="nav-actions"></div>
-  </nav>
+    <span class="text-sm text-gray-500">Not affiliated with or endorsed by the American Legion.</span>
+  </header>
 
-  <div class="flex flex-1 min-h-0">
-
-    <!-- Sidebar (hidden by default; shown as md:flex after login) -->
-    <aside id="sidebar" class="hidden flex-col w-64 bg-legion-blue text-blue-100 py-8 px-4 shadow-lg">
-      <nav class="flex flex-col gap-2">
-        <a href="#" class="py-2 px-3 rounded-lg font-medium hover:bg-gray-900 hover:text-legion-gold transition">🏠 Dashboard</a>
-        <a href="#" class="py-2 px-3 rounded-lg font-medium hover:bg-gray-900 hover:text-legion-gold transition">👥 User Management</a>
-        <a href="#" class="py-2 px-3 rounded-lg font-medium hover:bg-gray-900 hover:text-legion-gold transition">⚙️ Program Configuration</a>
-        <a href="#" class="py-2 px-3 rounded-lg font-medium hover:bg-gray-900 hover:text-legion-gold transition">🗂️ Content Management</a>
-        <a href="#" class="py-2 px-3 rounded-lg font-medium hover:bg-gray-900 hover:text-legion-gold transition">🗳️ Elections</a>
-        <a href="#" class="py-2 px-3 rounded-lg font-medium hover:bg-gray-900 hover:text-legion-gold transition">📜 Audit Logs</a>
-      </nav>
-    </aside>
-
-    <!-- Main Content Area -->
-    <main id="main-content" class="flex-1 p-6 lg:p-10 bg-gray-50 hidden">
-      <h1 class="text-3xl font-extrabold text-legion-blue mb-8">Admin Dashboard</h1>
-      <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
-        <!-- User Management Card -->
-        <div class="bg-white rounded-2xl shadow-lg p-6 border-t-4 border-legion-gold">
-          <h2 class="text-lg font-semibold mb-2 text-legion-blue">User Management</h2>
-          <p class="text-gray-700 mb-4">Manage users, roles, and permissions.</p>
-          <a href="#" class="text-legion-blue font-semibold hover:text-legion-gold transition">Go to User Management &rarr;</a>
-        </div>
-        <!-- Program Configuration Card -->
-        <div class="bg-white rounded-2xl shadow-lg p-6 border-t-4 border-legion-gold">
-          <h2 class="text-lg font-semibold mb-2 text-legion-blue">Program Configuration</h2>
-          <p class="text-gray-700 mb-4">Customize branding and manage integrations.</p>
-          <a href="#" class="text-legion-blue font-semibold hover:text-legion-gold transition">Configure Program &rarr;</a>
-        </div>
-        <!-- Content Management Card -->
-        <div class="bg-white rounded-2xl shadow-lg p-6 border-t-4 border-legion-gold">
-          <h2 class="text-lg font-semibold mb-2 text-legion-blue">Content Management</h2>
-          <p class="text-gray-700 mb-4">Manage schedules, announcements, and resources.</p>
-          <a href="#" class="text-legion-blue font-semibold hover:text-legion-gold transition">Manage Content &rarr;</a>
-        </div>
-        <!-- Elections Card -->
-        <div class="bg-white rounded-2xl shadow-lg p-6 border-t-4 border-legion-gold">
-          <h2 class="text-lg font-semibold mb-2 text-legion-blue">Elections</h2>
-          <p class="text-gray-700 mb-4">Set up and manage elections.</p>
-          <a href="#" class="text-legion-blue font-semibold hover:text-legion-gold transition">Manage Elections &rarr;</a>
-        </div>
-        <!-- Audit Logs Card -->
-        <div class="bg-white rounded-2xl shadow-lg p-6 border-t-4 border-legion-gold">
-          <h2 class="text-lg font-semibold mb-2 text-legion-blue">Audit Logs</h2>
-          <p class="text-gray-700 mb-4">View user activity and system changes.</p>
-          <a href="#" class="text-legion-blue font-semibold hover:text-legion-gold transition">View Audit Logs &rarr;</a>
-        </div>
+  <!-- FEATURES SECTION -->
+  <section class="w-full max-w-4xl mx-auto px-4 py-8">
+    <h2 class="text-2xl font-bold text-blue-900 mb-8 text-center">All Your Program Needs, One App</h2>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+      <!-- Feature 1 -->
+      <div class="bg-white rounded-2xl shadow-md p-6 flex flex-col items-center text-center">
+        <svg class="w-10 h-10 mb-2 text-blue-700" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 17v-4a2 2 0 012-2h2a2 2 0 012 2v4m-6 0v1a3 3 0 003 3h0a3 3 0 003-3v-1M7 10V7a5 5 0 0110 0v3" /></svg>
+        <h3 class="font-semibold text-blue-900 mb-2">Admin Portal</h3>
+        <p>Create schedules, announcements, voting, and more—all roles in one secure hub. Counselors & staff tools built in.</p>
       </div>
-    </main>
-
-    <!-- Login Form (shown only when logged out) -->
-    <main id="login-content" class="flex-1 flex flex-col items-center justify-center p-6 lg:p-10 bg-gray-50">
-      <div class="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full flex flex-col items-center">
-        <img src="Boys State Shield Blue on Transparent.png" alt="Logo" class="w-28 h-28 mb-6 p-1 rounded-full" />
-        <h1 class="text-2xl font-extrabold text-legion-blue mb-4">Admin Portal Login</h1>
-        <form onsubmit="login(event)" class="w-full">
-          <input type="text" placeholder="Username" required class="mb-3 w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-legion-gold" />
-          <input type="password" placeholder="Password" required class="mb-6 w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-legion-gold" />
-          <button type="submit" class="w-full bg-legion-blue text-white font-semibold py-2 rounded-lg hover:bg-blue-900 transition">Login</button>
-        </form>
-        <p class="text-xs text-gray-500 mt-6">Not affiliated with or endorsed by the American Legion.</p>
+      <!-- Feature 2 -->
+      <div class="bg-white rounded-2xl shadow-md p-6 flex flex-col items-center text-center">
+        <svg class="w-10 h-10 mb-2 text-blue-700" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 20h5v-2a3 3 0 00-5.356-1.857M9 20H4v-2a3 3 0 015.356-1.857M14 10V6a4 4 0 00-8 0v4m8 0a4 4 0 01-8 0" /></svg>
+        <h3 class="font-semibold text-blue-900 mb-2">Parent Access</h3>
+        <p>Optional parent views—see milestones, schedules, and awards for their child’s program. Private & secure.</p>
       </div>
-    </main>
-  </div>
+      <!-- Feature 3 -->
+      <div class="bg-white rounded-2xl shadow-md p-6 flex flex-col items-center text-center">
+        <svg class="w-10 h-10 mb-2 text-blue-700" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 8v4l3 3M21 12A9 9 0 113 12a9 9 0 0118 0z" /></svg>
+        <h3 class="font-semibold text-blue-900 mb-2">Mobile-Friendly & Secure</h3>
+        <p>Designed for every device, with strong privacy and per-program data isolation. Your data = your control.</p>
+      </div>
+    </div>
+  </section>
 
-  <!-- Footer (always visible) -->
-  <footer class="bg-legion-blue text-white border-t mt-8 py-4 text-center text-xs">
-    © 2025 Boys State App Admin Portal. Not affiliated with or endorsed by the American Legion.
+  <!-- HOW IT WORKS -->
+  <section class="w-full max-w-4xl mx-auto px-4 py-8">
+    <h2 class="text-xl font-bold text-blue-900 mb-4 text-center">How It Works</h2>
+    <ol class="flex flex-col md:flex-row items-center justify-center gap-6 md:gap-8 text-blue-900 font-medium">
+      <li class="flex flex-col items-center">
+        <span class="rounded-full bg-blue-700 text-white w-10 h-10 flex items-center justify-center mb-2 font-bold text-xl">1</span>
+        <span>Create your account</span>
+      </li>
+      <span class="hidden md:block text-2xl">→</span>
+      <li class="flex flex-col items-center">
+        <span class="rounded-full bg-blue-700 text-white w-10 h-10 flex items-center justify-center mb-2 font-bold text-xl">2</span>
+        <span>Register your program</span>
+      </li>
+      <span class="hidden md:block text-2xl">→</span>
+      <li class="flex flex-col items-center">
+        <span class="rounded-full bg-blue-700 text-white w-10 h-10 flex items-center justify-center mb-2 font-bold text-xl">3</span>
+        <span>Invite staff, delegates, & parents</span>
+      </li>
+    </ol>
+  </section>
+
+  <!-- WHO IT'S FOR -->
+  <section class="w-full max-w-3xl mx-auto px-4 py-8">
+    <h2 class="text-xl font-bold text-blue-900 mb-4 text-center">Who’s it for?</h2>
+    <ul class="grid grid-cols-1 md:grid-cols-2 gap-4 text-center">
+      <li class="bg-white shadow rounded-xl p-4">🌟 <span class="font-bold">Delegates</span> – access all your program info, vote, and connect</li>
+      <li class="bg-white shadow rounded-xl p-4">🧑‍💼 <span class="font-bold">Counselors & Staff</span> – run your program from your phone</li>
+      <li class="bg-white shadow rounded-xl p-4">🏅 <span class="font-bold">Parents</span> – track progress, schedules, and awards</li>
+      <li class="bg-white shadow rounded-xl p-4">👩‍💻 <span class="font-bold">Directors/Admins</span> – configure, audit, and manage securely</li>
+    </ul>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="bg-blue-900 text-white py-6 mt-10 text-center text-sm">
+    <p class="mb-2">&copy; 2025 Boys State App. Not affiliated with or endorsed by the American Legion.</p>
+    <p>
+      <a href="mailto:info@boysstate.app" class="underline hover:text-blue-200">Contact</a>
+      &nbsp;|&nbsp;
+      <a href="https://github.com/revathiest/BoysStateAppWeb" target="_blank" rel="noopener" class="underline hover:text-blue-200">GitHub</a>
+    </p>
   </footer>
-
-  <!-- Auth State Script -->
-  <script>
-    function updateHeaderButton() {
-      const actions = document.getElementById('nav-actions');
-      if (localStorage.getItem('admin_logged_in') === 'true') {
-        actions.innerHTML = `<button onclick="logout()" class="bg-legion-red text-white px-4 py-2 rounded-lg font-semibold hover:bg-red-700 transition w-28">Logout</button>`;
-      } else {
-        actions.innerHTML = `<button class="bg-legion-gold text-legion-blue px-4 py-2 rounded-lg font-semibold w-28 cursor-default opacity-0 select-none" tabindex="-1" aria-hidden="true">Login</button>`;
-      }
-    }
-    function showDashboard() {
-      document.getElementById('sidebar').classList.remove('hidden');
-      document.getElementById('main-content').classList.remove('hidden');
-      document.getElementById('login-content').classList.add('hidden');
-      updateHeaderButton();
-    }
-    function showLogin() {
-      document.getElementById('sidebar').classList.add('hidden');
-      document.getElementById('main-content').classList.add('hidden');
-      document.getElementById('login-content').classList.remove('hidden');
-      updateHeaderButton();
-    }
-    function login(e) {
-      e.preventDefault();
-      localStorage.setItem('admin_logged_in', 'true');
-      showDashboard();
-    }
-    function logout() {
-      localStorage.removeItem('admin_logged_in');
-      showLogin();
-    }
-    // On load: check login state
-    if (localStorage.getItem('admin_logged_in') === 'true') {
-      showDashboard();
-    } else {
-      showLogin();
-    }
-  </script>
 </body>
 </html>
