@@ -59,3 +59,18 @@ test('register and customize program', async () => {
 
   await stopServer(app);
 });
+
+test('CSP header is set', async () => {
+  process.env.NODE_ENV = 'test';
+  const createServer = require('../src/index');
+  const app = createServer();
+  const port = await startServer(app);
+
+  const res = await fetch(`http://127.0.0.1:${port}/login.html`);
+  assert.strictEqual(
+    res.headers.get('content-security-policy'),
+    "default-src 'self'; script-src 'self'; style-src 'self'"
+  );
+
+  await stopServer(app);
+});

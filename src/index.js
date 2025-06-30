@@ -28,6 +28,7 @@ function createServer() {
   const users = {};
 
   return http.createServer(async (req, res) => {
+    res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self'; style-src 'self'");
     const cookies = parseCookies(req.headers.cookie);
 
     if (req.method === 'POST' && req.url === '/register') {
