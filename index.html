@@ -1,16 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <link href="public/tailwind.css" rel="stylesheet"/>
   <script>
     if (localStorage.getItem('jwtToken')) {
       window.location.href = 'console.html';
     }
   </script>
   <meta charset="UTF-8" />
-  <title>Boys State App – Secure Platform for Boys & Girls State</title>
+  <title>Boys State App – Secure Platform for Boys & Girls State</title><div class="bg-pink-500 text-white p-4">If this is pink, Tailwind is working!</div>
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="description" content="The secure, modern, mobile-first app for Boys State and Girls State delegates, staff, and parents.">
-  <link href="/tailwind.css" rel="stylesheet">
   <style>
     @keyframes logoIn { from { opacity:0; transform: translateY(-30px) scale(0.96);} to { opacity:1; transform: translateY(0) scale(1);} }
     .logo-anim { animation: logoIn 1s cubic-bezier(.23,1.03,.68,1) 0.2s both; }

@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node src/index.js",
     "test": "node --test",
-    "build:css": "tailwindcss -i ./src/styles/tailwind.css -o ./public/tailwind.css --minify"
+    "build:css": "tailwindcss -i ./src/styles/tailwind.css -o ./public/tailwind.css --minify",
+    "dev:css": "tailwindcss -i ./src/styles/tailwind.css -o ./public/tailwind.css --watch"
   },
   "keywords": [],
   "author": "",
