@@ -1,10 +1,16 @@
+let jwtToken = null; // Store in memory by default
+
 document.addEventListener('DOMContentLoaded', () => {
+
+  if (localStorage.getItem('jwtToken')) {
+    window.location.href = 'console.html';
+  }
+
   const apiBase = typeof window.API_URL === 'string' && window.API_URL.trim()
-  ? window.API_URL
-  : null;
+    ? window.API_URL
+    : null;
 
   if (!apiBase) {
-    // Show an error to the user and prevent further action
     alert("Configuration error: API_URL is not set. Please contact the site administrator.");
     // Optionally, you could also disable forms so they can't submit:
     document.querySelectorAll('form').forEach(f => f.querySelectorAll('button, input[type="submit"]').forEach(btn => btn.disabled = true));
@@ -38,12 +44,14 @@ document.addEventListener('DOMContentLoaded', () => {
       });
       const data = await resp.json();
       const msg = document.getElementById('loginMessage');
-      if (resp.status === 200) {
+      debugger;
+      if (resp.status === 200 && data.token) {
+        jwtToken = data.token;
         msg.textContent = 'Login successful!';
         msg.classList.remove('text-red-600');
         msg.classList.add('text-green-700');
         setTimeout(() => {
-          window.location.href = '/';
+          window.location.href = '/public/console.html';
         }, 1000);
       } else {
         msg.textContent = data.error || 'Login failed.';
@@ -52,6 +60,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   }
+  
 
   const registerForm = document.getElementById('registerForm');
   if (registerForm) {

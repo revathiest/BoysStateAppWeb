@@ -1,6 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <script>
+    if (localStorage.getItem('jwtToken')) {
+      window.location.href = 'console.html';
+    }
+  </script>
   <meta charset="UTF-8" />
   <title>Boys State App – Secure Platform for Boys & Girls State</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
