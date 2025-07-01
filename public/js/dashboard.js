@@ -4,12 +4,32 @@ document.addEventListener('DOMContentLoaded', async () => {
     return;
   }
 
-  const res = await fetch('/api/programs', { headers: { 'Cookie': document.cookie } });
+  let res;
+  try {
+    res = await fetch('/api/programs', {
+      headers: { 'Cookie': document.cookie }
+    });
+  } catch (err) {
+    console.error('Network error while loading programs', err);
+    document.getElementById('main-content').innerHTML =
+      '<p class="text-red-600">Unable to reach server.</p>';
+    return;
+  }
+
   if (res.status !== 200) {
     window.location.href = 'login.html';
     return;
   }
-  const data = await res.json();
+
+  let data;
+  try {
+    data = await res.json();
+  } catch (err) {
+    console.error('Invalid JSON from /api/programs', err);
+    document.getElementById('main-content').innerHTML =
+      '<p class="text-red-600">Unexpected response from server.</p>';
+    return;
+  }
   document.getElementById('main-content').classList.remove('hidden');
   const listEl = document.getElementById('programList');
   if (!data.programs || data.programs.length === 0) {

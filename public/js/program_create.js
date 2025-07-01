@@ -9,14 +9,22 @@ document.addEventListener('DOMContentLoaded', () => {
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const data = new URLSearchParams(new FormData(form));
-    const resp = await fetch('/create-program', {
-      method: 'POST',
-      headers: {
-        'Cookie': document.cookie,
-        'Content-Type': 'application/x-www-form-urlencoded'
-      },
-      body: data.toString()
-    });
+    let resp;
+    try {
+      resp = await fetch('/create-program', {
+        method: 'POST',
+        headers: {
+          'Cookie': document.cookie,
+          'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: data.toString()
+      });
+    } catch (err) {
+      console.error('Network error creating program', err);
+      msg.textContent = 'Unable to reach server.';
+      msg.className = 'text-red-600';
+      return;
+    }
     if (resp.status === 201) {
       msg.textContent = 'Program created!';
       msg.className = 'text-green-700';
