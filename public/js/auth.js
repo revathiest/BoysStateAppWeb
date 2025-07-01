@@ -44,7 +44,6 @@ document.addEventListener('DOMContentLoaded', () => {
       });
       const data = await resp.json();
       const msg = document.getElementById('loginMessage');
-      debugger;
       if (resp.status === 200 && data.token) {
         jwtToken = data.token;
         localStorage.setItem('jwtToken', data.token);
