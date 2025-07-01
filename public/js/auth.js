@@ -37,12 +37,26 @@ document.addEventListener('DOMContentLoaded', () => {
       e.preventDefault();
       const email = document.getElementById('loginEmail').value;
       const password = document.getElementById('loginPassword').value;
-      const resp = await fetch(`${apiBase}/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
-      });
-      const data = await resp.json();
+      let resp;
+      try {
+        resp = await fetch(`${apiBase}/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+      } catch (err) {
+        console.error('Network error during login', err);
+        document.getElementById('loginMessage').textContent =
+          'Unable to reach server.';
+        return;
+      }
+
+      let data = {};
+      try {
+        data = await resp.json();
+      } catch (err) {
+        console.error('Invalid JSON from login endpoint', err);
+      }
       const msg = document.getElementById('loginMessage');
       if (resp.status === 200 && data.token) {
         jwtToken = data.token;
@@ -69,12 +83,26 @@ document.addEventListener('DOMContentLoaded', () => {
       e.preventDefault();
       const email = document.getElementById('regEmail').value;
       const password = document.getElementById('regPassword').value;
-      const resp = await fetch(`${apiBase}/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
-      });
-      const data = await resp.json();
+      let resp;
+      try {
+        resp = await fetch(`${apiBase}/register`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+      } catch (err) {
+        console.error('Network error during registration', err);
+        document.getElementById('registerMessage').textContent =
+          'Unable to reach server.';
+        return;
+      }
+
+      let data = {};
+      try {
+        data = await resp.json();
+      } catch (err) {
+        console.error('Invalid JSON from registration endpoint', err);
+      }
       const msg = document.getElementById('registerMessage');
       if (resp.status === 201) {
         msg.textContent = 'Registration successful! You can now log in.';
