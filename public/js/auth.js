@@ -3,7 +3,7 @@ let jwtToken = null; // Store in memory by default
 document.addEventListener('DOMContentLoaded', () => {
 
   if (localStorage.getItem('jwtToken')) {
-    window.location.href = 'console.html';
+    window.location.href = 'dashboard.html';
   }
 
   const apiBase = typeof window.API_URL === 'string' && window.API_URL.trim()
@@ -52,7 +52,7 @@ document.addEventListener('DOMContentLoaded', () => {
         msg.classList.remove('text-red-600');
         msg.classList.add('text-green-700');
         setTimeout(() => {
-          window.location.href = '/public/console.html';
+          window.location.href = '/public/dashboard.html';
         }, 1000);
       } else {
         msg.textContent = data.error || 'Login failed.';
