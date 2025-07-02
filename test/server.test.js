@@ -1,6 +1,4 @@
-const http = require('node:http');
 const { once } = require('node:events');
-const assert = require('node:assert');
 
 async function startServer(app) {
   app.listen(0);
@@ -8,23 +6,21 @@ async function startServer(app) {
   return app.address().port;
 }
 
-async function stopServer(server) {
+function stopServer(server) {
   return new Promise((resolve) => server.close(resolve));
 }
-
-const test = require('node:test');
 
 test('GET / returns index page', async () => {
   process.env.NODE_ENV = 'test';
   const createServer = require('../src/index');
   const app = createServer();
-  const appPort = await startServer(app);
+  const port = await startServer(app);
 
-  const res = await fetch(`http://127.0.0.1:${appPort}/`);
+  const res = await fetch(`http://127.0.0.1:${port}/`);
   const text = await res.text();
 
-  assert.strictEqual(res.status, 200);
-  assert.ok(text.includes('Boys State App'));
+  expect(res.status).toBe(200);
+  expect(text).toContain('Boys State App');
 
   await stopServer(app);
 });
@@ -41,9 +37,9 @@ test('register and create program', async () => {
     body: 'username=test&password=secret',
     redirect: 'manual'
   });
-  assert.strictEqual(res.status, 303);
+  expect(res.status).toBe(303);
   const cookie = res.headers.get('set-cookie');
-  assert.ok(cookie.includes('username=test'));
+  expect(cookie).toContain('username=test');
 
   res = await fetch(`http://127.0.0.1:${port}/create-program`, {
     method: 'POST',
@@ -54,15 +50,15 @@ test('register and create program', async () => {
     body: 'programName=TestProgram&color=%23ff0000&imageUrl=logo.png'
   });
   const created = await res.json();
-  assert.strictEqual(res.status, 201);
-  assert.strictEqual(created.role, 'admin');
+  expect(res.status).toBe(201);
+  expect(created.role).toBe('admin');
 
   res = await fetch(`http://127.0.0.1:${port}/api/programs`, {
     headers: { 'Cookie': cookie }
   });
   const list = await res.json();
-  assert.strictEqual(list.programs.length, 1);
-  assert.strictEqual(list.programs[0].programName, 'TestProgram');
+  expect(list.programs.length).toBe(1);
+  expect(list.programs[0].programName).toBe('TestProgram');
 
   await stopServer(app);
 });
@@ -74,8 +70,7 @@ test('CSP header is set', async () => {
   const port = await startServer(app);
 
   const res = await fetch(`http://127.0.0.1:${port}/login.html`);
-  assert.strictEqual(
-    res.headers.get('content-security-policy'),
+  expect(res.headers.get('content-security-policy')).toBe(
     "default-src 'self'; script-src 'self'; style-src 'self'"
   );
 
@@ -91,16 +86,14 @@ test('passwords are hashed and requests are logged', async () => {
   const app = createServer();
   const port = await startServer(app);
 
-  // Register user
   let res = await fetch(`http://127.0.0.1:${port}/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: 'username=loginuser&password=secret',
     redirect: 'manual'
   });
-  assert.strictEqual(res.status, 303);
+  expect(res.status).toBe(303);
 
-  // Login with no programs should go to onboarding
   res = await fetch(`http://127.0.0.1:${port}/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -108,11 +101,10 @@ test('passwords are hashed and requests are logged', async () => {
     redirect: 'manual'
   });
   const loginCookie = res.headers.get('set-cookie');
-  assert.strictEqual(res.status, 303);
-  assert.strictEqual(res.headers.get('location'), '/onboarding.html');
-  assert.ok(loginCookie.includes('username=loginuser'));
+  expect(res.status).toBe(303);
+  expect(res.headers.get('location')).toBe('/onboarding.html');
+  expect(loginCookie).toContain('username=loginuser');
 
-  // Create a program for the user
   await fetch(`http://127.0.0.1:${port}/create-program`, {
     method: 'POST',
     headers: {
@@ -122,16 +114,16 @@ test('passwords are hashed and requests are logged', async () => {
     body: 'programName=Prog&color=%2300ff00&imageUrl=logo.png'
   });
 
-  // Login again should redirect to dashboard
   res = await fetch(`http://127.0.0.1:${port}/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: 'username=loginuser&password=secret',
     redirect: 'manual'
   });
-  assert.strictEqual(res.status, 303);
-  assert.strictEqual(res.headers.get('location'), '/dashboard.html');
+  expect(res.status).toBe(303);
+  expect(res.headers.get('location')).toBe('/dashboard.html');
 
+  console.log = origLog;
   await stopServer(app);
 });
 
@@ -146,14 +138,14 @@ test('unauthorized access is blocked', async () => {
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: 'programName=Nope&color=%23ff0000&imageUrl=img.png'
   });
-  assert.strictEqual(res.status, 401);
+  expect(res.status).toBe(401);
 
   res = await fetch(`http://127.0.0.1:${port}/api/programs`);
-  assert.strictEqual(res.status, 401);
+  expect(res.status).toBe(401);
 
   res = await fetch(`http://127.0.0.1:${port}/create-program.html`, { redirect: 'manual' });
-  assert.strictEqual(res.status, 302);
-  assert.strictEqual(res.headers.get('location'), '/login.html');
+  expect(res.status).toBe(302);
+  expect(res.headers.get('location')).toBe('/login.html');
 
   await stopServer(app);
 });
@@ -165,8 +157,7 @@ test('CSP header is set on index', async () => {
   const port = await startServer(app);
 
   const res = await fetch(`http://127.0.0.1:${port}/`);
-  assert.strictEqual(
-    res.headers.get('content-security-policy'),
+  expect(res.headers.get('content-security-policy')).toBe(
     "default-src 'self'; script-src 'self'; style-src 'self'"
   );
 
