@@ -12,12 +12,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!valid && window.ensureValidToken && apiBaseTemp) {
       const refreshed = await window.ensureValidToken(apiBaseTemp);
       if (refreshed) {
-        window.location.href = 'dashboard.html';
+        window.location.href = 'console.html';
         return;
       }
     }
     if (valid) {
-      window.location.href = 'dashboard.html';
+      window.location.href = 'console.html';
       return;
     } else {
       localStorage.removeItem('jwtToken');
@@ -84,7 +84,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         msg.classList.remove('text-red-600');
         msg.classList.add('text-green-700');
         setTimeout(() => {
-          window.location.href = '/public/dashboard.html';
+          window.location.href = '/public/console.html';
         }, 1000);
       } else {
         msg.textContent = data.error || 'Login failed.';
