@@ -81,3 +81,31 @@ test('CSP header is set', async () => {
 
   await stopServer(app);
 });
+
+test('passwords are hashed and requests are logged', async () => {
+  process.env.NODE_ENV = 'test';
+  const logs = [];
+  const origLog = console.log;
+  console.log = (msg) => logs.push(msg);
+
+  const createServer = require('../src/index');
+  const app = createServer();
+  const port = await startServer(app);
+
+  let res = await fetch(`http://127.0.0.1:${port}/register`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: 'username=hashme&password=secret',
+    redirect: 'manual'
+  });
+  assert.strictEqual(res.status, 303);
+  const store = createServer.userStore;
+  assert.notStrictEqual(store.hashme.password, 'secret');
+
+  await fetch(`http://127.0.0.1:${port}/login.html`);
+
+  console.log = origLog;
+  assert.ok(logs.some(l => l.includes('GET /login.html')));
+
+  await stopServer(app);
+});

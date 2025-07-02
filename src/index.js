@@ -1,8 +1,31 @@
 const http = require('node:http');
 const fs = require('node:fs');
 const path = require('node:path');
+const { scrypt, randomBytes, timingSafeEqual } = require('node:crypto');
 
 const publicDir = path.join(__dirname, '..', 'public');
+
+function hashPassword(password) {
+  return new Promise((resolve, reject) => {
+    const salt = randomBytes(16).toString('hex');
+    scrypt(password, salt, 64, (err, derivedKey) => {
+      if (err) return reject(err);
+      resolve(`${salt}:${derivedKey.toString('hex')}`);
+    });
+  });
+}
+
+function verifyPassword(stored, password) {
+  return new Promise((resolve, reject) => {
+    const [salt, key] = stored.split(':');
+    if (!salt || !key) return resolve(false);
+    scrypt(password, salt, 64, (err, derivedKey) => {
+      if (err) return reject(err);
+      const hashed = Buffer.from(key, 'hex');
+      resolve(timingSafeEqual(hashed, derivedKey));
+    });
+  });
+}
 
 function parseBody(req) {
   return new Promise((resolve) => {
@@ -24,12 +47,19 @@ function parseCookies(cookieHeader) {
   }));
 }
 
+function logRequest(req, res, start) {
+  const duration = Date.now() - start;
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url} ${res.statusCode} ${duration}ms`);
+}
+
 function createServer() {
   // In-memory user store
-  // In-memory user store
   const users = {};
+  createServer.userStore = users;
 
   return http.createServer(async (req, res) => {
+    const startTime = Date.now();
+    res.on('finish', () => logRequest(req, res, startTime));
     res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self'; style-src 'self'");
     const cookies = parseCookies(req.headers.cookie);
 
@@ -39,7 +69,8 @@ function createServer() {
         res.writeHead(400);
         return res.end('Invalid registration');
       }
-      users[username] = { password, programs: [] };
+      const hashed = await hashPassword(password);
+      users[username] = { password: hashed, programs: [] };
       res.writeHead(303, {
         'Location': '/onboarding.html',
         'Set-Cookie': `username=${username}; Path=/`
@@ -49,7 +80,12 @@ function createServer() {
 
     if (req.method === 'POST' && req.url === '/login') {
       const { username, password } = await parseBody(req);
-      if (!username || !password || !users[username] || users[username].password !== password) {
+      if (!username || !password || !users[username]) {
+        res.writeHead(401);
+        return res.end('Unauthorized');
+      }
+      const ok = await verifyPassword(users[username].password, password);
+      if (!ok) {
         res.writeHead(401);
         return res.end('Unauthorized');
       }
