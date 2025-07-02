@@ -12,12 +12,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!valid && window.ensureValidToken && apiBaseTemp) {
       const refreshed = await window.ensureValidToken(apiBaseTemp);
       if (refreshed) {
-        window.location.href = 'dashboard.html';
+        window.location.href = 'console.html';
         return;
       }
     }
     if (valid) {
-      window.location.href = 'dashboard.html';
+      window.location.href = 'console.html';
       return;
     } else {
       localStorage.removeItem('jwtToken');

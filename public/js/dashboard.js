@@ -61,11 +61,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   document.getElementById('main-content').classList.remove('hidden');
-  const listEl = document.getElementById('programList');
-  if (!data.programs || data.programs.length === 0) {
-    window.location.href = 'onboarding.html';
-    return;
-  }
+  // const listEl = document.getElementById('programList');
+  // if (!data.programs || data.programs.length === 0) {
+  //   window.location.href = 'onboarding.html';
+  //   return;
+  // }
   data.programs.forEach((p, idx) => {
     const li = document.createElement('li');
     li.className = 'bg-white shadow p-4 rounded-lg flex items-center justify-between';
