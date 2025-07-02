@@ -1,5 +1,13 @@
-document.addEventListener('DOMContentLoaded', () => {
-  if (!localStorage.getItem('jwtToken')) {
+document.addEventListener('DOMContentLoaded', async () => {
+  const apiBase = typeof window.API_URL === 'string' && window.API_URL.trim()
+    ? window.API_URL
+    : null;
+  if (!apiBase) {
+    alert('Configuration error: API_URL is not set. Please contact the site administrator.');
+    return;
+  }
+  let token = await window.ensureValidToken(apiBase);
+  if (!token) {
     window.location.href = 'login.html';
     return;
   }
@@ -11,10 +19,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const data = new URLSearchParams(new FormData(form));
     let resp;
     try {
-      resp = await fetch('/create-program', {
+      token = await window.ensureValidToken(apiBase);
+      if (!token) {
+        window.location.href = 'login.html';
+        return;
+      }
+      resp = await fetch(`${apiBase}/create-program`, {
         method: 'POST',
         headers: {
-          'Cookie': document.cookie,
+          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/x-www-form-urlencoded'
         },
         body: data.toString()
