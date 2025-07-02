@@ -1,13 +1,26 @@
 document.addEventListener('DOMContentLoaded', async () => {
-  if (!localStorage.getItem('jwtToken')) {
+  const apiBase = typeof window.API_URL === 'string' && window.API_URL.trim()
+    ? window.API_URL
+    : null;
+  if (!apiBase) {
+    alert('Configuration error: API_URL is not set. Please contact the site administrator.');
+    return;
+  }
+  let token = await window.ensureValidToken(apiBase);
+  if (!token) {
     window.location.href = 'login.html';
     return;
   }
 
   let res;
   try {
-    res = await fetch('/api/programs', {
-      headers: { 'Cookie': document.cookie }
+    token = await window.ensureValidToken(apiBase);
+    if (!token) {
+      window.location.href = 'login.html';
+      return;
+    }
+    res = await fetch(`${apiBase}/api/programs`, {
+      headers: { 'Authorization': `Bearer ${token}` }
     });
   } catch (err) {
     console.error('Network error while loading programs', err);

@@ -1,9 +1,27 @@
 let jwtToken = null; // Store in memory by default
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
 
-  if (localStorage.getItem('jwtToken')) {
-    window.location.href = 'dashboard.html';
+  const token = localStorage.getItem('jwtToken');
+  if (token) {
+    const apiBaseTemp = typeof window.API_URL === 'string' && window.API_URL.trim() ? window.API_URL : null;
+    if (!window.isTokenExpired || !window.ensureValidToken) {
+      console.warn('token utils not loaded');
+    }
+    const valid = window.isTokenExpired ? !window.isTokenExpired(token) : true;
+    if (!valid && window.ensureValidToken && apiBaseTemp) {
+      const refreshed = await window.ensureValidToken(apiBaseTemp);
+      if (refreshed) {
+        window.location.href = 'dashboard.html';
+        return;
+      }
+    }
+    if (valid) {
+      window.location.href = 'dashboard.html';
+      return;
+    } else {
+      localStorage.removeItem('jwtToken');
+    }
   }
 
   const apiBase = typeof window.API_URL === 'string' && window.API_URL.trim()
