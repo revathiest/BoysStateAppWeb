@@ -44,7 +44,7 @@ This repository contains the **web-based admin portal** for Boys State App. The 
 ## Using the Portal
 
 * Navigate to `index.html` and choose **Register** to create an admin account.
-* After registering or logging in, you will be redirected to the **Customize Program** page to set your program name, color, and logo URL.
+* After registering you will be taken to **onboarding.html**. From there create your first program. Subsequent logins redirect to **dashboard.html** which lists all your programs and shows features based on your role.
 
 ## Deployment
 

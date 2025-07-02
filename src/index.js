@@ -25,6 +25,8 @@ function parseCookies(cookieHeader) {
 }
 
 function createServer() {
+  // In-memory user store
+  // In-memory user store
   const users = {};
 
   return http.createServer(async (req, res) => {
@@ -37,9 +39,9 @@ function createServer() {
         res.writeHead(400);
         return res.end('Invalid registration');
       }
-      users[username] = { password, program: null };
+      users[username] = { password, programs: [] };
       res.writeHead(303, {
-        'Location': '/customize.html',
+        'Location': '/onboarding.html',
         'Set-Cookie': `username=${username}; Path=/`
       });
       return res.end();
@@ -51,31 +53,51 @@ function createServer() {
         res.writeHead(401);
         return res.end('Unauthorized');
       }
+      const dest = (users[username].programs && users[username].programs.length) ?
+        '/dashboard.html' : '/onboarding.html';
       res.writeHead(303, {
-        'Location': '/customize.html',
+        'Location': dest,
         'Set-Cookie': `username=${username}; Path=/`
       });
       return res.end();
     }
 
-    if (req.method === 'POST' && req.url === '/customize') {
+    if (req.method === 'POST' && req.url === '/create-program') {
       const username = cookies.username;
       if (!username || !users[username]) {
         res.writeHead(401);
         return res.end('Unauthorized');
       }
       const { programName, color, imageUrl } = await parseBody(req);
-      users[username].program = { programName, color, imageUrl };
-      res.writeHead(200);
-      return res.end('Program updated');
+      if (!programName) {
+        res.writeHead(400);
+        return res.end('Invalid');
+      }
+      const program = { programName, color, imageUrl, role: 'admin' };
+      users[username].programs.push(program);
+      res.writeHead(201, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify(program));
     }
 
-    if (req.method === 'GET' && req.url === '/customize.html') {
+    if (req.method === 'GET' && req.url === '/create-program.html') {
       const username = cookies.username;
       if (!username || !users[username]) {
         res.writeHead(302, { 'Location': '/login.html' });
         return res.end();
       }
+    }
+
+    if (req.method === 'GET' && req.url === '/api/programs') {
+      const username = cookies.username;
+      if (!username || !users[username]) {
+        res.writeHead(401);
+        return res.end('Unauthorized');
+      }
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({
+        username,
+        programs: users[username].programs
+      }));
     }
 
     let filePath = req.url === '/' ? 'index.html' : req.url.slice(1);

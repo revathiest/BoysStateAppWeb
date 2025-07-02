@@ -1,9 +1,27 @@
 let jwtToken = null; // Store in memory by default
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
 
-  if (localStorage.getItem('jwtToken')) {
-    window.location.href = 'console.html';
+  const token = localStorage.getItem('jwtToken');
+  if (token) {
+    const apiBaseTemp = typeof window.API_URL === 'string' && window.API_URL.trim() ? window.API_URL : null;
+    if (!window.isTokenExpired || !window.ensureValidToken) {
+      console.warn('token utils not loaded');
+    }
+    const valid = window.isTokenExpired ? !window.isTokenExpired(token) : true;
+    if (!valid && window.ensureValidToken && apiBaseTemp) {
+      const refreshed = await window.ensureValidToken(apiBaseTemp);
+      if (refreshed) {
+        window.location.href = 'dashboard.html';
+        return;
+      }
+    }
+    if (valid) {
+      window.location.href = 'dashboard.html';
+      return;
+    } else {
+      localStorage.removeItem('jwtToken');
+    }
   }
 
   const apiBase = typeof window.API_URL === 'string' && window.API_URL.trim()
@@ -37,12 +55,26 @@ document.addEventListener('DOMContentLoaded', () => {
       e.preventDefault();
       const email = document.getElementById('loginEmail').value;
       const password = document.getElementById('loginPassword').value;
-      const resp = await fetch(`${apiBase}/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
-      });
-      const data = await resp.json();
+      let resp;
+      try {
+        resp = await fetch(`${apiBase}/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+      } catch (err) {
+        console.error('Network error during login', err);
+        document.getElementById('loginMessage').textContent =
+          'Unable to reach server.';
+        return;
+      }
+
+      let data = {};
+      try {
+        data = await resp.json();
+      } catch (err) {
+        console.error('Invalid JSON from login endpoint', err);
+      }
       const msg = document.getElementById('loginMessage');
       if (resp.status === 200 && data.token) {
         jwtToken = data.token;
@@ -52,7 +84,7 @@ document.addEventListener('DOMContentLoaded', () => {
         msg.classList.remove('text-red-600');
         msg.classList.add('text-green-700');
         setTimeout(() => {
-          window.location.href = '/public/console.html';
+          window.location.href = '/public/dashboard.html';
         }, 1000);
       } else {
         msg.textContent = data.error || 'Login failed.';
@@ -69,12 +101,26 @@ document.addEventListener('DOMContentLoaded', () => {
       e.preventDefault();
       const email = document.getElementById('regEmail').value;
       const password = document.getElementById('regPassword').value;
-      const resp = await fetch(`${apiBase}/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
-      });
-      const data = await resp.json();
+      let resp;
+      try {
+        resp = await fetch(`${apiBase}/register`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+      } catch (err) {
+        console.error('Network error during registration', err);
+        document.getElementById('registerMessage').textContent =
+          'Unable to reach server.';
+        return;
+      }
+
+      let data = {};
+      try {
+        data = await resp.json();
+      } catch (err) {
+        console.error('Invalid JSON from registration endpoint', err);
+      }
       const msg = document.getElementById('registerMessage');
       if (resp.status === 201) {
         msg.textContent = 'Registration successful! You can now log in.';

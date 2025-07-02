@@ -24,12 +24,12 @@ test('GET / returns index page', async () => {
   const text = await res.text();
 
   assert.strictEqual(res.status, 200);
-  assert.ok(text.includes('Boys State App Admin Portal'));
+  assert.ok(text.includes('Boys State App'));
 
   await stopServer(app);
 });
 
-test('register and customize program', async () => {
+test('register and create program', async () => {
   process.env.NODE_ENV = 'test';
   const createServer = require('../src/index');
   const app = createServer();
@@ -45,7 +45,7 @@ test('register and customize program', async () => {
   const cookie = res.headers.get('set-cookie');
   assert.ok(cookie.includes('username=test'));
 
-  res = await fetch(`http://127.0.0.1:${port}/customize`, {
+  res = await fetch(`http://127.0.0.1:${port}/create-program`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
@@ -53,9 +53,16 @@ test('register and customize program', async () => {
     },
     body: 'programName=TestProgram&color=%23ff0000&imageUrl=logo.png'
   });
-  const text = await res.text();
-  assert.strictEqual(res.status, 200);
-  assert.strictEqual(text, 'Program updated');
+  const created = await res.json();
+  assert.strictEqual(res.status, 201);
+  assert.strictEqual(created.role, 'admin');
+
+  res = await fetch(`http://127.0.0.1:${port}/api/programs`, {
+    headers: { 'Cookie': cookie }
+  });
+  const list = await res.json();
+  assert.strictEqual(list.programs.length, 1);
+  assert.strictEqual(list.programs[0].programName, 'TestProgram');
 
   await stopServer(app);
 });
