@@ -1,4 +1,5 @@
 document.addEventListener('DOMContentLoaded', async () => {
+  // Check for configured API base
   const apiBase = typeof window.API_URL === 'string' && window.API_URL.trim()
     ? window.API_URL
     : null;
@@ -6,20 +7,35 @@ document.addEventListener('DOMContentLoaded', async () => {
     alert('Configuration error: API_URL is not set. Please contact the site administrator.');
     return;
   }
+
+  // Get JWT token (should check validity/refresh if needed)
   let token = await window.ensureValidToken(apiBase);
   if (!token) {
     window.location.href = 'login.html';
     return;
   }
 
+  // Extract email from JWT
+  function getEmailFromToken(token) {
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return payload.email;
+    } catch (e) {
+      return null;
+    }
+  }
+  const email = getEmailFromToken(token);
+  if (!email) {
+    alert('Invalid token: no email found');
+    window.location.href = 'login.html';
+    return;
+  }
+
+  // Fetch program data using the correct endpoint
   let res;
   try {
-    token = await window.ensureValidToken(apiBase);
-    if (!token) {
-      window.location.href = 'login.html';
-      return;
-    }
-    res = await fetch(`${apiBase}/api/programs`, {
+    // The API expects /programs/{email}
+    res = await fetch(`${apiBase}/programs/${encodeURIComponent(email)}`, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
   } catch (err) {
@@ -38,11 +54,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   try {
     data = await res.json();
   } catch (err) {
-    console.error('Invalid JSON from /api/programs', err);
+    console.error('Invalid JSON from /programs', err);
     document.getElementById('main-content').innerHTML =
       '<p class="text-red-600">Unexpected response from server.</p>';
     return;
   }
+
   document.getElementById('main-content').classList.remove('hidden');
   const listEl = document.getElementById('programList');
   if (!data.programs || data.programs.length === 0) {
