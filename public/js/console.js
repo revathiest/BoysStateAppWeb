@@ -13,6 +13,32 @@ document.addEventListener('DOMContentLoaded', async () => {
     return;
   }
 
+  let userEmail = null;
+  try {
+    userEmail = JSON.parse(atob(token.split('.')[1])).email;
+  } catch (e) {
+    console.error('Failed to parse user email from token', e);
+  }
+  if (!userEmail) {
+    window.location.href = 'login.html';
+    return;
+  }
+
+  try {
+    const res = await fetch(`${apiBase}/programs/${encodeURIComponent(userEmail)}`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (res.ok) {
+      const programs = await res.json().catch(() => null);
+      console.log('Loaded programs', programs);
+    } else if (res.status === 401) {
+      window.location.href = 'login.html';
+      return;
+    }
+  } catch (err) {
+    console.error('Network error while loading programs', err);
+  }
+
 document.getElementById('main-content').classList.remove('hidden');
 
   const logoutBtn = document.getElementById('logoutBtn');
