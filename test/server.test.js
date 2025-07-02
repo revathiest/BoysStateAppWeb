@@ -82,8 +82,11 @@ test('CSP header is set', async () => {
   await stopServer(app);
 });
 
-test('login redirects based on program enrollment', async () => {
+test('passwords are hashed and requests are logged', async () => {
   process.env.NODE_ENV = 'test';
+  const logs = [];
+  const origLog = console.log;
+  console.log = (msg) => logs.push(msg);
   const createServer = require('../src/index');
   const app = createServer();
   const port = await startServer(app);
