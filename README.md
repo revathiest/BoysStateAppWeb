@@ -32,6 +32,8 @@ This repository contains the **web-based admin portal** for Boys State App. The 
 
    * Copy `.env.example` to `.env` and adjust values such as `PORT` for the local server.
    * Edit `public/js/config.js` and set `API_URL` to your backend API's base URL.
+   * The server reads `API_URL` and optional `PROGRAM_ID` to send log events to
+     your backend's `/logs` endpoint.
 3. **Run the app:**
 
    ```bash
