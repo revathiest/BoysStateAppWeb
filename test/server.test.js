@@ -202,6 +202,22 @@ test('login fails with wrong password', async () => {
   await stopServer(app);
 });
 
+test('login fails for unknown user', async () => {
+  process.env.NODE_ENV = 'test';
+  const createServer = require('../src/index');
+  const app = createServer();
+  const port = await startServer(app);
+
+  const res = await fetch(`http://127.0.0.1:${port}/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: 'username=nouser&password=whatever',
+  });
+  expect(res.status).toBe(401);
+
+  await stopServer(app);
+});
+
 test('missing program name returns 400', async () => {
   process.env.NODE_ENV = 'test';
   const createServer = require('../src/index');
@@ -245,4 +261,28 @@ test('GET unknown file returns 404', async () => {
   expect(res.status).toBe(404);
 
   await stopServer(app);
+});
+
+test('console output is sent to logger', () => {
+  process.env.NODE_ENV = 'test';
+  const logger = require('../src/logger');
+  const origFetch = global.fetch;
+  global.fetch = jest.fn().mockResolvedValue({});
+  process.env.API_URL = 'http://example.com';
+  const start = logger.getLogs().length;
+  const circular = {};
+  circular.self = circular;
+  console.log('log-one');
+  console.error('error-one');
+  console.log(circular);
+  process.emit('unhandledRejection', new Error('oops'));
+  process.emit('uncaughtException', new Error('boom'));
+  const logs = logger.getLogs().slice(start).join('\n');
+  expect(logs).toContain('log-one');
+  expect(logs).toContain('error-one');
+  expect(logs).toContain('Unhandled rejection');
+  expect(logs).toContain('Uncaught exception');
+  expect(global.fetch).toHaveBeenCalled();
+  global.fetch = origFetch;
+  delete process.env.API_URL;
 });
