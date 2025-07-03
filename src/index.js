@@ -67,11 +67,13 @@ function createServer() {
     if (req.method === 'POST' && req.url === '/register') {
       const { username, password } = await parseBody(req);
       if (!username || !password || users[username]) {
+        logger.log(`Failed registration attempt for ${username || 'unknown'}`, { level: 'warn', source: 'auth' });
         res.writeHead(400);
         return res.end('Invalid registration');
       }
       const hashed = await hashPassword(password);
       users[username] = { password: hashed, programs: [] };
+      logger.log(`User registered: ${username}`, { source: 'auth' });
       res.writeHead(303, {
         'Location': '/onboarding.html',
         'Set-Cookie': `username=${username}; Path=/`
@@ -82,14 +84,17 @@ function createServer() {
     if (req.method === 'POST' && req.url === '/login') {
       const { username, password } = await parseBody(req);
       if (!username || !password || !users[username]) {
+        logger.log(`Failed login for ${username || 'unknown'}`, { level: 'warn', source: 'auth' });
         res.writeHead(401);
         return res.end('Unauthorized');
       }
       const ok = await verifyPassword(users[username].password, password);
       if (!ok) {
+        logger.log(`Failed login for ${username}`, { level: 'warn', source: 'auth' });
         res.writeHead(401);
         return res.end('Unauthorized');
       }
+      logger.log(`Successful login for ${username}`, { source: 'auth' });
       const dest = (users[username].programs && users[username].programs.length) ?
         '/dashboard.html' : '/onboarding.html';
       res.writeHead(303, {
@@ -102,16 +107,19 @@ function createServer() {
     if (req.method === 'POST' && req.url === '/create-program') {
       const username = cookies.username;
       if (!username || !users[username]) {
+        logger.log('Unauthorized program creation attempt', { level: 'warn', source: 'program' });
         res.writeHead(401);
         return res.end('Unauthorized');
       }
       const { programName, color, imageUrl } = await parseBody(req);
       if (!programName) {
+        logger.log('Program creation failed: missing name', { level: 'warn', source: 'program' });
         res.writeHead(400);
         return res.end('Invalid');
       }
       const program = { programName, color, imageUrl, role: 'admin' };
       users[username].programs.push(program);
+      logger.log(`Program created by ${username}: ${programName}`, { source: 'program' });
       res.writeHead(201, { 'Content-Type': 'application/json' });
       return res.end(JSON.stringify(program));
     }
@@ -168,6 +176,7 @@ function createServer() {
         res.writeHead(404);
         res.end('Not Found');
       } else {
+        logger.log(`Error reading file ${filePath}: ${err.message}`, { level: 'error', error: err.stack, source: 'server' });
         res.writeHead(500);
         res.end('Server Error');
       }
