@@ -2,6 +2,7 @@ const http = require('node:http');
 const fs = require('node:fs');
 const path = require('node:path');
 const { scrypt, randomBytes, timingSafeEqual } = require('node:crypto');
+const logger = require('./logger');
 
 const publicDir = path.join(__dirname, '..', 'public');
 
@@ -49,7 +50,7 @@ function parseCookies(cookieHeader) {
 
 function logRequest(req, res, start) {
   const duration = Date.now() - start;
-  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url} ${res.statusCode} ${duration}ms`);
+  logger.log(`${req.method} ${req.url} ${res.statusCode} ${duration}ms`);
 }
 
 function createServer() {
@@ -136,10 +137,20 @@ function createServer() {
       }));
     }
 
-    let filePath = req.url === '/' ? 'index.html' : req.url.slice(1);
-    filePath = path.normalize(path.join(publicDir, filePath));
+    if (req.method === 'GET' && req.url === '/logs') {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify(logger.getLogs()));
+    }
 
-    if (!filePath.startsWith(publicDir)) {
+    let filePath;
+    if (req.url === '/') {
+      filePath = path.join(__dirname, '..', 'index.html');
+    } else {
+      filePath = path.normalize(path.join(publicDir, req.url.slice(1)));
+    }
+    const baseDir = path.join(__dirname, '..');
+
+    if (!filePath.startsWith(baseDir)) {
       res.writeHead(400);
       return res.end('Bad Request');
     }
@@ -167,7 +178,7 @@ function createServer() {
 if (require.main === module) {
   const port = process.env.PORT || 8080;
   createServer().listen(port, () => {
-    console.log(`Server running on port ${port}`);
+    logger.log(`Server running on port ${port}`);
   });
 }
 
