@@ -119,9 +119,10 @@ test('passwords are hashed and requests are logged', async () => {
   });
   expect(res.status).toBe(303);
   expect(res.headers.get('location')).toBe('/dashboard.html');
-  const logRes = await fetch(`http://127.0.0.1:${port}/logs`);
-  const logEntries = await logRes.json();
-  expect(logEntries.some(l => l.includes('/login'))).toBe(true);
+  const logRes = await fetch(`http://127.0.0.1:${port}/api/logs?search=/login`);
+  const logData = await logRes.json();
+  expect(logData.total).toBeGreaterThan(0);
+  expect(logData.items.some(l => l.message.includes('/login'))).toBe(true);
 
   await stopServer(app);
 });
@@ -263,6 +264,25 @@ test('GET unknown file returns 404', async () => {
   await stopServer(app);
 });
 
+test('api log filter returns warning entries', async () => {
+  process.env.NODE_ENV = 'test';
+  const createServer = require('../src/index');
+  const app = createServer();
+  const port = await startServer(app);
+
+  await fetch(`http://127.0.0.1:${port}/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: 'username=nobody&password=wrong'
+  });
+
+  const res = await fetch(`http://127.0.0.1:${port}/api/logs?level=warn`);
+  const data = await res.json();
+  expect(data.items.some(l => l.level === 'warn')).toBe(true);
+
+  await stopServer(app);
+});
+
 test('console output is sent to logger', () => {
   process.env.NODE_ENV = 'test';
   const logger = require('../src/logger');
@@ -277,7 +297,7 @@ test('console output is sent to logger', () => {
   console.log(circular);
   process.emit('unhandledRejection', new Error('oops'));
   process.emit('uncaughtException', new Error('boom'));
-  const logs = logger.getLogs().slice(start).join('\n');
+  const logs = logger.getLogs().slice(start).map(l => l.message).join('\n');
   expect(logs).toContain('log-one');
   expect(logs).toContain('error-one');
   expect(logs).toContain('Unhandled rejection');

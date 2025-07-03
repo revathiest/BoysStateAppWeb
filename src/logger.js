@@ -13,15 +13,18 @@ function sendToApi(data) {
 }
 
 function log(message, { level = 'info', error = null, source = 'server' } = {}) {
-  const entry = `[${new Date().toISOString()}] ${message}`;
-  logs.push(entry);
-
-  const payload = {
-    programId: process.env.PROGRAM_ID || 'unknown',
+  const entry = {
+    timestamp: new Date().toISOString(),
     level,
     message,
     error,
     source
+  };
+  logs.push(entry);
+
+  const payload = {
+    programId: process.env.PROGRAM_ID || 'unknown',
+    ...entry
   };
   sendToApi(payload);
 }
