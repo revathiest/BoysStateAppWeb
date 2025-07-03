@@ -2,6 +2,37 @@ const http = require('node:http');
 const fs = require('node:fs');
 const path = require('node:path');
 const { scrypt, randomBytes, timingSafeEqual } = require('node:crypto');
+
+// Load environment variables early so the logger can use them
+(function loadEnv() {
+  const envPath = path.join(__dirname, '..', '.env');
+  try {
+    const envData = fs.readFileSync(envPath, 'utf8');
+    envData.split(/\r?\n/).forEach((line) => {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith('#') || !trimmed.includes('=')) return;
+      const [key, ...rest] = trimmed.split('=');
+      if (process.env[key] === undefined) {
+        process.env[key] = rest.join('=');
+      }
+    });
+  } catch {
+    // Ignore missing .env file
+  }
+  if (!process.env.API_URL) {
+    try {
+      const cfgPath = path.join(__dirname, '..', 'public', 'js', 'config.js');
+      const cfg = fs.readFileSync(cfgPath, 'utf8');
+      const match = cfg.match(/window\.API_URL\s*=\s*"([^"]+)"/);
+      if (match) {
+        process.env.API_URL = match[1];
+      }
+    } catch {
+      // Ignore missing config file
+    }
+  }
+})();
+
 const logger = require('./logger');
 
 const publicDir = path.join(__dirname, '..', 'public');

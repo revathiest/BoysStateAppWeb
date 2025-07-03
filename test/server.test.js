@@ -286,3 +286,23 @@ test('console output is sent to logger', () => {
   global.fetch = origFetch;
   delete process.env.API_URL;
 });
+
+test('logger uses API_URL from config.js when env missing', () => {
+  process.env.NODE_ENV = 'test';
+  delete process.env.API_URL;
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const cfgPath = path.join(__dirname, '../public/js/config.js');
+  const origCfg = fs.readFileSync(cfgPath, 'utf8');
+  fs.writeFileSync(cfgPath, 'window.API_URL = "http://cfg.example";');
+  jest.resetModules();
+  require('../src/index');
+  const logger = require('../src/logger');
+  const origFetch = global.fetch;
+  global.fetch = jest.fn().mockResolvedValue({});
+  logger.log('cfg-test');
+  expect(process.env.API_URL).toBe('http://cfg.example');
+  expect(global.fetch).toHaveBeenCalled();
+  global.fetch = origFetch;
+  fs.writeFileSync(cfgPath, origCfg);
+});
