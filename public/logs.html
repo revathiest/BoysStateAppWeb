@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Logs - Boys State App</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link href="tailwind.css" rel="stylesheet" />
+</head>
+<body class="min-h-screen bg-gray-50 p-4">
+  <h1 class="text-2xl font-bold mb-4">Logs</h1>
+  <div class="mb-4 flex flex-wrap gap-2" id="filters">
+    <input type="date" id="start" class="border rounded p-1" />
+    <input type="date" id="end" class="border rounded p-1" />
+    <select id="level" multiple class="border rounded p-1">
+      <option value="debug">debug</option>
+      <option value="info">info</option>
+      <option value="warn">warn</option>
+      <option value="error">error</option>
+    </select>
+    <select id="source" class="border rounded p-1">
+      <option value="all">all</option>
+      <option value="server">server</option>
+      <option value="auth">auth</option>
+      <option value="program">program</option>
+      <option value="console">console</option>
+      <option value="process">process</option>
+    </select>
+    <input type="text" id="search" placeholder="search" class="border rounded p-1" />
+    <button id="apply" class="bg-blue-600 text-white px-3 py-1 rounded">Apply</button>
+  </div>
+  <table class="min-w-full bg-white" id="logTable">
+    <thead>
+      <tr>
+        <th class="px-2 py-1">Timestamp</th>
+        <th class="px-2 py-1">Level</th>
+        <th class="px-2 py-1">Source</th>
+        <th class="px-2 py-1">Message</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+  <div id="pager" class="mt-4 flex items-center gap-2"></div>
+  <script src="js/config.js"></script>
+  <script src="js/tokenUtils.js"></script>
+  <script src="js/logs.js"></script>
+</body>
+</html>

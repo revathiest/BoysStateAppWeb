@@ -181,6 +181,31 @@ function createServer() {
       return res.end(JSON.stringify(logger.getLogs()));
     }
 
+    if (req.method === 'GET' && req.url.startsWith('/api/logs')) {
+      const urlObj = new URL(req.url, `http://${req.headers.host}`);
+      let logs = logger.getLogs();
+      const start = urlObj.searchParams.get('start');
+      const end = urlObj.searchParams.get('end');
+      const level = urlObj.searchParams.getAll('level');
+      const source = urlObj.searchParams.get('source');
+      const search = urlObj.searchParams.get('search');
+      if (start) logs = logs.filter(l => l.timestamp >= start);
+      if (end) logs = logs.filter(l => l.timestamp <= end);
+      if (level && level.length) logs = logs.filter(l => level.includes(l.level));
+      if (source && source !== 'all') logs = logs.filter(l => l.source === source);
+      if (search) logs = logs.filter(l => {
+        return (l.message && l.message.includes(search)) ||
+               (l.error && l.error.includes(search)) ||
+               (l.source && l.source.includes(search));
+      });
+      const page = parseInt(urlObj.searchParams.get('page') || '1', 10);
+      const pageSize = parseInt(urlObj.searchParams.get('pageSize') || '50', 10);
+      const startIdx = (page - 1) * pageSize;
+      const items = logs.slice(startIdx, startIdx + pageSize);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ total: logs.length, items }));
+    }
+
     let filePath;
     if (req.url === '/') {
       filePath = path.join(__dirname, '..', 'index.html');
