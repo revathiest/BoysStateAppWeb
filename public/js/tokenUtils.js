@@ -36,6 +36,9 @@
       }
     } catch (err) {
       console.error('Token refresh failed', err);
+      if (window.logToServer) {
+        window.logToServer('Token refresh failed', { level: 'error', error: err });
+      }
     }
     localStorage.removeItem('jwtToken');
     return null;
