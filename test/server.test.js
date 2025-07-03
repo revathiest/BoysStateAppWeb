@@ -79,9 +79,6 @@ test('CSP header is set', async () => {
 
 test('passwords are hashed and requests are logged', async () => {
   process.env.NODE_ENV = 'test';
-  const logs = [];
-  const origLog = console.log;
-  console.log = (msg) => logs.push(msg);
   const createServer = require('../src/index');
   const app = createServer();
   const port = await startServer(app);
@@ -122,8 +119,10 @@ test('passwords are hashed and requests are logged', async () => {
   });
   expect(res.status).toBe(303);
   expect(res.headers.get('location')).toBe('/dashboard.html');
+  const logRes = await fetch(`http://127.0.0.1:${port}/logs`);
+  const logEntries = await logRes.json();
+  expect(logEntries.some(l => l.includes('/login'))).toBe(true);
 
-  console.log = origLog;
   await stopServer(app);
 });
 
@@ -160,6 +159,90 @@ test('CSP header is set on index', async () => {
   expect(res.headers.get('content-security-policy')).toBe(
     "default-src 'self'; script-src 'self'; style-src 'self'"
   );
+
+  await stopServer(app);
+});
+
+test('invalid registration is rejected', async () => {
+  process.env.NODE_ENV = 'test';
+  const createServer = require('../src/index');
+  const app = createServer();
+  const port = await startServer(app);
+
+  const res = await fetch(`http://127.0.0.1:${port}/register`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: 'username=&password=',
+  });
+  expect(res.status).toBe(400);
+
+  await stopServer(app);
+});
+
+test('login fails with wrong password', async () => {
+  process.env.NODE_ENV = 'test';
+  const createServer = require('../src/index');
+  const app = createServer();
+  const port = await startServer(app);
+
+  await fetch(`http://127.0.0.1:${port}/register`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: 'username=baduser&password=secret',
+    redirect: 'manual'
+  });
+
+  const res = await fetch(`http://127.0.0.1:${port}/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: 'username=baduser&password=wrong',
+  });
+  expect(res.status).toBe(401);
+
+  await stopServer(app);
+});
+
+test('missing program name returns 400', async () => {
+  process.env.NODE_ENV = 'test';
+  const createServer = require('../src/index');
+  const app = createServer();
+  const port = await startServer(app);
+
+  await fetch(`http://127.0.0.1:${port}/register`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: 'username=puser&password=secret',
+    redirect: 'manual'
+  });
+  const cookieRes = await fetch(`http://127.0.0.1:${port}/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: 'username=puser&password=secret',
+    redirect: 'manual'
+  });
+  const cookie = cookieRes.headers.get('set-cookie');
+
+  const res = await fetch(`http://127.0.0.1:${port}/create-program`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'Cookie': cookie
+    },
+    body: 'programName=&color=%23fff&imageUrl=img.png'
+  });
+  expect(res.status).toBe(400);
+
+  await stopServer(app);
+});
+
+test('GET unknown file returns 404', async () => {
+  process.env.NODE_ENV = 'test';
+  const createServer = require('../src/index');
+  const app = createServer();
+  const port = await startServer(app);
+
+  const res = await fetch(`http://127.0.0.1:${port}/nosuchfile.html`);
+  expect(res.status).toBe(404);
 
   await stopServer(app);
 });
