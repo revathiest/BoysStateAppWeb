@@ -1,5 +1,8 @@
 document.addEventListener('DOMContentLoaded', async () => {
   console.log("On console.html, jwtToken:", localStorage.getItem('jwtToken'));
+  if (window.logToServer) {
+    window.logToServer('Loaded console page', { level: 'info' });
+  }
   const apiBase = typeof window.API_URL === 'string' && window.API_URL.trim()
     ? window.API_URL
     : null;
@@ -18,6 +21,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     userEmail = JSON.parse(atob(token.split('.')[1])).email;
   } catch (e) {
     console.error('Failed to parse user email from token', e);
+    if (window.logToServer) {
+      window.logToServer('Failed to parse user email from token', { level: 'error', error: e });
+    }
   }
   if (!userEmail) {
     window.location.href = 'login.html';
@@ -31,12 +37,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (res.ok) {
       const programs = await res.json().catch(() => null);
       console.log('Loaded programs', programs);
+      if (window.logToServer) {
+        window.logToServer('Loaded programs', { level: 'info' });
+      }
     } else if (res.status === 401) {
       window.location.href = 'login.html';
       return;
     }
   } catch (err) {
     console.error('Network error while loading programs', err);
+    if (window.logToServer) {
+      window.logToServer('Network error while loading programs', { level: 'error', error: err });
+    }
   }
 
 document.getElementById('main-content').classList.remove('hidden');

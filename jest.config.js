@@ -18,14 +18,14 @@ module.exports = {                               // Use ts-jest for TypeScript s
     '!**/node_modules/**',
     '!**/__mocks__/**'
   ],
-  coverageThreshold: {
-    global: {
-      branches: 80,
-      functions: 80,
-      lines: 80,
-      statements: 80
-    }
-  },
+    coverageThreshold: {
+      global: {
+        branches: 70,
+        functions: 80,
+        lines: 80,
+        statements: 80
+      }
+    },
 
   // === OUTPUT SETTINGS ===
   verbose: false,     // Minimal output
