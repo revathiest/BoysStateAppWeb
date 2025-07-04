@@ -166,6 +166,37 @@ document.getElementById('filters').addEventListener('submit', e => {
 });
 
 // On first load, show first page of logs
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+  const apiBaseLocal =
+    (typeof window.API_URL === 'string' && window.API_URL.trim()) ||
+    (typeof window.apiBase !== 'undefined' && window.apiBase) ||
+    '';
+  if (!apiBaseLocal) {
+    alert('Configuration error: API_URL is not set. Please contact the site administrator.');
+    return;
+  }
+
+  let token = null;
+  if (window.ensureValidToken) {
+    token = await window.ensureValidToken(apiBaseLocal);
+  }
+  if (!token && typeof localStorage !== 'undefined') {
+    try { token = localStorage.getItem('jwtToken'); } catch {}
+  }
+  if (!token) {
+    if (window.location) window.location.href = 'login.html';
+    return;
+  }
+
+  const logoutBtn = document.getElementById('logoutBtn');
+  if (logoutBtn && typeof logoutBtn.addEventListener === 'function') {
+    logoutBtn.addEventListener('click', () => {
+      if (typeof localStorage !== 'undefined') {
+        try { localStorage.removeItem('jwtToken'); } catch {}
+      }
+      if (window.location) window.location.href = 'login.html';
+    });
+  }
+
   fetchLogs(getFilters());
 });
