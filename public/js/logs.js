@@ -21,6 +21,11 @@ const apiBase =
   
 
 async function fetchLogs(params = {}) {
+  const token = window.ensureValidToken ? await window.ensureValidToken(apiBase) : localStorage.getItem('jwtToken');
+  if (!token) {
+    if (window.location) window.location.href = 'login.html';
+    return;
+  }
   // Always require programId (e.g., "unknown" is valid)
   if (!params.programId) {
     alert('Program ID is required.');
@@ -63,7 +68,7 @@ async function fetchLogs(params = {}) {
       params,
       url,
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
+        'Authorization': `Bearer ${token}`
       }
     });
   }
@@ -74,7 +79,7 @@ async function fetchLogs(params = {}) {
   try {
     const response = await fetch(url, {
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
+        'Authorization': `Bearer ${token}`
       }
     });
 
@@ -162,5 +167,5 @@ document.getElementById('filters').addEventListener('submit', e => {
 
 // On first load, show first page of logs
 document.addEventListener('DOMContentLoaded', () => {
-  fetchLogs();
+  fetchLogs(getFilters());
 });
