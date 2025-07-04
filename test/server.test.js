@@ -79,9 +79,6 @@ test('CSP header is set', async () => {
 
 test('passwords are hashed and requests are logged', async () => {
   process.env.NODE_ENV = 'test';
-  const logs = [];
-  const origLog = console.log;
-  console.log = (msg) => logs.push(msg);
   const createServer = require('../src/index');
   const app = createServer();
   const port = await startServer(app);
@@ -122,8 +119,11 @@ test('passwords are hashed and requests are logged', async () => {
   });
   expect(res.status).toBe(303);
   expect(res.headers.get('location')).toBe('/dashboard.html');
+  const logRes = await fetch(`http://127.0.0.1:${port}/api/logs?search=/login`);
+  const logData = await logRes.json();
+  expect(logData.total).toBeGreaterThan(0);
+  expect(logData.items.some(l => l.message.includes('/login'))).toBe(true);
 
-  console.log = origLog;
   await stopServer(app);
 });
 
@@ -162,4 +162,167 @@ test('CSP header is set on index', async () => {
   );
 
   await stopServer(app);
+});
+
+test('invalid registration is rejected', async () => {
+  process.env.NODE_ENV = 'test';
+  const createServer = require('../src/index');
+  const app = createServer();
+  const port = await startServer(app);
+
+  const res = await fetch(`http://127.0.0.1:${port}/register`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: 'username=&password=',
+  });
+  expect(res.status).toBe(400);
+
+  await stopServer(app);
+});
+
+test('login fails with wrong password', async () => {
+  process.env.NODE_ENV = 'test';
+  const createServer = require('../src/index');
+  const app = createServer();
+  const port = await startServer(app);
+
+  await fetch(`http://127.0.0.1:${port}/register`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: 'username=baduser&password=secret',
+    redirect: 'manual'
+  });
+
+  const res = await fetch(`http://127.0.0.1:${port}/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: 'username=baduser&password=wrong',
+  });
+  expect(res.status).toBe(401);
+
+  await stopServer(app);
+});
+
+test('login fails for unknown user', async () => {
+  process.env.NODE_ENV = 'test';
+  const createServer = require('../src/index');
+  const app = createServer();
+  const port = await startServer(app);
+
+  const res = await fetch(`http://127.0.0.1:${port}/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: 'username=nouser&password=whatever',
+  });
+  expect(res.status).toBe(401);
+
+  await stopServer(app);
+});
+
+test('missing program name returns 400', async () => {
+  process.env.NODE_ENV = 'test';
+  const createServer = require('../src/index');
+  const app = createServer();
+  const port = await startServer(app);
+
+  await fetch(`http://127.0.0.1:${port}/register`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: 'username=puser&password=secret',
+    redirect: 'manual'
+  });
+  const cookieRes = await fetch(`http://127.0.0.1:${port}/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: 'username=puser&password=secret',
+    redirect: 'manual'
+  });
+  const cookie = cookieRes.headers.get('set-cookie');
+
+  const res = await fetch(`http://127.0.0.1:${port}/create-program`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'Cookie': cookie
+    },
+    body: 'programName=&color=%23fff&imageUrl=img.png'
+  });
+  expect(res.status).toBe(400);
+
+  await stopServer(app);
+});
+
+test('GET unknown file returns 404', async () => {
+  process.env.NODE_ENV = 'test';
+  const createServer = require('../src/index');
+  const app = createServer();
+  const port = await startServer(app);
+
+  const res = await fetch(`http://127.0.0.1:${port}/nosuchfile.html`);
+  expect(res.status).toBe(404);
+
+  await stopServer(app);
+});
+
+test('api log filter returns warning entries', async () => {
+  process.env.NODE_ENV = 'test';
+  const createServer = require('../src/index');
+  const app = createServer();
+  const port = await startServer(app);
+
+  await fetch(`http://127.0.0.1:${port}/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: 'username=nobody&password=wrong'
+  });
+
+  const res = await fetch(`http://127.0.0.1:${port}/api/logs?level=warn`);
+  const data = await res.json();
+  expect(data.items.some(l => l.level === 'warn')).toBe(true);
+
+  await stopServer(app);
+});
+
+test('console output is sent to logger', () => {
+  process.env.NODE_ENV = 'test';
+  const logger = require('../src/logger');
+  const origFetch = global.fetch;
+  global.fetch = jest.fn().mockResolvedValue({});
+  process.env.API_URL = 'http://example.com';
+  const start = logger.getLogs().length;
+  const circular = {};
+  circular.self = circular;
+  console.log('log-one');
+  console.error('error-one');
+  console.log(circular);
+  process.emit('unhandledRejection', new Error('oops'));
+  process.emit('uncaughtException', new Error('boom'));
+  const logs = logger.getLogs().slice(start).map(l => l.message).join('\n');
+  expect(logs).toContain('log-one');
+  expect(logs).toContain('error-one');
+  expect(logs).toContain('Unhandled rejection');
+  expect(logs).toContain('Uncaught exception');
+  expect(global.fetch).toHaveBeenCalled();
+  global.fetch = origFetch;
+  delete process.env.API_URL;
+});
+
+test('logger uses API_URL from config.js when env missing', () => {
+  process.env.NODE_ENV = 'test';
+  delete process.env.API_URL;
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const cfgPath = path.join(__dirname, '../public/js/config.js');
+  const origCfg = fs.readFileSync(cfgPath, 'utf8');
+  fs.writeFileSync(cfgPath, 'window.API_URL = "http://cfg.example";');
+  jest.resetModules();
+  require('../src/index');
+  const logger = require('../src/logger');
+  const origFetch = global.fetch;
+  global.fetch = jest.fn().mockResolvedValue({});
+  logger.log('cfg-test');
+  expect(process.env.API_URL).toBe('http://cfg.example');
+  expect(global.fetch).toHaveBeenCalled();
+  global.fetch = origFetch;
+  fs.writeFileSync(cfgPath, origCfg);
 });

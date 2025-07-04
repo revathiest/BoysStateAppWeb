@@ -32,12 +32,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         },
         body: data.toString()
       });
-    } catch (err) {
-      console.error('Network error creating program', err);
-      msg.textContent = 'Unable to reach server.';
-      msg.className = 'text-red-600';
-      return;
+  } catch (err) {
+    console.error('Network error creating program', err);
+    if (window.logToServer) {
+      window.logToServer('Network error creating program', { level: 'error', error: err });
     }
+    msg.textContent = 'Unable to reach server.';
+    msg.className = 'text-red-600';
+    return;
+  }
     if (resp.status === 201) {
       msg.textContent = 'Program created!';
       msg.className = 'text-green-700';

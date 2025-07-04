@@ -40,6 +40,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   } catch (err) {
     console.error('Network error while loading programs', err);
+    if (window.logToServer) {
+      window.logToServer('Network error while loading programs', { level: 'error', error: err });
+    }
     document.getElementById('main-content').innerHTML =
       '<p class="text-red-600">Unable to reach server.</p>';
     return;
@@ -55,6 +58,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     data = await res.json();
   } catch (err) {
     console.error('Invalid JSON from /programs', err);
+    if (window.logToServer) {
+      window.logToServer('Invalid JSON from /programs', { level: 'error', error: err });
+    }
     document.getElementById('main-content').innerHTML =
       '<p class="text-red-600">Unexpected response from server.</p>';
     return;

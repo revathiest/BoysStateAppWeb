@@ -7,6 +7,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     const apiBaseTemp = typeof window.API_URL === 'string' && window.API_URL.trim() ? window.API_URL : null;
     if (!window.isTokenExpired || !window.ensureValidToken) {
       console.warn('token utils not loaded');
+      if (window.logToServer) {
+        window.logToServer('token utils not loaded', { level: 'warn' });
+      }
     }
     const valid = window.isTokenExpired ? !window.isTokenExpired(token) : true;
     if (!valid && window.ensureValidToken && apiBaseTemp) {
@@ -64,6 +67,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
       } catch (err) {
         console.error('Network error during login', err);
+        if (window.logToServer) {
+          window.logToServer('Network error during login', { level: 'error', error: err });
+        }
         document.getElementById('loginMessage').textContent =
           'Unable to reach server.';
         return;
@@ -74,12 +80,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         data = await resp.json();
       } catch (err) {
         console.error('Invalid JSON from login endpoint', err);
+        if (window.logToServer) {
+          window.logToServer('Invalid JSON from login endpoint', { level: 'error', error: err });
+        }
       }
       const msg = document.getElementById('loginMessage');
       if (resp.status === 200 && data.token) {
         jwtToken = data.token;
         localStorage.setItem('jwtToken', data.token);
         console.log("JWT stored:", data.token); // Add this
+        if (window.logToServer) {
+          window.logToServer('Login successful', { level: 'info' });
+        }
         msg.textContent = 'Login successful!';
         msg.classList.remove('text-red-600');
         msg.classList.add('text-green-700');
@@ -110,6 +122,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
       } catch (err) {
         console.error('Network error during registration', err);
+        if (window.logToServer) {
+          window.logToServer('Network error during registration', { level: 'error', error: err });
+        }
         document.getElementById('registerMessage').textContent =
           'Unable to reach server.';
         return;
@@ -120,6 +135,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         data = await resp.json();
       } catch (err) {
         console.error('Invalid JSON from registration endpoint', err);
+        if (window.logToServer) {
+          window.logToServer('Invalid JSON from registration endpoint', { level: 'error', error: err });
+        }
       }
       const msg = document.getElementById('registerMessage');
       if (resp.status === 201) {

@@ -3,6 +3,38 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { scrypt, randomBytes, timingSafeEqual } = require('node:crypto');
 
+// Load environment variables early so the logger can use them
+(function loadEnv() {
+  const envPath = path.join(__dirname, '..', '.env');
+  try {
+    const envData = fs.readFileSync(envPath, 'utf8');
+    envData.split(/\r?\n/).forEach((line) => {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith('#') || !trimmed.includes('=')) return;
+      const [key, ...rest] = trimmed.split('=');
+      if (process.env[key] === undefined) {
+        process.env[key] = rest.join('=');
+      }
+    });
+  } catch {
+    // Ignore missing .env file
+  }
+  if (!process.env.API_URL) {
+    try {
+      const cfgPath = path.join(__dirname, '..', 'public', 'js', 'config.js');
+      const cfg = fs.readFileSync(cfgPath, 'utf8');
+      const match = cfg.match(/window\.API_URL\s*=\s*"([^"]+)"/);
+      if (match) {
+        process.env.API_URL = match[1];
+      }
+    } catch {
+      // Ignore missing config file
+    }
+  }
+})();
+
+const logger = require('./logger');
+
 const publicDir = path.join(__dirname, '..', 'public');
 
 function hashPassword(password) {
@@ -49,7 +81,7 @@ function parseCookies(cookieHeader) {
 
 function logRequest(req, res, start) {
   const duration = Date.now() - start;
-  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url} ${res.statusCode} ${duration}ms`);
+  logger.log(`${req.method} ${req.url} ${res.statusCode} ${duration}ms`);
 }
 
 function createServer() {
@@ -66,11 +98,13 @@ function createServer() {
     if (req.method === 'POST' && req.url === '/register') {
       const { username, password } = await parseBody(req);
       if (!username || !password || users[username]) {
+        logger.log(`Failed registration attempt for ${username || 'unknown'}`, { level: 'warn', source: 'auth' });
         res.writeHead(400);
         return res.end('Invalid registration');
       }
       const hashed = await hashPassword(password);
       users[username] = { password: hashed, programs: [] };
+      logger.log(`User registered: ${username}`, { source: 'auth' });
       res.writeHead(303, {
         'Location': '/onboarding.html',
         'Set-Cookie': `username=${username}; Path=/`
@@ -81,14 +115,17 @@ function createServer() {
     if (req.method === 'POST' && req.url === '/login') {
       const { username, password } = await parseBody(req);
       if (!username || !password || !users[username]) {
+        logger.log(`Failed login for ${username || 'unknown'}`, { level: 'warn', source: 'auth' });
         res.writeHead(401);
         return res.end('Unauthorized');
       }
       const ok = await verifyPassword(users[username].password, password);
       if (!ok) {
+        logger.log(`Failed login for ${username}`, { level: 'warn', source: 'auth' });
         res.writeHead(401);
         return res.end('Unauthorized');
       }
+      logger.log(`Successful login for ${username}`, { source: 'auth' });
       const dest = (users[username].programs && users[username].programs.length) ?
         '/dashboard.html' : '/onboarding.html';
       res.writeHead(303, {
@@ -101,16 +138,19 @@ function createServer() {
     if (req.method === 'POST' && req.url === '/create-program') {
       const username = cookies.username;
       if (!username || !users[username]) {
+        logger.log('Unauthorized program creation attempt', { level: 'warn', source: 'program' });
         res.writeHead(401);
         return res.end('Unauthorized');
       }
       const { programName, color, imageUrl } = await parseBody(req);
       if (!programName) {
+        logger.log('Program creation failed: missing name', { level: 'warn', source: 'program' });
         res.writeHead(400);
         return res.end('Invalid');
       }
       const program = { programName, color, imageUrl, role: 'admin' };
       users[username].programs.push(program);
+      logger.log(`Program created by ${username}: ${programName}`, { source: 'program' });
       res.writeHead(201, { 'Content-Type': 'application/json' });
       return res.end(JSON.stringify(program));
     }
@@ -136,10 +176,45 @@ function createServer() {
       }));
     }
 
-    let filePath = req.url === '/' ? 'index.html' : req.url.slice(1);
-    filePath = path.normalize(path.join(publicDir, filePath));
+    if (req.method === 'GET' && req.url === '/logs') {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify(logger.getLogs()));
+    }
 
-    if (!filePath.startsWith(publicDir)) {
+    if (req.method === 'GET' && req.url.startsWith('/api/logs')) {
+      const urlObj = new URL(req.url, `http://${req.headers.host}`);
+      let logs = logger.getLogs();
+      const start = urlObj.searchParams.get('start');
+      const end = urlObj.searchParams.get('end');
+      const level = urlObj.searchParams.getAll('level');
+      const source = urlObj.searchParams.get('source');
+      const search = urlObj.searchParams.get('search');
+      if (start) logs = logs.filter(l => l.timestamp >= start);
+      if (end) logs = logs.filter(l => l.timestamp <= end);
+      if (level && level.length) logs = logs.filter(l => level.includes(l.level));
+      if (source && source !== 'all') logs = logs.filter(l => l.source === source);
+      if (search) logs = logs.filter(l => {
+        return (l.message && l.message.includes(search)) ||
+               (l.error && l.error.includes(search)) ||
+               (l.source && l.source.includes(search));
+      });
+      const page = parseInt(urlObj.searchParams.get('page') || '1', 10);
+      const pageSize = parseInt(urlObj.searchParams.get('pageSize') || '50', 10);
+      const startIdx = (page - 1) * pageSize;
+      const items = logs.slice(startIdx, startIdx + pageSize);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ total: logs.length, items }));
+    }
+
+    let filePath;
+    if (req.url === '/') {
+      filePath = path.join(__dirname, '..', 'index.html');
+    } else {
+      filePath = path.normalize(path.join(publicDir, req.url.slice(1)));
+    }
+    const baseDir = path.join(__dirname, '..');
+
+    if (!filePath.startsWith(baseDir)) {
       res.writeHead(400);
       return res.end('Bad Request');
     }
@@ -157,6 +232,7 @@ function createServer() {
         res.writeHead(404);
         res.end('Not Found');
       } else {
+        logger.log(`Error reading file ${filePath}: ${err.message}`, { level: 'error', error: err.stack, source: 'server' });
         res.writeHead(500);
         res.end('Server Error');
       }
@@ -167,7 +243,7 @@ function createServer() {
 if (require.main === module) {
   const port = process.env.PORT || 8080;
   createServer().listen(port, () => {
-    console.log(`Server running on port ${port}`);
+    logger.log(`Server running on port ${port}`);
   });
 }
 
