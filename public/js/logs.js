@@ -36,7 +36,7 @@ async function fetchLogs(params = {}) {
     delete params.start;
   }
   if (params.end) {
-    params.dateTo = params.end + 'T23:59:59Z';d
+    params.dateTo = params.end + 'T23:59:59Z';
     delete params.end;
   }
   // Remove only undefined/null fields (leave empty string and "unknown")
