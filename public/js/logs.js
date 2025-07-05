@@ -143,17 +143,52 @@ function renderPager(page, pageSize, total) {
   pager.innerHTML = '';
   if (!total || total <= pageSize) return;
   const totalPages = Math.ceil(total / pageSize);
-  for (let p = 1; p <= totalPages; p++) {
+  const maxPagesToShow = 5;
+  let start = Math.max(1, page - Math.floor(maxPagesToShow / 2));
+  let end = Math.min(totalPages, start + maxPagesToShow - 1);
+
+  if (end - start < maxPagesToShow - 1) {
+    start = Math.max(1, end - maxPagesToShow + 1);
+  }
+
+  function makePagerBtn(label, p, isActive = false) {
     const btn = document.createElement('button');
     btn.type = 'button';
-    btn.className = `px-2 py-1 rounded ${p === page ? 'bg-legend-blue text-white font-bold' : 'bg-gray-200 text-gray-700'} mx-1`;
-    btn.textContent = p;
-    btn.onclick = () => {
-      fetchLogs({ ...getFilters(), page: p });
-    };
-    pager.appendChild(btn);
+    btn.textContent = label;
+    // Shared classes for ALL buttons (arrows, numbers, active/inactive)
+    btn.className =
+      'mx-1 px-4 min-w-[3rem] min-h-[2.5rem] rounded-full border text-lg font-semibold flex items-center justify-center';
+    if (isActive) {
+      btn.style.background = '#2563eb';
+      btn.style.color = '#fff';
+      btn.style.fontWeight = 'bold';
+      btn.style.cursor = 'default';
+      btn.disabled = true;
+      btn.setAttribute('aria-current', 'page');
+    } else {
+      btn.className += ' bg-gray-100 text-gray-700 transition hover:bg-blue-100 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-300';
+      btn.onclick = () => fetchLogs({ ...getFilters(), page: p });
+    }
+    return btn;
+  }
+  
+  // Numbered pages
+  if (page > 1) {
+    pager.appendChild(makePagerBtn('«', 1));
+    pager.appendChild(makePagerBtn('‹', page - 1));
+  }
+  for (let p = start; p <= end; p++) {
+    pager.appendChild(makePagerBtn(p, p, p === page));
+  }
+
+  // Next/Last
+  if (page < totalPages) {
+    pager.appendChild(makePagerBtn('›', page + 1));
+    pager.appendChild(makePagerBtn('»', totalPages));
   }
 }
+
+
 
 document.getElementById('apply').addEventListener('click', () => {
   fetchLogs(getFilters());
