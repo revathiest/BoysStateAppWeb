@@ -56,11 +56,10 @@ function interceptConsole() {
 
 function interceptProcessErrors() {
   process.on('uncaughtException', (err) => {
-    log('Uncaught exception', { level: 'error', error: err.stack || err.message, source: 'process' });
+    log(`Uncaught exception on route ${err.route || 'unknown'}: ${err.stack || err.message}`, { level: 'error', source: 'process' });
   });
   process.on('unhandledRejection', (reason) => {
-    const error = reason instanceof Error ? reason.stack : JSON.stringify(reason);
-    log('Unhandled rejection', { level: 'error', error, source: 'process' });
+    log(`Unhandled rejection: ${JSON.stringify(reason)}`, { level: 'error', source: 'process' });
   });
 }
 
