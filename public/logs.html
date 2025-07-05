@@ -5,6 +5,7 @@
   <title>Boys State App Logs</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link href="tailwind.css" rel="stylesheet" />
+  <link href="logs.css" rel="stylesheet" />
 </head>
 <body class="bg-gray-50 font-sans min-h-screen">
 
@@ -18,9 +19,11 @@
   </nav>
 
   <!-- Main Content -->
-  <main class="flex flex-col items-center px-6 py-10">
+  <main class="flex flex-col items-stretch p-6 lg:p-10 bg-gray-50">
+
     <!-- Heading OUTSIDE card -->
-    <h1 class="text-2xl md:text-3xl font-extrabold text-legend-blue mb-2 tracking-tight mt-2 self-start max-w-5xl w-full">Audit Logs</h1>
+    <h1 class="text-3xl font-extrabold text-legend-blue mb-8 self-start">Audit Logs</h1>
+
     <p class="text-gray-600 mb-6 self-start max-w-5xl w-full">View system and user activity across the platform.</p>
     
     <!-- Card for filters and table -->
@@ -89,86 +92,6 @@
           </tbody>
         </table>
       </div>
-
-      <!-- Responsive Table Styles -->
-      <style>
-        /* Make cells compact and allow text to shrink/truncate */
-        #logTable td, #logTable th {
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          vertical-align: top;
-        }
-        #logTable th:nth-child(1), #logTable td[data-label="Timestamp"] {
-          max-width: 110px;
-          min-width: 80px;
-        }
-        #logTable th:nth-child(2), #logTable td[data-label="Level"] {
-          max-width: 90px;
-          min-width: 60px;
-        }
-        #logTable th:nth-child(3), #logTable td[data-label="Source"] {
-          max-width: 110px;
-          min-width: 80px;
-        }
-        #logTable th:nth-child(4), #logTable td[data-label="Message"] {
-          width: 100%;
-          max-width: unset;
-          min-width: 200px;
-          white-space: normal;
-          word-break: break-word;
-          overflow-wrap: anywhere;
-        }
-        /* Stacked card view at wider screens (e.g., tablets) */
-        @media (max-width: 900px) {
-          #logTable, #logTable thead, #logTable tbody, #logTable tr {
-            display: block;
-            width: 100%;
-          }
-          #logTable thead tr {
-            display: none;
-          }
-          #logTable tr {
-            margin-bottom: 1rem;
-            border-radius: 10px;
-            box-shadow: 0 1px 6px rgba(0,0,0,0.08);
-            background: #f8fafc;
-            overflow: hidden;
-            border: 1px solid #e5e7eb;
-          }
-          #logTable td {
-            display: flex;
-            justify-content: flex-start;
-            align-items: center;
-            padding: 0.7rem 1rem;
-            border-bottom: 1px solid #e5e7eb;
-            font-size: 0.98rem;
-            max-width: unset;
-            white-space: normal;
-            overflow: visible;
-            text-overflow: unset;
-          }
-          #logTable td:last-child {
-            border-bottom: none;
-          }
-          #logTable td::before {
-            content: attr(data-label);
-            font-weight: 600;
-            color: #2563eb;
-            margin-right: 1rem;
-            flex-shrink: 0;
-            min-width: 100px;
-          }
-          #logTable td::before {
-            content: attr(data-label);
-            font-weight: 600;
-            color: #2563eb;
-            margin-right: 0.5rem;       /* Reduce space between label/value */
-            flex-shrink: 0;
-            min-width: 0;               /* Remove forced minimum label width */
-          }
-        }
-      </style>
 
       <!-- Pagination -->
       <div id="pager" class="mt-4 flex justify-center gap-2"></div>

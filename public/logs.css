@@ -1,0 +1,76 @@
+/* Make cells compact and allow text to shrink/truncate */
+#logTable td, #logTable th {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    vertical-align: top;
+    }
+    #logTable th:nth-child(1), #logTable td[data-label="Timestamp"] {
+    max-width: 110px;
+    min-width: 80px;
+    }
+    #logTable th:nth-child(2), #logTable td[data-label="Level"] {
+    max-width: 90px;
+    min-width: 60px;
+    }
+    #logTable th:nth-child(3), #logTable td[data-label="Source"] {
+    max-width: 110px;
+    min-width: 80px;
+    }
+    #logTable th:nth-child(4), #logTable td[data-label="Message"] {
+    width: 100%;
+    max-width: unset;
+    min-width: 200px;
+    white-space: normal;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    }
+    /* Stacked card view at wider screens (e.g., tablets) */
+    @media (max-width: 900px) {
+    #logTable, #logTable thead, #logTable tbody, #logTable tr {
+        display: block;
+        width: 100%;
+    }
+    #logTable thead tr {
+        display: none;
+    }
+    #logTable tr {
+        margin-bottom: 1rem;
+        border-radius: 10px;
+        box-shadow: 0 1px 6px rgba(0,0,0,0.08);
+        background: #f8fafc;
+        overflow: hidden;
+        border: 1px solid #e5e7eb;
+    }
+    #logTable td {
+        display: flex;
+        justify-content: flex-start;
+        align-items: center;
+        padding: 0.7rem 1rem;
+        border-bottom: 1px solid #e5e7eb;
+        font-size: 0.98rem;
+        max-width: unset;
+        white-space: normal;
+        overflow: visible;
+        text-overflow: unset;
+    }
+    #logTable td:last-child {
+        border-bottom: none;
+    }
+    #logTable td::before {
+        content: attr(data-label);
+        font-weight: 600;
+        color: #2563eb;
+        margin-right: 1rem;
+        flex-shrink: 0;
+        min-width: 100px;
+    }
+    #logTable td::before {
+        content: attr(data-label);
+        font-weight: 600;
+        color: #2563eb;
+        margin-right: 0.5rem;       /* Reduce space between label/value */
+        flex-shrink: 0;
+        min-width: 0;               /* Remove forced minimum label width */
+    }
+    }

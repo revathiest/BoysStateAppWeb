@@ -197,6 +197,47 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (window.location) window.location.href = 'login.html';
     });
   }
+  
+  document.getElementById("download").addEventListener("click", function() {
+    // 1. Get table rows (only those currently shown)
+    const table = document.getElementById("logTable");
+    const rows = table.querySelectorAll("tr");
+  
+    // 2. Build CSV string
+    let csv = '';
+    // Optional: build headers from first row (thead)
+    const headerCells = table.querySelectorAll("thead th");
+    let headers = [];
+    headerCells.forEach(th => headers.push(th.textContent.trim()));
+    csv += headers.join(",") + "\n";
+  
+    // Table body rows
+    const bodyRows = table.querySelectorAll("tbody tr");
+    bodyRows.forEach(row => {
+      let rowData = [];
+      row.querySelectorAll("td").forEach(cell => {
+        // Escape commas, double quotes, and line breaks in cell values
+        let val = cell.textContent.replace(/"/g, '""').replace(/\n/g, ' ');
+        if(val.includes(",") || val.includes('"')) {
+          val = `"${val}"`;
+        }
+        rowData.push(val.trim());
+      });
+      csv += rowData.join(",") + "\n";
+    });
+  
+    // 3. Download the CSV
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "audit_logs.csv";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+  
 
   fetchLogs(getFilters());
 });
