@@ -81,7 +81,8 @@ function parseCookies(cookieHeader) {
 
 function logRequest(req, res, start) {
   const duration = Date.now() - start;
-  logger.log(`${req.method} ${req.url} ${res.statusCode} ${duration}ms`);
+  const user = req.user || 'anonymous';
+  logger.log(`${req.method} ${req.url} by ${user} ${res.statusCode} ${duration}ms`);
 }
 
 function createServer() {
@@ -94,13 +95,22 @@ function createServer() {
     res.on('finish', () => logRequest(req, res, startTime));
     res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self'; style-src 'self'");
     const cookies = parseCookies(req.headers.cookie);
+    req.user = cookies.username;
 
     if (req.method === 'POST' && req.url === '/register') {
       const { username, password } = await parseBody(req);
-      if (!username || !password || users[username]) {
-        logger.log(`Failed registration attempt for ${username || 'unknown'}`, { level: 'warn', source: 'auth' });
+      req.user = username;
+      if (!username || !password) {
+        logger.log('Failed registration: missing fields', { level: 'warn', source: 'auth', username });
         res.writeHead(400);
-        return res.end('Invalid registration');
+        res.end('Missing username or password');
+        return;
+      }
+      if (users[username]) {
+        logger.log(`Failed registration: duplicate username ${username}`, { level: 'warn', source: 'auth' });
+        res.writeHead(409);
+        res.end('Username already exists');
+        return;
       }
       const hashed = await hashPassword(password);
       users[username] = { password: hashed, programs: [] };
@@ -114,16 +124,19 @@ function createServer() {
 
     if (req.method === 'POST' && req.url === '/login') {
       const { username, password } = await parseBody(req);
-      if (!username || !password || !users[username]) {
-        logger.log(`Failed login for ${username || 'unknown'}`, { level: 'warn', source: 'auth' });
+      req.user = username;
+      if (!users[username]) {
+        logger.log(`Failed login: user not found (${username})`, { level: 'warn', source: 'auth' });
         res.writeHead(401);
-        return res.end('Unauthorized');
+        res.end('Unauthorized');
+        return;
       }
       const ok = await verifyPassword(users[username].password, password);
       if (!ok) {
-        logger.log(`Failed login for ${username}`, { level: 'warn', source: 'auth' });
+        logger.log(`Failed login: incorrect password (${username})`, { level: 'warn', source: 'auth' });
         res.writeHead(401);
-        return res.end('Unauthorized');
+        res.end('Unauthorized');
+        return;
       }
       logger.log(`Successful login for ${username}`, { source: 'auth' });
       const dest = (users[username].programs && users[username].programs.length) ?
@@ -137,16 +150,19 @@ function createServer() {
 
     if (req.method === 'POST' && req.url === '/create-program') {
       const username = cookies.username;
+      req.user = username;
       if (!username || !users[username]) {
-        logger.log('Unauthorized program creation attempt', { level: 'warn', source: 'program' });
+        logger.log('Unauthorized program creation attempt by unknown user', { level: 'warn', source: 'program' });
         res.writeHead(401);
-        return res.end('Unauthorized');
+        res.end('Unauthorized');
+        return;
       }
       const { programName, color, imageUrl } = await parseBody(req);
       if (!programName) {
-        logger.log('Program creation failed: missing name', { level: 'warn', source: 'program' });
+        logger.log(`Failed program creation: missing programName by ${username}`, { level: 'warn', source: 'program' });
         res.writeHead(400);
-        return res.end('Invalid');
+        res.end('Missing program name');
+        return;
       }
       const program = { programName, color, imageUrl, role: 'admin' };
       users[username].programs.push(program);
@@ -157,6 +173,7 @@ function createServer() {
 
     if (req.method === 'GET' && req.url === '/create-program.html') {
       const username = cookies.username;
+      req.user = username;
       if (!username || !users[username]) {
         res.writeHead(302, { 'Location': '/login.html' });
         return res.end();
@@ -165,6 +182,7 @@ function createServer() {
 
     if (req.method === 'GET' && req.url === '/api/programs') {
       const username = cookies.username;
+      req.user = username;
       if (!username || !users[username]) {
         res.writeHead(401);
         return res.end('Unauthorized');
@@ -177,11 +195,13 @@ function createServer() {
     }
 
     if (req.method === 'GET' && req.url === '/logs') {
+      logger.log(`/logs accessed by ${req.user || 'anonymous'}`, { level: 'info', source: 'logs' });
       res.writeHead(200, { 'Content-Type': 'application/json' });
       return res.end(JSON.stringify(logger.getLogs()));
     }
 
     if (req.method === 'GET' && req.url.startsWith('/api/logs')) {
+      logger.log(`/api/logs accessed by ${req.user || 'anonymous'}`, { level: 'info', source: 'logs' });
       const urlObj = new URL(req.url, `http://${req.headers.host}`);
       let logs = logger.getLogs();
       const start = urlObj.searchParams.get('start');
@@ -229,10 +249,11 @@ function createServer() {
       res.end(data);
     } catch (err) {
       if (err.code === 'ENOENT') {
+        logger.log(`File not found (404): ${filePath}`, { level: 'warn', source: 'server', user: req.user || 'anonymous' });
         res.writeHead(404);
         res.end('Not Found');
       } else {
-        logger.log(`Error reading file ${filePath}: ${err.message}`, { level: 'error', error: err.stack, source: 'server' });
+        logger.log(`Error reading file ${filePath}: ${err.message}`, { level: 'error', source: 'server' });
         res.writeHead(500);
         res.end('Server Error');
       }
