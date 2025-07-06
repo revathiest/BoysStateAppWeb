@@ -4,26 +4,11 @@ const apiBase =
   (typeof window.apiBase !== 'undefined' && window.apiBase) ||
   "";
 
-async function loadPrograms(token) {
-  if (!token) {
-    token = window.ensureValidToken
-      ? await window.ensureValidToken(apiBase)
-      : localStorage.getItem('jwtToken');
-  }
-  if (!token) {
-    if (window.location) window.location.href = 'login.html';
-    return [];
-  }
-  let email = null;
+async function loadPrograms() {
   try {
-    email = JSON.parse(atob(token.split('.')[1])).email;
-  } catch {}
-  if (!email) return [];
-  try {
-    const res = await fetch(
-      `${apiBase}/programs/${encodeURIComponent(email)}`,
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
+    const res = await fetch(`${apiBase}/programs`, {
+      credentials: 'include'
+    });
     if (!res.ok) return [];
     const data = (await res.json().catch(() => null)) || {};
     const programs = data.programs || [];
@@ -80,11 +65,6 @@ function toISODateString(dateVal, isEndOfDay = false) {
   
 
 async function fetchLogs(params = {}) {
-  const token = window.ensureValidToken ? await window.ensureValidToken(apiBase) : localStorage.getItem('jwtToken');
-  if (!token) {
-    if (window.location) window.location.href = 'login.html';
-    return;
-  }
   // Always require programId (e.g., "unknown" is valid)
   if (!params.programId) {
     alert('Program ID is required.');
@@ -125,10 +105,7 @@ async function fetchLogs(params = {}) {
       level: 'info',
       source: 'logs.js',
       params,
-      url,
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
+      url
     });
   }
 
@@ -137,9 +114,7 @@ async function fetchLogs(params = {}) {
 
   try {
     const response = await fetch(url, {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
+      credentials: 'include'
     });
 
     if (window.logToServer) {
@@ -271,29 +246,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     return;
   }
 
-  let token = null;
-  if (window.ensureValidToken) {
-    token = await window.ensureValidToken(apiBaseLocal);
-  }
-  if (!token && typeof localStorage !== 'undefined') {
-    try { token = localStorage.getItem('jwtToken'); } catch {}
-  }
-  if (!token) {
-    if (window.location) window.location.href = 'login.html';
-    return;
-  }
-
   const logoutBtn = document.getElementById('logoutBtn');
   if (logoutBtn && typeof logoutBtn.addEventListener === 'function') {
     logoutBtn.addEventListener('click', () => {
-      if (typeof localStorage !== 'undefined') {
-        try { localStorage.removeItem('jwtToken'); } catch {}
-      }
       if (window.location) window.location.href = 'login.html';
     });
   }
 
-  await loadPrograms(token);
+  await loadPrograms();
 
   const programSel = document.getElementById('programId');
   if (programSel) {
