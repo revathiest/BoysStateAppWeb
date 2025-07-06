@@ -22,9 +22,9 @@ document.getElementById('createProgramForm').onsubmit = async function(e) {
     try {
       const res = await fetch(`${apiBaseUrl}/programs`, {
         method: 'POST',
-        headers: {
+        headers: Object.assign({
           'Content-Type': 'application/json'
-        },
+        }, (typeof getAuthHeaders === 'function' ? getAuthHeaders() : {})),
         credentials: 'include',
         body: JSON.stringify({
           name,
@@ -57,4 +57,3 @@ document.getElementById('createProgramForm').onsubmit = async function(e) {
     el.innerHTML = msg;
     el.classList.remove('hidden');
   }
-  

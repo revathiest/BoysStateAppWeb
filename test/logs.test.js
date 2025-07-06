@@ -55,7 +55,7 @@ test('loadPrograms fetches user programs', async () => {
   vm.runInContext(code, ctx);
   await ctx.loadPrograms();
   expect(fetchMock).toHaveBeenCalledWith(
-    'http://api.test/programs',
-    { credentials: 'include' }
+    "http://api.test/programs",
+    expect.objectContaining({ credentials: "include" })
   );
 });

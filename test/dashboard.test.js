@@ -33,6 +33,6 @@ test('dashboard fetches user programs', async () => {
   vm.createContext(ctx);
   vm.runInContext(code, ctx);
   await ready();
-  expect(fetchMock).toHaveBeenCalledWith('http://api.test/programs', { credentials: 'include' });
+  expect(fetchMock).toHaveBeenCalledWith('http://api.test/programs', expect.objectContaining({ credentials: 'include' }));
   expect(logoutBtn.addEventListener).toHaveBeenCalled();
 });
