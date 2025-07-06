@@ -4,6 +4,48 @@ const apiBase =
   (typeof window.apiBase !== 'undefined' && window.apiBase) ||
   "";
 
+async function loadPrograms(token) {
+  if (!token) {
+    token = window.ensureValidToken
+      ? await window.ensureValidToken(apiBase)
+      : localStorage.getItem('jwtToken');
+  }
+  if (!token) {
+    if (window.location) window.location.href = 'login.html';
+    return [];
+  }
+  let email = null;
+  try {
+    email = JSON.parse(atob(token.split('.')[1])).email;
+  } catch {}
+  if (!email) return [];
+  try {
+    const res = await fetch(
+      `${apiBase}/programs/${encodeURIComponent(email)}`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    if (!res.ok) return [];
+    const data = (await res.json().catch(() => null)) || {};
+    const programs = data.programs || [];
+    const select = document.getElementById('programId');
+    if (select) {
+      select.innerHTML = '';
+      programs.forEach(p => {
+        const opt = document.createElement('option');
+        opt.value = p.id || p.programId || p.programName || p.name;
+        opt.textContent = p.name || p.programName || opt.value;
+        select.appendChild(opt);
+      });
+    }
+    return programs;
+  } catch (err) {
+    if (window.logToServer) {
+      window.logToServer('Failed to load programs', { level: 'error', error: err });
+    }
+    return [];
+  }
+}
+
   function getFilters() {
     let level = document.getElementById('level').value;
     let source = document.getElementById('source').value;
@@ -232,6 +274,13 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (window.location) window.location.href = 'login.html';
     });
   }
+
+  await loadPrograms(token);
+
+  const programSel = document.getElementById('programId');
+  if (programSel) {
+    programSel.addEventListener('change', () => fetchLogs(getFilters()));
+  }
   
   document.getElementById("download").addEventListener("click", function() {
     // 1. Get table rows (only those currently shown)
@@ -272,7 +321,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
   });
-  
 
   fetchLogs(getFilters());
 });
