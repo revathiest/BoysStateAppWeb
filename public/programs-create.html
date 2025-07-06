@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Boys State App – Create Program</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="tailwind.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50 font-sans min-h-screen">
+
+  <!-- Navbar -->
+  <nav class="bg-legend-blue text-white px-6 py-4 flex items-center justify-between shadow">
+    <div class="flex items-center gap-3">
+      <img src="images/Boys State Shield White on Blue.png" alt="Logo" class="w-8 h-8 p-1 rounded-full" />
+      <span class="text-xl font-semibold">Boys State App <span class="text-sm font-normal text-gray-200 ml-2">Admin Portal</span></span>
+    </div>
+    <div class="flex items-center gap-2">
+      <button id="logoutBtn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-2xl shadow ml-3 transition">Logout</button>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="flex flex-col items-stretch p-6 lg:p-10 bg-gray-50">
+    <!-- Place this just before your <h1>Audit Logs</h1> -->
+    <a href="console.html" class="inline-flex items-center text-legend-blue font-semibold mb-4 hover:underline group self-start">
+      <span class="mr-2 text-lg">&larr;</span>
+      Back to Dashboard
+    </a>
+      <h1 class="text-3xl font-extrabold text-legend-blue mb-4 self-start">
+        Create a New Program
+      </h1>
+
+      <section class="bg-white rounded-2xl border-t-4 border-legend-gold shadow p-6">
+        <form id="createProgramForm" class="w-full">
+          <div>
+            <label for="name" class="block font-semibold text-legend-blue mb-1">Program Name <span class="text-red-500">*</span></label>
+            <input
+              id="name"
+              name="name"
+              type="text"
+              required
+              placeholder="e.g. Texas Boys State 2025"
+              class="w-full px-4 py-2 border rounded-xl bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-400 mb-4"
+            />
+          </div>
+          <div>
+            <label for="year" class="block font-semibold text-legend-blue mb-1">Year <span class="text-red-500">*</span></label>
+            <input
+              id="year"
+              name="year"
+              type="number"
+              required
+              min="1900"
+              max="2100"
+              placeholder="2025"
+              class="w-full px-4 py-2 border rounded-xl bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-400"
+            />
+          </div>
+          <div id="formError" class="hidden p-3 rounded bg-red-100 text-red-700 font-semibold mt-4"></div>
+          <div id="formSuccess" class="hidden p-3 rounded bg-green-100 text-green-700 font-semibold mt-4"></div>
+          <div class="mt-8 flex items-center gap-4">
+            <button
+              type="submit"
+              id="createBtn"
+              class="bg-legend-blue text-white font-bold py-2 px-6 rounded-2xl shadow hover:bg-blue-900 transition"
+            >
+              Create Program
+            </button>
+          </div>
+        </form>
+      </section>
+    </div>
+  </main>
+
+  <footer class="bg-legend-blue text-white border-t mt-8 py-4 text-center text-xs">
+    &copy; 2025 Boys State App Admin Portal. Not affiliated with or endorsed by the American Legion.
+  </footer>
+  
+  <script src="js/tokenUtils.js"></script>
+  <script>
+    document.getElementById('logoutBtn').onclick = function() {
+      logout();
+    };
+
+    document.getElementById('createProgramForm').onsubmit = async function(e) {
+      e.preventDefault();
+      document.getElementById('formError').classList.add('hidden');
+      document.getElementById('formSuccess').classList.add('hidden');
+
+      const name = document.getElementById('name').value.trim();
+      const year = document.getElementById('year').value.trim();
+
+      if (!name || !year) {
+        showError("Program name and year are required.");
+        return;
+      }
+      if (isNaN(Number(year))) {
+        showError("Year must be a number.");
+        return;
+      }
+
+      const token = getToken();
+      if (!token) {
+        showError("Not logged in.");
+        return;
+      }
+
+      document.getElementById('createBtn').disabled = true;
+      try {
+        const res = await fetch('/programs', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token
+          },
+          body: JSON.stringify({
+            name,
+            year: Number(year)
+          })
+        });
+
+        if (res.status === 201) {
+          const data = await res.json();
+          showSuccess(`Program created! <br><span class="font-mono text-xs">ID: ${data.id}</span><br>Name: <b>${data.name}</b> (${data.year})`);
+          document.getElementById('name').value = '';
+          document.getElementById('year').value = '';
+        } else {
+          const err = await res.json();
+          showError(err.error || "Failed to create program.");
+        }
+      } catch {
+        showError("Network/server error.");
+      }
+      document.getElementById('createBtn').disabled = false;
+    };
+
+    function showError(msg) {
+      const el = document.getElementById('formError');
+      el.innerHTML = msg;
+      el.classList.remove('hidden');
+    }
+    function showSuccess(msg) {
+      const el = document.getElementById('formSuccess');
+      el.innerHTML = msg;
+      el.classList.remove('hidden');
+    }
+  </script>
+</body>
+</html>
