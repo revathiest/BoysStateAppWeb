@@ -20,7 +20,7 @@ module.exports = {                               // Use ts-jest for TypeScript s
   ],
     coverageThreshold: {
       global: {
-        branches: 65,
+        branches: 80,
         functions: 70,
         lines: 80,
         statements: 80
