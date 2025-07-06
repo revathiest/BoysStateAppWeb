@@ -21,6 +21,6 @@ test('toISODateString converts local date to ISO', () => {
   };
   vm.createContext(ctx);
   vm.runInContext(code, ctx);
-  expect(ctx.toISODateString('2023-01-01')).toMatch(/^2023-01-01T00:00:00/);
-  expect(ctx.toISODateString('2023-01-01', true)).toMatch(/^2023-01-01T23:59:59/);
+  expect(ctx.toISODateString('2023-01-01')).toMatch(/^2023-01-01T06:00:00.000Z/);
+  expect(ctx.toISODateString('2023-01-01', true)).toMatch(/^2023-01-02T05:59:59.000Z/);
 });

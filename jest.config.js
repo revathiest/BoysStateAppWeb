@@ -14,7 +14,7 @@ module.exports = {                               // Use ts-jest for TypeScript s
   coverageReporters: ['text', 'lcov'],                // Console + HTML
   collectCoverageFrom: [
     'src/**/*.{js,ts}',
-    'public/js/**/*.{js,ts}',     // Focus JS coverage on /public/js, not all of /public
+    'public/**/*.{js,ts}',
     '!**/node_modules/**',
     '!**/__mocks__/**'
   ],
