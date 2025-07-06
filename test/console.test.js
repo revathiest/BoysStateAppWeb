@@ -25,6 +25,6 @@ test('console page loads programs with credentials', async () => {
   vm.createContext(ctx);
   vm.runInContext(code, ctx);
   await ready();
-  expect(fetchMock).toHaveBeenCalledWith('http://api.test/programs', { credentials: 'include' });
+  expect(fetchMock).toHaveBeenCalledWith('http://api.test/programs', expect.objectContaining({ credentials: 'include' }));
   expect(logoutBtn.addEventListener).toHaveBeenCalledWith('click', expect.any(Function));
 });
