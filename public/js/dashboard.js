@@ -9,9 +9,15 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   // Get JWT token (should check validity/refresh if needed)
-  let token = await window.ensureValidToken(apiBase);
+  let token = null;
+  if (window.ensureValidToken) {
+    token = await window.ensureValidToken(apiBaseLocal);
+  }
+  if (!token && typeof localStorage !== 'undefined') {
+    try { token = localStorage.getItem('jwtToken'); } catch {}
+  }
   if (!token) {
-    window.location.href = 'login.html';
+    if (window.location) window.location.href = 'login.html';
     return;
   }
 
