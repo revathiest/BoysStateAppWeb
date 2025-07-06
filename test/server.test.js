@@ -326,3 +326,21 @@ test('logger uses API_URL from config.js when env missing', () => {
   global.fetch = origFetch;
   fs.writeFileSync(cfgPath, origCfg);
 });
+
+test('CORS headers are set and OPTIONS handled', async () => {
+  process.env.NODE_ENV = 'test';
+  const createServer = require('../src/index');
+  const app = createServer();
+  const port = await startServer(app);
+
+  const res = await fetch(`http://127.0.0.1:${port}/login`, {
+    method: 'OPTIONS',
+    headers: { Origin: 'http://example.com', 'Access-Control-Request-Method': 'POST' }
+  });
+
+  expect(res.status).toBe(204);
+  expect(res.headers.get('access-control-allow-origin')).toBe('http://example.com');
+  expect(res.headers.get('access-control-allow-credentials')).toBe('true');
+
+  await stopServer(app);
+});
