@@ -1,16 +1,16 @@
-// Authentication tokens are stored as HTTP-only cookies by the backend.
-// These helper functions remain for compatibility but no longer read or
-// write any client-side storage.
+// Authentication helpers using sessionStorage. The JWT token is saved
+// under the `authToken` key and sent as a Bearer Authorization header
+// on each request.
 
 function getAuthHeaders() {
-  // Cookies will be sent automatically with `credentials: "include"`.
-  return {};
+  const token = sessionStorage.getItem('authToken');
+  return token ? { 'Authorization': `Bearer ${token}` } : {};
 }
 
 function clearAuthToken() {
-  // No-op: cookie tokens cannot be cleared from JavaScript.
+  sessionStorage.removeItem('authToken');
 }
 
-function storeAuthToken() {
-  // No-op: tokens are set by the server.
+function storeAuthToken(token) {
+  if (token) sessionStorage.setItem('authToken', token);
 }
