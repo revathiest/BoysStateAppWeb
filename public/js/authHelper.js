@@ -1,12 +1,16 @@
+// Authentication helpers using sessionStorage. The JWT token is saved
+// under the `authToken` key and sent as a Bearer Authorization header
+// on each request.
+
 function getAuthHeaders() {
-  const token = localStorage.getItem('authToken');
+  const token = sessionStorage.getItem('authToken');
   return token ? { 'Authorization': `Bearer ${token}` } : {};
 }
 
 function clearAuthToken() {
-  localStorage.removeItem('authToken');
+  sessionStorage.removeItem('authToken');
 }
 
 function storeAuthToken(token) {
-  if (token) localStorage.setItem('authToken', token);
+  if (token) sessionStorage.setItem('authToken', token);
 }

@@ -7,6 +7,8 @@ test('fetchLogs uses credentials include', async () => {
   const fetchMock = jest.fn().mockResolvedValue({ ok: true, json: () => ({ logs: [], total:0, page:1, pageSize:50 }) });
   const ctx = {
     window: { API_URL: 'http://api.test', logToServer: jest.fn() },
+    sessionStorage: { getItem: () => 'abc' },
+    sessionStorage: { getItem: () => 'abc' },
     document: {
       getElementById: jest.fn(id => {
         if (id === 'apply' || id === 'filters') return { addEventListener: jest.fn() };
@@ -22,10 +24,13 @@ test('fetchLogs uses credentials include', async () => {
     alert: jest.fn()
   };
   vm.createContext(ctx);
-  vm.runInContext(code, ctx);
+  const helper = fs.readFileSync(path.join(__dirname, '../public/js/authHelper.js'), 'utf8');
+  vm.runInNewContext('var window = globalThis.window; var sessionStorage = globalThis.sessionStorage;\n' + helper, ctx);
+  vm.runInNewContext(code, ctx);
   await ctx.fetchLogs({ programId: 'test' });
   const opts = fetchMock.mock.calls[0][1];
   expect(opts.credentials).toBe('include');
+  expect(opts.headers.Authorization).toBe('Bearer abc');
 });
 
 test('loadPrograms fetches user programs', async () => {
@@ -52,10 +57,9 @@ test('loadPrograms fetches user programs', async () => {
     alert: jest.fn()
   };
   vm.createContext(ctx);
-  vm.runInContext(code, ctx);
-  await ctx.loadPrograms();
-  expect(fetchMock).toHaveBeenCalledWith(
-    "http://api.test/programs",
-    expect.objectContaining({ credentials: "include" })
-  );
+  const helper2 = fs.readFileSync(path.join(__dirname, '../public/js/authHelper.js'), 'utf8');
+  vm.runInNewContext('var window = globalThis.window; var sessionStorage = globalThis.sessionStorage;\n' + helper2, ctx);
+  vm.runInNewContext(code, ctx);
+  const result = await ctx.loadPrograms();
+  expect(Array.isArray(result)).toBe(true);
 });

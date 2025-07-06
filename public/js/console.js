@@ -12,7 +12,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   try {
     const res = await fetch(`${apiBase}/programs`, {
       credentials: 'include',
-      headers: typeof getAuthHeaders === 'function' ? getAuthHeaders() : {},
+      headers: typeof getAuthHeaders === 'function' ? getAuthHeaders() : {}
     });
     if (res.ok) {
       const programs = await res.json().catch(() => null);

@@ -8,7 +8,7 @@ async function loadPrograms() {
   try {
     const res = await fetch(`${apiBase}/programs`, {
       credentials: 'include',
-      headers: typeof getAuthHeaders === "function" ? getAuthHeaders() : {},
+      headers: typeof getAuthHeaders === "function" ? getAuthHeaders() : {}
     });
     if (!res.ok) return [];
     const data = (await res.json().catch(() => null)) || {};
@@ -116,7 +116,7 @@ async function fetchLogs(params = {}) {
   try {
     const response = await fetch(url, {
       credentials: 'include',
-      headers: typeof getAuthHeaders === "function" ? getAuthHeaders() : {},
+      headers: typeof getAuthHeaders === "function" ? getAuthHeaders() : {}
     });
 
     if (response.status === 401) {

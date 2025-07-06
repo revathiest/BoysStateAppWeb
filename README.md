@@ -48,7 +48,7 @@ This repository contains the **web-based admin portal** for Boys State App. The 
 
 * Navigate to `index.html` and choose **Register** to create an admin account.
 * After registering you will be taken to **onboarding.html**. From there create your first program. Subsequent logins redirect to **dashboard.html** which lists all your programs and shows features based on your role.
-* Authentication tokens are returned by the API and stored in `localStorage`. Subsequent requests include the token via an `Authorization: Bearer` header.
+* After login the API returns a JWT which is stored in `sessionStorage`. Subsequent requests include this token via an `Authorization: Bearer` header along with `credentials: 'include'`.
 
 ## Deployment
 

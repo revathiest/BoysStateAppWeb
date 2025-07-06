@@ -13,7 +13,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   try {
     res = await fetch(`${apiBase}/programs`, {
       credentials: 'include',
-      headers: typeof getAuthHeaders === 'function' ? getAuthHeaders() : {},
+      headers: typeof getAuthHeaders === 'function' ? getAuthHeaders() : {}
     });
   } catch (err) {
     console.error('Network error while loading programs', err);
@@ -26,7 +26,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   if (res.status !== 200) {
-  if (typeof clearAuthToken === "function") clearAuthToken();
     if (typeof clearAuthToken === 'function') clearAuthToken();
     window.location.href = 'login.html';
     return;
