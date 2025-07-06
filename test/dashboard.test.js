@@ -1,9 +1,8 @@
-const fs = require('fs');
-const path = require('path');
-const vm = require('vm');
+beforeEach(() => {
+  jest.resetModules();
+});
 
 test('dashboard fetches user programs', async () => {
-  const code = fs.readFileSync(path.join(__dirname, '../public/js/dashboard.js'), 'utf8');
   let ready;
   const logoutBtn = { addEventListener: jest.fn() };
   const doc = {
@@ -23,15 +22,13 @@ test('dashboard fetches user programs', async () => {
     status: 200,
     json: () => ({ username: 'u', programs: [{ programName: 'P', role: 'admin' }] })
   });
-  const ctx = {
-    window: { API_URL: 'http://api.test', logToServer: jest.fn() },
-    document: doc,
-    fetch: fetchMock,
-    console: { log: jest.fn(), error: jest.fn() },
-    alert: jest.fn()
-  };
-  vm.createContext(ctx);
-  vm.runInContext(code, ctx);
+  global.window = { API_URL: 'http://api.test', logToServer: jest.fn() };
+  global.document = doc;
+  global.fetch = fetchMock;
+  global.console = { log: jest.fn(), error: jest.fn() };
+  global.alert = jest.fn();
+
+  require('../public/js/dashboard.js');
   await ready();
   expect(fetchMock).toHaveBeenCalledWith('http://api.test/programs', expect.objectContaining({ credentials: 'include' }));
   expect(logoutBtn.addEventListener).toHaveBeenCalled();

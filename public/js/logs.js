@@ -233,6 +233,10 @@ document.getElementById('apply').addEventListener('click', () => {
   fetchLogs(getFilters());
 });
 
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { loadPrograms, toISODateString, fetchLogs };
+}
+
 // Support Enter key in filter form
 document.getElementById('filters').addEventListener('submit', e => {
   e.preventDefault();
