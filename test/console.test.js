@@ -1,9 +1,8 @@
-const fs = require('fs');
-const path = require('path');
-const vm = require('vm');
+beforeEach(() => {
+  jest.resetModules();
+});
 
 test('console page loads programs with credentials', async () => {
-  const code = fs.readFileSync(path.join(__dirname, '../public/js/console.js'), 'utf8');
   let ready;
   const logoutBtn = { addEventListener: jest.fn() };
   const document = {

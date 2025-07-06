@@ -70,7 +70,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   document.getElementById('logoutBtn').addEventListener('click', () => {
-    if (typeof clearAuthToken === 'function') clearAuthToken();
     window.location.href = 'login.html';
   });
 });

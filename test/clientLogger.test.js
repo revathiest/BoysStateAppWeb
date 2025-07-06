@@ -1,7 +1,6 @@
 const path = require('path');
 const fs = require('fs');
 const vm = require('vm');
-
 test('client logger posts console output', () => {
   const fetchMock = jest.fn().mockResolvedValue({});
   global.window = { API_URL: 'http://api.test' };

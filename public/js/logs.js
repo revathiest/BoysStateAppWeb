@@ -120,7 +120,6 @@ async function fetchLogs(params = {}) {
     });
 
     if (response.status === 401) {
-      if (typeof clearAuthToken === "function") clearAuthToken();
       window.location.href = "login.html";
       return;
     }
@@ -236,6 +235,10 @@ document.getElementById('apply').addEventListener('click', () => {
   fetchLogs(getFilters());
 });
 
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { loadPrograms, toISODateString, fetchLogs };
+}
+
 // Support Enter key in filter form
 document.getElementById('filters').addEventListener('submit', e => {
   e.preventDefault();
@@ -256,7 +259,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   const logoutBtn = document.getElementById('logoutBtn');
   if (logoutBtn && typeof logoutBtn.addEventListener === 'function') {
     logoutBtn.addEventListener('click', () => {
-      if (typeof clearAuthToken === 'function') clearAuthToken();
       if (window.location) window.location.href = 'login.html';
     });
   }

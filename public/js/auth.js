@@ -1,5 +1,4 @@
 document.addEventListener('DOMContentLoaded', async () => {
-  if (typeof clearAuthToken === "function") clearAuthToken();
   const apiBase = typeof window.API_URL === 'string' && window.API_URL.trim()
     ? window.API_URL
     : null;

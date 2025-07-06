@@ -1,9 +1,8 @@
-const fs = require('fs');
-const path = require('path');
-const vm = require('vm');
+beforeEach(() => {
+  jest.resetModules();
+});
 
 test('program creation posts JSON with credentials', async () => {
-  const code = fs.readFileSync(path.join(__dirname, '../public/js/programs-create.js'), 'utf8');
   const form = {};
   const nameInput = { value: 'Test Program' };
   const yearInput = { value: '2024' };
