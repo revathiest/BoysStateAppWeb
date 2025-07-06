@@ -9,11 +9,15 @@
       error: error && (error.stack || error.message || String(error)),
       source: 'browser'
     };
+    const headers = {
+      'Content-Type': 'application/json'
+    };
+    if (typeof getAuthHeaders === 'function') {
+      Object.assign(headers, getAuthHeaders());
+    }
     fetch(`${apiBase}/logs`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
+      headers,
       credentials: 'include',
       body: JSON.stringify(payload)
     }).catch(() => {});

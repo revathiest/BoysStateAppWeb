@@ -20,11 +20,15 @@ document.getElementById('createProgramForm').onsubmit = async function(e) {
   
     document.getElementById('createBtn').disabled = true;
     try {
+      const headers = {
+        'Content-Type': 'application/json'
+      };
+      if (typeof getAuthHeaders === 'function') {
+        Object.assign(headers, getAuthHeaders());
+      }
       const res = await fetch(`${apiBaseUrl}/programs`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers,
         credentials: 'include',
         body: JSON.stringify({
           name,

@@ -23,3 +23,17 @@ test('toISODateString converts local date to ISO', () => {
   expect(mod.toISODateString('2023-01-01')).toBe(expectedStart);
   expect(mod.toISODateString('2023-01-01', true)).toBe(expectedEnd);
 });
+
+test('toISODateString handles undefined and ISO input', () => {
+  jest.resetModules();
+  global.window = {};
+  global.document = {
+    getElementById: jest.fn(() => ({ addEventListener: jest.fn() })),
+    querySelector: jest.fn(() => ({ })),
+    querySelectorAll: jest.fn(() => []),
+    addEventListener: jest.fn()
+  };
+  const mod = require('../public/js/logs.js');
+  expect(mod.toISODateString(undefined)).toBeUndefined();
+  expect(mod.toISODateString('2023-01-01T10:00:00')).toBe('2023-01-01T10:00:00');
+});

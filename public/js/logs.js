@@ -236,7 +236,7 @@ document.getElementById('apply').addEventListener('click', () => {
 });
 
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { loadPrograms, toISODateString, fetchLogs };
+  module.exports = { loadPrograms, toISODateString, fetchLogs, renderLogs, renderPager };
 }
 
 // Support Enter key in filter form
