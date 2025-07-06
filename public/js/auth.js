@@ -1,31 +1,4 @@
-let jwtToken = null; // Store in memory by default
-
 document.addEventListener('DOMContentLoaded', async () => {
-
-  const token = localStorage.getItem('jwtToken');
-  if (token) {
-    const apiBaseTemp = typeof window.API_URL === 'string' && window.API_URL.trim() ? window.API_URL : null;
-    if (!window.isTokenExpired || !window.ensureValidToken) {
-      console.warn('token utils not loaded');
-      if (window.logToServer) {
-        window.logToServer('token utils not loaded', { level: 'warn' });
-      }
-    }
-    const valid = window.isTokenExpired ? !window.isTokenExpired(token) : true;
-    if (!valid && window.ensureValidToken && apiBaseTemp) {
-      const refreshed = await window.ensureValidToken(apiBaseTemp);
-      if (refreshed) {
-        window.location.href = 'console.html';
-        return;
-      }
-    }
-    if (valid) {
-      window.location.href = 'console.html';
-      return;
-    } else {
-      localStorage.removeItem('jwtToken');
-    }
-  }
 
   const apiBase = typeof window.API_URL === 'string' && window.API_URL.trim()
     ? window.API_URL
@@ -63,6 +36,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         resp = await fetch(`${apiBase}/login`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
           body: JSON.stringify({ email, password })
         });
       } catch (err) {
@@ -85,10 +59,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
       }
       const msg = document.getElementById('loginMessage');
-      if (resp.status === 200 && data.token) {
-        jwtToken = data.token;
-        localStorage.setItem('jwtToken', data.token);
-        console.log("JWT stored:", data.token); // Add this
+      if (resp.ok) {
         if (window.logToServer) {
           window.logToServer('Login successful', { level: 'info' });
         }
@@ -118,6 +89,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         resp = await fetch(`${apiBase}/register`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
           body: JSON.stringify({ email, password })
         });
       } catch (err) {

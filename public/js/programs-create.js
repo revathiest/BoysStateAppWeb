@@ -18,20 +18,14 @@ document.getElementById('createProgramForm').onsubmit = async function(e) {
     // Use the global API URL from config.js
     const apiBaseUrl = window.API_URL || "http://localhost:3000";
   
-    const token = window.getToken ? window.getToken() : localStorage.getItem('jwtToken');
-    if (!token) {
-      showError("Not logged in.");
-      return;
-    }
-  
     document.getElementById('createBtn').disabled = true;
     try {
       const res = await fetch(`${apiBaseUrl}/programs`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + token
+          'Content-Type': 'application/json'
         },
+        credentials: 'include',
         body: JSON.stringify({
           name,
           year: Number(year)

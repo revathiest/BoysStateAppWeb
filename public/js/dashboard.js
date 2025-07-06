@@ -8,41 +8,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     return;
   }
 
-  // Get JWT token (should check validity/refresh if needed)
-  let token = null;
-  if (window.ensureValidToken) {
-    token = await window.ensureValidToken(apiBaseLocal);
-  }
-  if (!token && typeof localStorage !== 'undefined') {
-    try { token = localStorage.getItem('jwtToken'); } catch {}
-  }
-  if (!token) {
-    if (window.location) window.location.href = 'login.html';
-    return;
-  }
-
-  // Extract email from JWT
-  function getEmailFromToken(token) {
-    try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      return payload.email;
-    } catch (e) {
-      return null;
-    }
-  }
-  const email = getEmailFromToken(token);
-  if (!email) {
-    alert('Invalid token: no email found');
-    window.location.href = 'login.html';
-    return;
-  }
-
-  // Fetch program data using the correct endpoint
+  // Fetch program data using credentials
   let res;
   try {
-    // The API expects /programs/{email}
-    res = await fetch(`${apiBase}/programs/${encodeURIComponent(email)}`, {
-      headers: { 'Authorization': `Bearer ${token}` }
+    res = await fetch(`${apiBase}/programs`, {
+      credentials: 'include'
     });
   } catch (err) {
     console.error('Network error while loading programs', err);
@@ -73,7 +43,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   document.getElementById('main-content').classList.remove('hidden');
-  // const listEl = document.getElementById('programList');
+  const listEl = document.getElementById('programList');
   // if (!data.programs || data.programs.length === 0) {
   //   window.location.href = 'onboarding.html';
   //   return;
@@ -98,7 +68,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   document.getElementById('logoutBtn').addEventListener('click', () => {
-    localStorage.removeItem('jwtToken');
     window.location.href = 'login.html';
   });
 });
