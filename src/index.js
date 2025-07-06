@@ -79,6 +79,17 @@ function parseCookies(cookieHeader) {
   }));
 }
 
+function setCorsHeaders(req, res) {
+  const origin = req.headers.origin;
+  if (origin) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Vary', 'Origin');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
+  }
+}
+
 function logRequest(req, res, start) {
   const duration = Date.now() - start;
   const user = req.user || 'anonymous';
@@ -94,6 +105,11 @@ function createServer() {
     const startTime = Date.now();
     res.on('finish', () => logRequest(req, res, startTime));
     res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self'; style-src 'self'");
+    setCorsHeaders(req, res);
+    if (req.method === 'OPTIONS') {
+      res.writeHead(204);
+      return res.end();
+    }
     const cookies = parseCookies(req.headers.cookie);
     req.user = cookies.username;
 
