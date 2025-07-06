@@ -14,3 +14,7 @@ function clearAuthToken() {
 function storeAuthToken(token) {
   if (token) sessionStorage.setItem('authToken', token);
 }
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { getAuthHeaders, clearAuthToken, storeAuthToken };
+}

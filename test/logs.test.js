@@ -1,3 +1,8 @@
+const fs = require("fs");
+const path = require("path");
+const vm = require("vm");
+const code = fs.readFileSync(path.join(__dirname, "../public/js/logs.js"), "utf8");
+
 beforeEach(() => {
   jest.resetModules();
 });
@@ -47,12 +52,44 @@ test('loadPrograms fetches user programs', async () => {
     addEventListener: jest.fn(),
     createElement: jest.fn(() => ({}))
   };
+  const ctx = {
+    window: { API_URL: 'http://api.test', logToServer: jest.fn() },
+    sessionStorage: { getItem: () => 'abc' },
+    document,
+    fetch: fetchMock,
+    console: { log: jest.fn() },
+    URLSearchParams
+  };
   vm.createContext(ctx);
   const helper2 = fs.readFileSync(path.join(__dirname, '../public/js/authHelper.js'), 'utf8');
   vm.runInNewContext('var window = globalThis.window; var sessionStorage = globalThis.sessionStorage;\n' + helper2, ctx);
   vm.runInNewContext(code, ctx);
   const result = await ctx.loadPrograms();
   expect(Array.isArray(result)).toBe(true);
+});
+
+test('loadPrograms handles failure', async () => {
+  const fetchMock = jest.fn().mockRejectedValue(new Error('fail'));
+  const document = {
+    getElementById: jest.fn(() => ({ appendChild: jest.fn(), innerHTML: '', addEventListener: jest.fn() })),
+    querySelector: jest.fn(() => ({ innerHTML: '', appendChild: jest.fn() })),
+    addEventListener: jest.fn(),
+    createElement: jest.fn(() => ({}))
+  };
+  const ctx = {
+    window: { API_URL: 'http://api.test', logToServer: jest.fn() },
+    sessionStorage: { getItem: () => 'abc' },
+    document,
+    fetch: fetchMock,
+    console: { log: jest.fn(), error: jest.fn() },
+    URLSearchParams
+  };
+  vm.createContext(ctx);
+  const helper = fs.readFileSync(path.join(__dirname, '../public/js/authHelper.js'), 'utf8');
+  vm.runInNewContext('var window = globalThis.window; var sessionStorage = globalThis.sessionStorage;\n' + helper, ctx);
+  vm.runInNewContext(code, ctx);
+  const result = await ctx.loadPrograms();
+  expect(result).toEqual([]);
 });
 
 test('fetchLogs alerts when missing programId', async () => {
