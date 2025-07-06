@@ -7,8 +7,7 @@ const apiBase =
 async function loadPrograms() {
   try {
     const res = await fetch(`${apiBase}/programs`, {
-      credentials: 'include',
-      headers: typeof getAuthHeaders === "function" ? getAuthHeaders() : {},
+      credentials: 'include'
     });
     if (!res.ok) return [];
     const data = (await res.json().catch(() => null)) || {};
@@ -115,12 +114,10 @@ async function fetchLogs(params = {}) {
 
   try {
     const response = await fetch(url, {
-      credentials: 'include',
-      headers: typeof getAuthHeaders === "function" ? getAuthHeaders() : {},
+      credentials: 'include'
     });
 
     if (response.status === 401) {
-      if (typeof clearAuthToken === "function") clearAuthToken();
       window.location.href = "login.html";
       return;
     }
@@ -256,7 +253,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   const logoutBtn = document.getElementById('logoutBtn');
   if (logoutBtn && typeof logoutBtn.addEventListener === 'function') {
     logoutBtn.addEventListener('click', () => {
-      if (typeof clearAuthToken === 'function') clearAuthToken();
       if (window.location) window.location.href = 'login.html';
     });
   }

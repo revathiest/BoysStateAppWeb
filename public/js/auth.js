@@ -1,5 +1,4 @@
 document.addEventListener('DOMContentLoaded', async () => {
-  if (typeof clearAuthToken === "function") clearAuthToken();
   const apiBase = typeof window.API_URL === 'string' && window.API_URL.trim()
     ? window.API_URL
     : null;
@@ -63,7 +62,6 @@ document.addEventListener('DOMContentLoaded', async () => {
           if (window.logToServer) {
             window.logToServer("Login successful", { level: "info" });
           }
-          (typeof storeAuthToken === 'function' ? storeAuthToken(data.token) : null);
           msg.textContent = "Login successful!";
         msg.classList.remove('text-red-600');
         msg.classList.add('text-green-700');

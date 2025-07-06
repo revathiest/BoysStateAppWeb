@@ -1,12 +1,16 @@
+// Authentication tokens are stored as HTTP-only cookies by the backend.
+// These helper functions remain for compatibility but no longer read or
+// write any client-side storage.
+
 function getAuthHeaders() {
-  const token = localStorage.getItem('authToken');
-  return token ? { 'Authorization': `Bearer ${token}` } : {};
+  // Cookies will be sent automatically with `credentials: "include"`.
+  return {};
 }
 
 function clearAuthToken() {
-  localStorage.removeItem('authToken');
+  // No-op: cookie tokens cannot be cleared from JavaScript.
 }
 
-function storeAuthToken(token) {
-  if (token) localStorage.setItem('authToken', token);
+function storeAuthToken() {
+  // No-op: tokens are set by the server.
 }

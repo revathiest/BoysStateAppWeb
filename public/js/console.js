@@ -11,8 +11,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
   try {
     const res = await fetch(`${apiBase}/programs`, {
-      credentials: 'include',
-      headers: typeof getAuthHeaders === 'function' ? getAuthHeaders() : {},
+      credentials: 'include'
     });
     if (res.ok) {
       const programs = await res.json().catch(() => null);
@@ -21,7 +20,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.logToServer('Loaded programs', { level: 'info' });
       }
     } else if (res.status === 401) {
-      if (typeof clearAuthToken === 'function') clearAuthToken();
       window.location.href = 'login.html';
       return;
     }
@@ -37,7 +35,6 @@ document.getElementById('main-content').classList.remove('hidden');
   const logoutBtn = document.getElementById('logoutBtn');
   if (logoutBtn) {
     logoutBtn.addEventListener('click', () => {
-      if (typeof clearAuthToken === 'function') clearAuthToken();
       window.location.href = 'login.html'; // Redirect to login or home
     });
   }
