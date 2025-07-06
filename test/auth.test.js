@@ -209,3 +209,31 @@ test('register handles bad response', async () => {
   await handler({ preventDefault: () => {} });
   expect(msgEl.textContent).toBe('nope');
 });
+
+test('cancel buttons navigate home', () => {
+  let ready;
+  let loginHandler;
+  let registerHandler;
+  const cancelLogin = { addEventListener: jest.fn((ev, fn) => { if(ev==='click') loginHandler = fn; }) };
+  const cancelRegister = { addEventListener: jest.fn((ev, fn) => { if(ev==='click') registerHandler = fn; }) };
+  const doc = {
+    getElementById: jest.fn(id => {
+      if (id === 'cancelLogin') return cancelLogin;
+      if (id === 'cancelRegister') return cancelRegister;
+      return null;
+    }),
+    querySelectorAll: jest.fn(() => []),
+    addEventListener: jest.fn((ev, fn) => { if(ev==='DOMContentLoaded') ready = fn; })
+  };
+  global.window = { API_URL: 'http://api.test', location: { href: '' }, logToServer: jest.fn() };
+  global.document = doc;
+  global.fetch = jest.fn();
+  global.alert = jest.fn();
+
+  require('../public/js/auth.js');
+  ready();
+  loginHandler();
+  expect(global.window.location.href).toBe('/');
+  registerHandler();
+  expect(global.window.location.href).toBe('/');
+});

@@ -149,3 +149,24 @@ test('program creation handles network error', async () => {
   await form.onsubmit({ preventDefault: () => {} });
   expect(errorEl.innerHTML).toContain('Network');
 });
+
+test('showSuccess and showError modify DOM', () => {
+  const successEl = { classList: { remove: jest.fn() }, innerHTML: '' };
+  const errorEl = { classList: { remove: jest.fn() }, innerHTML: '' };
+  const doc = {
+    getElementById: jest.fn(id => {
+      if (id === 'formSuccess') return successEl;
+      if (id === 'formError') return errorEl;
+      return {};
+    })
+  };
+  const ctx = { window: { API_URL: 'http://api.test' }, document: doc };
+  vm.createContext(ctx);
+  vm.runInContext(code, ctx);
+  ctx.showSuccess('yay');
+  expect(successEl.innerHTML).toBe('yay');
+  expect(successEl.classList.remove).toHaveBeenCalledWith('hidden');
+  ctx.showError('bad');
+  expect(errorEl.innerHTML).toBe('bad');
+  expect(errorEl.classList.remove).toHaveBeenCalledWith('hidden');
+});
