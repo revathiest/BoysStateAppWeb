@@ -1,0 +1,30 @@
+const fs = require('fs');
+const path = require('path');
+const vm = require('vm');
+
+test('program creation posts JSON with credentials', async () => {
+  const code = fs.readFileSync(path.join(__dirname, '../public/js/programs-create.js'), 'utf8');
+  const form = {};
+  const nameInput = { value: 'Test Program' };
+  const yearInput = { value: '2024' };
+  const createBtn = { disabled: false };
+  const doc = {
+    getElementById: jest.fn(id => {
+      switch (id) {
+        case 'createProgramForm': return form;
+        case 'name': return nameInput;
+        case 'year': return yearInput;
+        case 'createBtn': return createBtn;
+        case 'formError': return { classList: { add: jest.fn(), remove: jest.fn() }, innerHTML: '' };
+        case 'formSuccess': return { classList: { add: jest.fn(), remove: jest.fn() }, innerHTML: '' };
+      }
+      return {};
+    })
+  };
+  const fetchMock = jest.fn().mockResolvedValue({ status: 201, json: () => ({ id: 1, name: 'Test Program', year: 2024 }) });
+  const ctx = { window: { API_URL: 'http://api.test' }, document: doc, fetch: fetchMock, console: { error: jest.fn() } };
+  vm.createContext(ctx);
+  vm.runInContext(code, ctx);
+  await form.onsubmit({ preventDefault: () => {} });
+  expect(fetchMock).toHaveBeenCalledWith('http://api.test/programs', expect.objectContaining({ credentials: 'include' }));
+});
