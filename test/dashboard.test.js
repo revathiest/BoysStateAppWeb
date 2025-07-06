@@ -33,3 +33,111 @@ test('dashboard fetches user programs', async () => {
   expect(fetchMock).toHaveBeenCalledWith('http://api.test/programs', expect.objectContaining({ credentials: 'include' }));
   expect(logoutBtn.addEventListener).toHaveBeenCalled();
 });
+
+test('dashboard alerts when API_URL missing', async () => {
+  let ready;
+  const doc = {
+    getElementById: jest.fn(() => ({ classList: { remove: jest.fn(), add: jest.fn() }, appendChild: jest.fn() })),
+    querySelectorAll: jest.fn(() => []),
+    createElement: jest.fn(() => ({ addEventListener: jest.fn() })),
+    addEventListener: jest.fn((ev, fn) => { if (ev === 'DOMContentLoaded') ready = fn; })
+  };
+  global.window = { API_URL: '', logToServer: jest.fn(), location: { href: '' } };
+  global.document = doc;
+  global.fetch = jest.fn();
+  global.console = { error: jest.fn() };
+  global.alert = jest.fn();
+
+  require('../public/js/dashboard.js');
+  await ready();
+  expect(global.alert).toHaveBeenCalled();
+  expect(global.fetch).not.toHaveBeenCalled();
+});
+
+test('dashboard handles network error', async () => {
+  let ready;
+  const mainContent = { classList: { remove: jest.fn() }, innerHTML: '' };
+  const doc = {
+    getElementById: jest.fn(id => {
+      if (id === 'main-content') return mainContent;
+      if (id === 'features') return { classList: { remove: jest.fn(), add: jest.fn() } };
+      if (id === 'userRole') return { textContent: '' };
+      if (id === 'programList') return { appendChild: jest.fn() };
+      if (id === 'logoutBtn') return { addEventListener: jest.fn() };
+      return null;
+    }),
+    querySelectorAll: jest.fn(() => []),
+    createElement: jest.fn(() => ({ addEventListener: jest.fn() })),
+    addEventListener: jest.fn((ev, fn) => { if (ev === 'DOMContentLoaded') ready = fn; })
+  };
+  const fetchMock = jest.fn().mockRejectedValue(new Error('fail'));
+  global.window = { API_URL: 'http://api.test', logToServer: jest.fn(), location: { href: '' } };
+  global.document = doc;
+  global.fetch = fetchMock;
+  global.console = { log: jest.fn(), error: jest.fn() };
+  global.alert = jest.fn();
+
+  require('../public/js/dashboard.js');
+  await ready();
+  expect(fetchMock).toHaveBeenCalled();
+  expect(mainContent.innerHTML).toContain('Unable');
+});
+
+test('dashboard redirects on 401', async () => {
+  let ready;
+  const doc = {
+    getElementById: jest.fn(id => {
+      if (id === 'main-content') return { classList: { remove: jest.fn() }, innerHTML: '' };
+      if (id === 'programList') return { appendChild: jest.fn() };
+      if (id === 'features') return { classList: { remove: jest.fn(), add: jest.fn() } };
+      if (id === 'userRole') return { textContent: '' };
+      if (id === 'logoutBtn') return { addEventListener: jest.fn() };
+      return null;
+    }),
+    querySelectorAll: jest.fn(() => []),
+    createElement: jest.fn(() => ({ addEventListener: jest.fn() })),
+    addEventListener: jest.fn((ev, fn) => { if (ev === 'DOMContentLoaded') ready = fn; })
+  };
+  const fetchMock = jest.fn().mockResolvedValue({ status: 401 });
+  global.window = { API_URL: 'http://api.test', logToServer: jest.fn(), location: { href: '' } };
+  global.document = doc;
+  global.fetch = fetchMock;
+  global.console = { error: jest.fn() };
+  global.alert = jest.fn();
+
+  require('../public/js/dashboard.js');
+  await ready();
+  expect(global.window.location.href).toBe('login.html');
+});
+
+test('dashboard hides features for counselor role', async () => {
+  let ready;
+  const features = { classList: { remove: jest.fn(), add: jest.fn() } };
+  const listEl = { appendChild: jest.fn() };
+  const doc = {
+    getElementById: jest.fn(id => {
+      if (id === 'logoutBtn') return { addEventListener: jest.fn() };
+      if (id === 'main-content') return { classList: { remove: jest.fn() } };
+      if (id === 'programList') return listEl;
+      if (id === 'features') return features;
+      if (id === 'userRole') return { textContent: '' };
+      return null;
+    }),
+    querySelectorAll: jest.fn(sel => sel === '#features > div:nth-child(1)' ? [{ classList: { add: features.classList.add, remove: jest.fn() } }] : []),
+    createElement: jest.fn(() => ({ addEventListener: jest.fn() })),
+    addEventListener: jest.fn((ev, fn) => { if (ev === 'DOMContentLoaded') ready = fn; })
+  };
+  const fetchMock = jest.fn().mockResolvedValue({
+    status: 200,
+    json: () => ({ username: 'u', programs: [{ programName: 'P', role: 'counselor' }] })
+  });
+  global.window = { API_URL: 'http://api.test', logToServer: jest.fn() };
+  global.document = doc;
+  global.fetch = fetchMock;
+  global.console = { log: jest.fn(), error: jest.fn() };
+  global.alert = jest.fn();
+
+  require('../public/js/dashboard.js');
+  await ready();
+  expect(features.classList.add).toHaveBeenCalled();
+});

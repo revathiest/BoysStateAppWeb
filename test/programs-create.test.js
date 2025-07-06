@@ -30,3 +30,85 @@ test('program creation posts JSON with credentials', async () => {
   await form.onsubmit({ preventDefault: () => {} });
   expect(fetchMock).toHaveBeenCalledWith('http://api.test/programs', expect.objectContaining({ credentials: 'include' }));
 });
+
+test('program creation validates required fields', async () => {
+  const form = {};
+  const nameInput = { value: '' };
+  const yearInput = { value: '' };
+  const errorEl = { classList: { add: jest.fn(), remove: jest.fn() }, innerHTML: '' };
+  const doc = {
+    getElementById: jest.fn(id => {
+      switch (id) {
+        case 'createProgramForm': return form;
+        case 'name': return nameInput;
+        case 'year': return yearInput;
+        case 'createBtn': return { disabled: false };
+        case 'formError': return errorEl;
+        case 'formSuccess': return { classList: { add: jest.fn(), remove: jest.fn() }, innerHTML: '' };
+      }
+      return {};
+    })
+  };
+  global.window = { API_URL: 'http://api.test' };
+  global.document = doc;
+  global.fetch = jest.fn();
+  require('../public/js/programs-create.js');
+  await form.onsubmit({ preventDefault: () => {} });
+  expect(errorEl.innerHTML).toContain('required');
+  expect(global.fetch).not.toHaveBeenCalled();
+});
+
+test('program creation validates numeric year', async () => {
+  const form = {};
+  const nameInput = { value: 'Name' };
+  const yearInput = { value: 'abcd' };
+  const errorEl = { classList: { add: jest.fn(), remove: jest.fn() }, innerHTML: '' };
+  const doc = {
+    getElementById: jest.fn(id => {
+      switch (id) {
+        case 'createProgramForm': return form;
+        case 'name': return nameInput;
+        case 'year': return yearInput;
+        case 'createBtn': return { disabled: false };
+        case 'formError': return errorEl;
+        case 'formSuccess': return { classList: { add: jest.fn(), remove: jest.fn() }, innerHTML: '' };
+      }
+      return {};
+    })
+  };
+  global.window = { API_URL: 'http://api.test' };
+  global.document = doc;
+  global.fetch = jest.fn();
+  require('../public/js/programs-create.js');
+  await form.onsubmit({ preventDefault: () => {} });
+  expect(errorEl.innerHTML).toContain('Year must');
+  expect(global.fetch).not.toHaveBeenCalled();
+});
+
+test('program creation handles network error', async () => {
+  const form = {};
+  const nameInput = { value: 'N' };
+  const yearInput = { value: '2024' };
+  const successEl = { classList: { add: jest.fn(), remove: jest.fn() }, innerHTML: '' };
+  const errorEl = { classList: { add: jest.fn(), remove: jest.fn() }, innerHTML: '' };
+  const doc = {
+    getElementById: jest.fn(id => {
+      switch (id) {
+        case 'createProgramForm': return form;
+        case 'name': return nameInput;
+        case 'year': return yearInput;
+        case 'createBtn': return { disabled: false };
+        case 'formError': return errorEl;
+        case 'formSuccess': return successEl;
+      }
+      return {};
+    })
+  };
+  const fetchMock = jest.fn().mockRejectedValue(new Error('fail'));
+  global.window = { API_URL: 'http://api.test' };
+  global.document = doc;
+  global.fetch = fetchMock;
+  require('../public/js/programs-create.js');
+  await form.onsubmit({ preventDefault: () => {} });
+  expect(errorEl.innerHTML).toContain('Network');
+});
