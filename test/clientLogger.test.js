@@ -1,4 +1,3 @@
-const path = require('path');
 
 test('client logger posts console output', () => {
   const fetchMock = jest.fn().mockResolvedValue({});

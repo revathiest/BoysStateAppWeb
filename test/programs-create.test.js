@@ -1,9 +1,8 @@
-const fs = require('fs');
-const path = require('path');
-const vm = require('vm');
+beforeEach(() => {
+  jest.resetModules();
+});
 
 test('program creation posts JSON with credentials', async () => {
-  const code = fs.readFileSync(path.join(__dirname, '../public/js/programs-create.js'), 'utf8');
   const form = {};
   const nameInput = { value: 'Test Program' };
   const yearInput = { value: '2024' };
@@ -22,9 +21,12 @@ test('program creation posts JSON with credentials', async () => {
     })
   };
   const fetchMock = jest.fn().mockResolvedValue({ status: 201, json: () => ({ id: 1, name: 'Test Program', year: 2024 }) });
-  const ctx = { window: { API_URL: 'http://api.test' }, document: doc, fetch: fetchMock, console: { error: jest.fn() } };
-  vm.createContext(ctx);
-  vm.runInContext(code, ctx);
+  global.window = { API_URL: 'http://api.test' };
+  global.document = doc;
+  global.fetch = fetchMock;
+  global.console = { error: jest.fn() };
+
+  require('../public/js/programs-create.js');
   await form.onsubmit({ preventDefault: () => {} });
   expect(fetchMock).toHaveBeenCalledWith('http://api.test/programs', expect.objectContaining({ credentials: 'include' }));
 });

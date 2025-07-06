@@ -1,9 +1,8 @@
-const fs = require('fs');
-const path = require('path');
-const vm = require('vm');
+beforeEach(() => {
+  jest.resetModules();
+});
 
 test('login form posts credentials', async () => {
-  const code = fs.readFileSync(path.join(__dirname, '../public/js/auth.js'), 'utf8');
   let loginHandler;
   const loginForm = { addEventListener: jest.fn((ev, fn) => { if (ev === 'submit') loginHandler = fn; }) };
   const doc = {
@@ -23,16 +22,13 @@ test('login form posts credentials', async () => {
     addEventListener: jest.fn((ev, fn) => { if (ev === 'DOMContentLoaded') fn(); })
   };
   const fetchMock = jest.fn().mockResolvedValue({ ok: true, json: () => ({}) });
-  const ctx = {
-    window: { API_URL: 'http://api.test', logToServer: jest.fn(), location: { href: '' } },
-    document: doc,
-    fetch: fetchMock,
-    console: { error: jest.fn() },
-    alert: jest.fn(),
-    setTimeout
-  };
-  vm.createContext(ctx);
-  vm.runInContext(code, ctx);
+  global.window = { API_URL: 'http://api.test', logToServer: jest.fn(), location: { href: '' } };
+  global.document = doc;
+  global.fetch = fetchMock;
+  global.console = { error: jest.fn() };
+  global.alert = jest.fn();
+
+  require('../public/js/auth.js');
   await loginHandler({ preventDefault: () => {} });
   expect(fetchMock).toHaveBeenCalledWith('http://api.test/login', expect.objectContaining({ credentials: 'include' }));
 });
