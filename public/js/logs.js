@@ -46,14 +46,31 @@ async function loadPrograms(token) {
   }
 }
 
+function toISODateString(dateVal, isEndOfDay = false) {
+  if (!dateVal) return undefined;
+  // If already has a time, just return as is (assume already UTC)
+  if (dateVal.includes('T')) return dateVal;
+  // Otherwise, append time and convert to ISO
+  let base = isEndOfDay ? 'T23:59:59' : 'T00:00:00';
+  return new Date(dateVal + base).toISOString();
+}
+
   function getFilters() {
     let level = document.getElementById('level').value;
     let source = document.getElementById('source').value;
+    let startVal = document.getElementById('start').value;
+    let endVal = document.getElementById('end').value;
+
+    console.log('DEBUG: startVal raw:', startVal, '| endVal raw:', endVal);
+
+      // Convert local date ("YYYY-MM-DD") to UTC start/end of day
+      let startUTC = toISODateString(startVal, false); // Start of day
+      let endUTC   = toISODateString(endVal, true);   // End of day
   
     return {
       programId: document.getElementById('programId').value, // "unknown" is valid!
-      start: document.getElementById('start').value,
-      end: document.getElementById('end').value,
+      start: startUTC,
+      end: endUTC,
       level: level === 'all' ? undefined : level,
       source: source === 'all' ? undefined : source,
       search: document.getElementById('search').value.trim(),
@@ -79,11 +96,11 @@ async function fetchLogs(params = {}) {
 
   // Date logic (convert to dateFrom/dateTo for API)
   if (params.start) {
-    params.dateFrom = params.start + 'T00:00:00Z';
+    params.dateFrom = params.start;
     delete params.start;
   }
   if (params.end) {
-    params.dateTo = params.end + 'T23:59:59Z';
+    params.dateTo = params.end;
     delete params.end;
   }
   // Remove only undefined/null fields (leave empty string and "unknown")
@@ -161,6 +178,7 @@ async function fetchLogs(params = {}) {
 }
 
 function renderLogs(logs) {
+  console.log('Rendering logs:', logs);
   const tbody = document.querySelector('#logTable tbody');
   tbody.innerHTML = '';
   if (!logs.length) {
