@@ -5,7 +5,6 @@ const apiBase =
   "";
 
 async function loadPrograms() {
-  debugger;
   try {
     const res = await fetch(`${apiBase}/programs`, {
       credentials: 'include',
