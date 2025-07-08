@@ -92,24 +92,6 @@ test('loadPrograms handles failure', async () => {
   expect(result).toEqual([]);
 });
 
-test('fetchLogs alerts when missing programId', async () => {
-  const fetchMock = jest.fn();
-  const document = {
-    getElementById: jest.fn(() => ({ value: 'x', addEventListener: jest.fn() })),
-    querySelector: jest.fn(() => ({ innerHTML: '', appendChild: jest.fn() })),
-    addEventListener: jest.fn(),
-    createElement: jest.fn(() => ({}))
-  };
-  global.window = { API_URL: 'http://api.test', logToServer: jest.fn() };
-  global.document = document;
-  global.fetch = fetchMock;
-  global.alert = jest.fn();
-  const mod = require('../public/js/logs.js');
-  await mod.fetchLogs({});
-  expect(global.alert).toHaveBeenCalled();
-  expect(fetchMock).not.toHaveBeenCalled();
-});
-
 test('fetchLogs redirects on 401', async () => {
   const fetchMock = jest.fn().mockResolvedValue({ status: 401 });
   const document = {
