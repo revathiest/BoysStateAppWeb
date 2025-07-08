@@ -18,7 +18,7 @@ function renderProgramSelector(programs, selectedProgramId) {
     container.innerHTML = `
       <div class="mb-2 flex items-center">
         <span class="font-bold text-blue-900 mr-2">Program:</span>
-        <span class="text-lg text-legend-gold">${p.programName || p.name}</span>
+        <span class="text-lg text-legend-blue">${p.programName || p.name}</span>
         <input type="hidden" id="current-program-id" value="${p.programId || p.id}">
       </div>
     `;
