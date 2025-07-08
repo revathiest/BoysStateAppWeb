@@ -15,6 +15,10 @@ function storeAuthToken(token) {
   if (token) sessionStorage.setItem('authToken', token);
 }
 
+function storeUser(user){
+  if (user) sessionStorage.setItem('user', user);
+}
+
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { getAuthHeaders, clearAuthToken, storeAuthToken };
+  module.exports = { getAuthHeaders, clearAuthToken, storeAuthToken, storeUser };
 }
