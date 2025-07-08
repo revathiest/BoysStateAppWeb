@@ -8,12 +8,6 @@ function getUsername() {
   return localStorage.getItem("user") || sessionStorage.getItem("user");
 }
 
-// Get auth headers (if you use JWT Bearer tokens)
-function getAuthHeaders() {
-  const token = localStorage.getItem("token");
-  return token ? { Authorization: `Bearer ${token}` } : {};
-}
-
 // Render the program selector (dropdown or label)
 function renderProgramSelector(programs, selectedProgramId) {
   const container = document.getElementById("program-selector");
@@ -77,7 +71,7 @@ async function fetchProgramsAndRenderSelector() {
     return;
   }
 
-  try {
+  try {debugger;
     const response = await fetch(
       `${apiBase}/user-programs/${encodeURIComponent(username)}`,
       {
@@ -112,5 +106,11 @@ async function fetchProgramsAndRenderSelector() {
 
 // On load
 document.addEventListener("DOMContentLoaded", () => {
+  const logoutBtn = document.getElementById('logoutBtn');
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', () => {
+      window.location.href = 'login.html'; // Redirect to login or home
+    });
+  }
   fetchProgramsAndRenderSelector();
 });
