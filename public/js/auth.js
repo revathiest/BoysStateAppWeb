@@ -63,6 +63,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             window.logToServer("Login successful", { level: "info" });
           }
           if (typeof storeAuthToken === 'function') storeAuthToken(data.token);
+          debugger;
+          if (typeof storeUser === 'function') storeUser(email);
           msg.textContent = "Login successful!";
         msg.classList.remove('text-red-600');
         msg.classList.add('text-green-700');

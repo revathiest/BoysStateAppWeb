@@ -5,14 +5,14 @@ const apiBase =
   "";
 
 async function loadPrograms() {
+  debugger;
   try {
     const res = await fetch(`${apiBase}/programs`, {
       credentials: 'include',
       headers: typeof getAuthHeaders === "function" ? getAuthHeaders() : {}
     });
     if (!res.ok) return [];
-    const data = (await res.json().catch(() => null)) || {};
-    const programs = data.programs || [];
+    const programs = (await res.json().catch(() => null)) || {};
     const select = document.getElementById('programId');
     if (select) {
       select.innerHTML = '';
@@ -42,6 +42,7 @@ function toISODateString(dateVal, isEndOfDay = false) {
 }
 
   function getFilters() {
+    debugger;
     let level = document.getElementById('level').value;
     let source = document.getElementById('source').value;
     let startVal = document.getElementById('start').value;
@@ -67,13 +68,13 @@ function toISODateString(dateVal, isEndOfDay = false) {
 
 async function fetchLogs(params = {}) {
   // Always require programId (e.g., "unknown" is valid)
-  if (!params.programId) {
-    alert('Program ID is required.');
-    if (window.logToServer) {
-      window.logToServer('No programId selected for log fetch', { level: 'warn', params });
-    }
-    return;
-  }
+  // if (!params.programId) {
+  //   alert('Program ID is required.');
+  //   if (window.logToServer) {
+  //     window.logToServer('No programId selected for log fetch', { level: 'warn', params });
+  //   }
+  //   return;
+  // }
 
   // Date logic (convert to dateFrom/dateTo for API)
   if (params.start) {

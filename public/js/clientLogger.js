@@ -1,9 +1,19 @@
 (function(){
   function sendLog(message, opts){
-    const { level='info', error=null } = opts || {};
+    const { level='info', error=null, programId=null } = opts || {};
     const apiBase = typeof window.API_URL === 'string' && window.API_URL.trim() ? window.API_URL : null;
     if(!apiBase) return;
+
+    // Get programId if set anywhere globally or in opts, otherwise default to 'website'
+    let pid = programId;
+    if (!pid) {
+      if (typeof window.programId === 'string' && window.programId) pid = window.programId;
+      else if (typeof window.selectedProgramId === 'string' && window.selectedProgramId) pid = window.selectedProgramId;
+      else pid = 'website';
+    }
+
     const payload = {
+      programId: pid,
       level,
       message,
       error: error && (error.stack || error.message || String(error)),
@@ -16,7 +26,7 @@
       Object.assign(headers, getAuthHeaders());
     }
     fetch(`${apiBase}/logs`, {
-      method: 'POST',
+      method: 'GET',
       headers,
       credentials: 'include',
       body: JSON.stringify(payload)

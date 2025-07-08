@@ -24,6 +24,7 @@
       <span class="mr-2 text-lg">&larr;</span>
       Back to Dashboard
     </a>
+    <div id="program-selector" class="mb-6"></div>
 
     <h1 class="text-3xl font-extrabold text-legend-blue mb-8 self-start">Program Configuration</h1>
 
@@ -87,16 +88,7 @@
     &copy; 2025 Boys State App Admin Portal. Not affiliated with or endorsed by the American Legion.
   </footer>
 
-  <!-- PROGRAM ID REPLACEMENT SCRIPT -->
-  <script>
-    // Replace all YOUR_PROGRAM_ID with actual programId from URL param
-    const params = new URLSearchParams(window.location.search);
-    const programId = params.get('programId');
-    if (programId) {
-      document.querySelectorAll('a[href*="YOUR_PROGRAM_ID"]').forEach(link => {
-        link.href = link.href.replace('YOUR_PROGRAM_ID', programId);
-      });
-    }
-  </script>
+  <script src="js/programs-config.js"></script>
+
 </body>
 </html>
