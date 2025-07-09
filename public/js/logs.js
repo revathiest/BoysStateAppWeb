@@ -6,19 +6,23 @@ const apiBase =
 
 async function loadPrograms() {
   try {
-    const res = await fetch(`${apiBase}/programs`, {
+    const res = await fetch(`${apiBase}/user-programs/${getUsername()}`, {
       credentials: 'include',
       headers: typeof getAuthHeaders === "function" ? getAuthHeaders() : {}
     });
     if (!res.ok) return [];
-    const programs = (await res.json().catch(() => null)) || {};
+
+    // Get the programs property (array) from the API response
+    const data = (await res.json().catch(() => null)) || {};
+    const programs = Array.isArray(data.programs) ? data.programs : [];
+
     const select = document.getElementById('programId');
     if (select) {
       select.innerHTML = '';
       programs.forEach(p => {
         const opt = document.createElement('option');
-        opt.value = p.id || p.programId || p.programName || p.name;
-        opt.textContent = p.name || p.programName || opt.value;
+        opt.value = p.programId || p.id || p.programName || p.name;
+        opt.textContent = p.programName || p.name || opt.value;
         select.appendChild(opt);
       });
     }
@@ -41,7 +45,6 @@ function toISODateString(dateVal, isEndOfDay = false) {
 }
 
   function getFilters() {
-    debugger;
     let level = document.getElementById('level').value;
     let source = document.getElementById('source').value;
     let startVal = document.getElementById('start').value;

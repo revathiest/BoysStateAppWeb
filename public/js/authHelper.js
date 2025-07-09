@@ -19,6 +19,10 @@ function storeUser(user){
   if (user) sessionStorage.setItem('user', user);
 }
 
+function getUsername(){
+  return sessionStorage.getItem('user')
+}
+
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { getAuthHeaders, clearAuthToken, storeAuthToken, storeUser };
+  module.exports = { getAuthHeaders, clearAuthToken, storeAuthToken, storeUser, getUsername};
 }
