@@ -34,48 +34,42 @@
       <div class="bg-white rounded-2xl shadow-lg p-6 border-t-4 border-legend-gold flex flex-col">
         <h2 class="text-lg font-semibold mb-2 text-legend-blue">Branding & Contact</h2>
         <p class="text-gray-700 mb-3 flex-1">Colors, logo, contact info, and branding.</p>
-        <a href="programs-branding.html?programId=YOUR_PROGRAM_ID"
-           class="text-legend-blue font-semibold hover:text-legend-gold transition mt-auto">Configure Branding & Contact &rarr;</a>
+        <a id="brandingLink" href="#" class="text-legend-blue font-semibold hover:text-legend-gold transition mt-auto">Configure Branding & Contact &rarr;</a>
       </div>
 
       <!-- Groupings -->
       <div class="bg-white rounded-2xl shadow-lg p-6 border-t-4 border-legend-gold flex flex-col">
         <h2 class="text-lg font-semibold mb-2 text-legend-blue">Groupings</h2>
         <p class="text-gray-700 mb-3 flex-1">Set up cities, counties, or other organizational groupings.</p>
-        <a href="programs-groupings.html?programId=YOUR_PROGRAM_ID"
-           class="text-legend-blue font-semibold hover:text-legend-gold transition mt-auto">Manage Groupings &rarr;</a>
+        <a id="groupingsLink" href="#" class="text-legend-blue font-semibold hover:text-legend-gold transition mt-auto">Manage Groupings &rarr;</a>
       </div>
 
       <!-- Parties -->
       <div class="bg-white rounded-2xl shadow-lg p-6 border-t-4 border-legend-gold flex flex-col">
         <h2 class="text-lg font-semibold mb-2 text-legend-blue">Parties</h2>
         <p class="text-gray-700 mb-3 flex-1">Create and manage political parties for elections.</p>
-        <a href="programs-parties.html?programId=YOUR_PROGRAM_ID"
-           class="text-legend-blue font-semibold hover:text-legend-gold transition mt-auto">Edit Parties &rarr;</a>
+        <a id="partiesLink" href="#" class="text-legend-blue font-semibold hover:text-legend-gold transition mt-auto">Edit Parties &rarr;</a>
       </div>
 
       <!-- Positions -->
       <div class="bg-white rounded-2xl shadow-lg p-6 border-t-4 border-legend-gold flex flex-col">
         <h2 class="text-lg font-semibold mb-2 text-legend-blue">Positions</h2>
         <p class="text-gray-700 mb-3 flex-1">Add and organize elected or appointed positions.</p>
-        <a href="programs-positions.html?programId=YOUR_PROGRAM_ID"
-           class="text-legend-blue font-semibold hover:text-legend-gold transition mt-auto">Manage Positions &rarr;</a>
+        <a id="positionsLink" href="#" class="text-legend-blue font-semibold hover:text-legend-gold transition mt-auto">Manage Positions &rarr;</a>
       </div>
 
       <!-- Staff -->
       <div class="bg-white rounded-2xl shadow-lg p-6 border-t-4 border-legend-gold flex flex-col">
         <h2 class="text-lg font-semibold mb-2 text-legend-blue">Staff</h2>
         <p class="text-gray-700 mb-3 flex-1">Manage staff members, counselors, and their roles.</p>
-        <a href="programs-staff.html?programId=YOUR_PROGRAM_ID"
-           class="text-legend-blue font-semibold hover:text-legend-gold transition mt-auto">Manage Staff &rarr;</a>
+        <a id="staffLink" href="#" class="text-legend-blue font-semibold hover:text-legend-gold transition mt-auto">Manage Staff &rarr;</a>
       </div>
 
       <!-- Parent/Delegate Links -->
       <div class="bg-white rounded-2xl shadow-lg p-6 border-t-4 border-legend-gold flex flex-col">
         <h2 class="text-lg font-semibold mb-2 text-legend-blue">Parent/Delegate Links</h2>
         <p class="text-gray-700 mb-3 flex-1">Configure parent accounts and delegate links.</p>
-        <a href="programs-parents.html?programId=YOUR_PROGRAM_ID"
-           class="text-legend-blue font-semibold hover:text-legend-gold transition mt-auto">Edit Parent/Delegate Links &rarr;</a>
+        <a id="parentsLink" href="#" class="text-legend-blue font-semibold hover:text-legend-gold transition mt-auto">Edit Parent/Delegate Links &rarr;</a>
       </div>
 
       <!-- Add more config sections as needed -->
@@ -88,9 +82,41 @@
     &copy; 2025 Boys State App Admin Portal. Not affiliated with or endorsed by the American Legion.
   </footer>
 
-  <script src="js/authHelper.js"></script>
   <script src="js/config.js"></script>
+  <script src="js/authHelper.js"></script>
   <script src="js/programs-config.js"></script>
+  <script>
+    // Assume your program selector triggers 'programSelected' event or similar
+    // If not, adapt the event handler to your selector code
 
+    // Example: Listen for a custom event fired when program is selected
+    document.addEventListener("programSelected", function(e) {
+      updateConfigLinks(e.detail.programId);
+    });
+
+    // Fallback for direct selector <select> (if present):
+    document.addEventListener("DOMContentLoaded", function() {
+      // Try to find a select in #program-selector
+      var select = document.querySelector('#program-selector select');
+      if (select) {
+        // On change, update links
+        select.addEventListener('change', function() {
+          updateConfigLinks(this.value);
+        });
+        // Also update immediately on page load to match current selection
+        if (select.value) updateConfigLinks(select.value);
+      }
+    });
+
+    function updateConfigLinks(programId) {
+      if (!programId) return;
+      document.getElementById("brandingLink").href = `branding-contact.html?programId=${encodeURIComponent(programId)}`;
+      document.getElementById("groupingsLink").href = `programs-groupings.html?programId=${encodeURIComponent(programId)}`;
+      document.getElementById("partiesLink").href = `programs-parties.html?programId=${encodeURIComponent(programId)}`;
+      document.getElementById("positionsLink").href = `programs-positions.html?programId=${encodeURIComponent(programId)}`;
+      document.getElementById("staffLink").href = `programs-staff.html?programId=${encodeURIComponent(programId)}`;
+      document.getElementById("parentsLink").href = `programs-parents.html?programId=${encodeURIComponent(programId)}`;
+    }
+  </script>
 </body>
 </html>
