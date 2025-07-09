@@ -173,4 +173,15 @@ function getProgramIdFromUrl() {
     // TODO: send to API endpoint here...
     // fetch(`/api/programs/${programId}/branding`, { method: "PUT", headers: {...}, body: JSON.stringify(config) })
   }
+
+  // On load
+document.addEventListener("DOMContentLoaded", () => {
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) {
+      logoutBtn.addEventListener('click', () => {
+        window.location.href = 'login.html'; // Redirect to login or home
+      });
+    }
+    fetchProgramsAndRenderSelector();
+  });
   
