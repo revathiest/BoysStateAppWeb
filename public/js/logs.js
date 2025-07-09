@@ -39,9 +39,9 @@ function toISODateString(dateVal, isEndOfDay = false) {
   if (!dateVal) return undefined;
   // If already has a time, just return as is (assume already UTC)
   if (dateVal.includes('T')) return dateVal;
-  // Otherwise, append time and convert to ISO
-  let base = isEndOfDay ? 'T23:59:59' : 'T00:00:00';
-  return new Date(dateVal + base).toISOString();
+  // Otherwise, append time and convert to ISO (treat as UTC)
+  const base = isEndOfDay ? 'T23:59:59' : 'T00:00:00';
+  return new Date(dateVal + base + 'Z').toISOString();
 }
 
   function getFilters() {
