@@ -39,53 +39,63 @@
       <h1 class="text-2xl font-bold text-legend-blue mb-4">Branding &amp; Contact Config</h1>
 
       <!-- Program Name & Welcome Message -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <div>
-          <label for="programName" class="font-semibold">Program Name</label>
-          <input type="text" id="programName" placeholder="Enter the name of your program"
-            class="appearance-none w-full px-4 py-2 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-legend-gold focus:border-legend-gold bg-gray-50 text-gray-900 placeholder-gray-400 transition mt-1" />
-        </div>
+      <div class="grid grid-cols-1 md:grid-cols-1 gap-8">
         <div>
           <label for="welcomeMessage" class="font-semibold">Welcome Message</label>
           <input type="text" id="welcomeMessage" placeholder="Enter a welcome message!"
             class="appearance-none w-full px-4 py-2 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-legend-gold focus:border-legend-gold bg-gray-50 text-gray-900 placeholder-gray-400 transition mt-1" />
         </div>
       </div>
+<!-- Logo/Icon/Banner URLs -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-8 mt-8">
+  <!-- Program Logo -->
+  <div>
+    <label for="logoUrl" class="font-semibold">Program Logo URL</label>
+    <input type="url" id="logoUrl" placeholder="https://your-host.com/logo.png"
+      class="block mt-1 w-full px-4 py-2 rounded-xl border border-gray-300">
+  </div>
+  <!-- App Icon -->
+  <div>
+    <label for="iconUrl" class="font-semibold">App Icon URL (square)</label>
+    <input type="url" id="iconUrl" placeholder="https://your-host.com/icon.png"
+      class="block mt-1 w-full px-4 py-2 rounded-xl border border-gray-300">
+  </div>
+  <!-- Banner Image -->
+  <div>
+    <label for="bannerUrl" class="font-semibold">Banner Image URL (optional)</label>
+    <input type="url" id="bannerUrl" placeholder="https://your-host.com/banner.png"
+      class="block mt-1 w-full px-4 py-2 rounded-xl border border-gray-300">
+  </div>
+</div>
+<!-- Unified image hosting suggestion -->
+<div class="text-xs text-gray-500 mt-4">
+  Host your images using a third-party service like
+  <a href="https://aws.amazon.com/s3/" target="_blank" class="underline text-blue-600">Amazon S3</a>,
+  <a href="https://cloudinary.com/" target="_blank" class="underline text-blue-600">Cloudinary</a>,
+  <a href="https://imgbb.com/" target="_blank" class="underline text-blue-600">ImgBB</a>,
+  <a href="https://imgur.com/" target="_blank" class="underline text-blue-600">Imgur</a>,
+  or <a href="https://drive.google.com/" target="_blank" class="underline text-blue-600">Google Drive</a>.
+  &nbsp;For best results, use public links that end in <span class="font-mono">.png</span>, <span class="font-mono">.jpg</span>, or <span class="font-mono">.svg</span>.
+  <br>
+  <a href="https://www.canva.com/designschool/tutorials/all/" target="_blank" class="underline text-blue-600">How to create a logo or banner image</a>
+</div>
 
-      <!-- Logo/Icon/Banner Uploads -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mt-8">
-        <div>
-          <label for="logoUpload" class="font-semibold">Program Logo</label>
-          <input type="file" id="logoUpload" accept="image/*" class="block mt-1">
-          <img id="logoPreview" class="img-preview" src="" alt="Logo Preview" style="display:none;">
-        </div>
-        <div>
-          <label for="iconUpload" class="font-semibold">App Icon (square)</label>
-          <input type="file" id="iconUpload" accept="image/*" class="block mt-1">
-          <img id="iconPreview" class="img-preview" src="" alt="Icon Preview" style="display:none;">
-        </div>
-        <div>
-          <label for="bannerUpload" class="font-semibold">Banner Image (optional)</label>
-          <input type="file" id="bannerUpload" accept="image/*" class="block mt-1">
-          <img id="bannerPreview" class="img-preview" src="" alt="Banner Preview" style="display:none;">
-        </div>
-      </div>
 
     <!-- Colors -->
     <div class="section-title font-bold mt-8 mb-2 text-legend-blue">Colors</div>
     <div class="flex flex-row gap-8 flex-wrap">
-    <div>
+      <div>
         <label for="primaryColor" class="block font-normal">Primary Color</label>
         <input type="color" id="primaryColor" value="#0C2340" class="mt-1 w-10 h-10 border-2 border-gray-200 rounded">
-    </div>
-    <div>
+      </div>
+      <div>
         <label for="secondaryColor" class="block font-normal">Secondary Color</label>
         <input type="color" id="secondaryColor" value="#F3C300" class="mt-1 w-10 h-10 border-2 border-gray-200 rounded">
-    </div>
-    <div>
+      </div>
+      <div>
         <label for="backgroundColor" class="block font-normal">Background Color</label>
         <input type="color" id="backgroundColor" value="#FFFFFF" class="mt-1 w-10 h-10 border-2 border-gray-200 rounded">
-    </div>
+      </div>
     </div>
 
       <!-- Contact Info -->
@@ -125,7 +135,7 @@
   <footer class="bg-legend-blue text-white border-t mt-8 py-4 text-center text-xs">
     &copy; 2025 Boys State App Admin Portal. Not affiliated with or endorsed by the American Legion.
   </footer>
-
+  
   <script src="js/config.js"></script>
   <script src="js/authHelper.js"></script>
   <script src="js/branding-contact.js"></script>

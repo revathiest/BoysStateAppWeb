@@ -71,7 +71,7 @@ async function fetchProgramsAndRenderSelector() {
     return;
   }
 
-  try {debugger;
+  try {
     const response = await fetch(
       `${apiBase}/user-programs/${encodeURIComponent(username)}`,
       {
