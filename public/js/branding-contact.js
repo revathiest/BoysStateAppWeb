@@ -25,14 +25,12 @@ document.addEventListener("DOMContentLoaded", async function() {
 
   try {
     const API_URL = window.API_URL;
-    console.log("Fetching program:", `/programs/${programId}`);
+    // Get program label info
     const res = await fetch(`${API_URL}/programs/${programId}`, {
       headers: typeof getAuthHeaders === "function" ? getAuthHeaders() : {}
     });
 
     const raw = await res.clone().text();
-    console.log("API status:", res.status, "API response:", raw);
-
     if (res.ok) {
       const program = JSON.parse(raw);
       const label = program.name
@@ -41,7 +39,8 @@ document.addEventListener("DOMContentLoaded", async function() {
       programNameLabel.textContent = label;
       errorMsg.style.display = 'none';
       formEls.forEach(el => el.disabled = false);
-      //loadConfig(program.branding || {});
+      // --- CHANGED: Fetch branding/contact data ---
+      await loadBrandingContactFromApi(); // CHANGED
     } else {
       programNameLabel.textContent = `Program not found (${programId})`;
       errorMsg.textContent = "Program not found!";
@@ -56,9 +55,31 @@ document.addEventListener("DOMContentLoaded", async function() {
   }
 });
 
+// --- CHANGED: Load from new endpoint ---
+async function loadBrandingContactFromApi() {
+  const API_URL = window.API_URL;
+  const errorMsg = document.getElementById('errorMsg');
+  errorMsg.style.display = 'none';
+
+  try {
+    const res = await fetch(`${API_URL}/api/branding-contact/${programId}`, {
+      headers: typeof getAuthHeaders === "function" ? getAuthHeaders() : {}
+    });
+    if (res.ok) {
+      const config = await res.json();
+      loadConfig(config);
+    } else {
+      // If not found, just clear the form (could show an error if you prefer)
+      resetForm();
+    }
+  } catch (e) {
+    errorMsg.textContent = "Could not load branding/contact config.";
+    errorMsg.style.display = 'block';
+  }
+}
+
 // Reset form to default state
 function resetForm() {
-  document.getElementById('programName').value = '';
   document.getElementById('welcomeMessage').value = '';
   document.getElementById('logoUrl').value = '';
   document.getElementById('iconUrl').value = '';
@@ -74,30 +95,37 @@ function resetForm() {
 
 // Load config from backend (or demo)
 function loadConfig(config) {
-  debugger;
-  document.getElementById('programName').value = config.name || '';
+  // Just map flat fields to your inputs
   document.getElementById('welcomeMessage').value = config.welcomeMessage || '';
   document.getElementById('logoUrl').value = config.logoUrl || '';
   document.getElementById('iconUrl').value = config.iconUrl || '';
   document.getElementById('bannerUrl').value = config.bannerUrl || '';
-  document.getElementById('primaryColor').value = config.colors?.primary || '#0C2340';
-  document.getElementById('secondaryColor').value = config.colors?.secondary || '#F3C300';
-  document.getElementById('backgroundColor').value = config.colors?.background || '#FFFFFF';
-  document.getElementById('contactEmail').value = config.contact?.email || '';
-  document.getElementById('contactPhone').value = config.contact?.phone || '';
-  document.getElementById('contactWebsite').value = config.contact?.website || '';
-  document.getElementById('contactFacebook').value = config.contact?.facebook || '';
+  document.getElementById('primaryColor').value = config.colorPrimary || '#0C2340';
+  document.getElementById('secondaryColor').value = config.colorSecondary || '#F3C300';
+  document.getElementById('backgroundColor').value = config.colorBackground || '#FFFFFF';
+  document.getElementById('contactEmail').value = config.contactEmail || '';
+  document.getElementById('contactPhone').value = config.contactPhone || '';
+  document.getElementById('contactWebsite').value = config.contactWebsite || '';
+  document.getElementById('contactFacebook').value = config.contactFacebook || '';
 }
 
-// Save config to backend (stub/demo version)
-function saveConfig() {
+
+// --- CHANGED: Save config to backend via PUT ---
+async function saveConfig() {
   if (!programId) return;
+  const API_URL = window.API_URL;
+  const errorMsg = document.getElementById('errorMsg');
+  const successMsg = document.getElementById('successMsg');
+  errorMsg.style.display = 'none';
+  if (successMsg) successMsg.style.display = 'none';
+
   const config = {
-    name: document.getElementById('programName').value.trim(),
     welcomeMessage: document.getElementById('welcomeMessage').value.trim(),
-    logoUrl: document.getElementById('logoUrl').value.trim(),
-    iconUrl: document.getElementById('iconUrl').value.trim(),
-    bannerUrl: document.getElementById('bannerUrl').value.trim(),
+    branding: {
+      logoUrl: document.getElementById('logoUrl').value.trim(),
+      iconUrl: document.getElementById('iconUrl').value.trim(),
+      bannerUrl: document.getElementById('bannerUrl').value.trim()
+    },
     colors: {
       primary: document.getElementById('primaryColor').value,
       secondary: document.getElementById('secondaryColor').value,
@@ -110,9 +138,33 @@ function saveConfig() {
       facebook: document.getElementById('contactFacebook').value.trim()
     }
   };
-  alert("Saving for programId = " + programId + ":\n\n" + JSON.stringify(config, null, 2));
-  // TODO: send to API endpoint here...
-  // fetch(`${API_URL}/programs/${programId}/branding`, { method: "PUT", headers: {...}, body: JSON.stringify(config) })
+
+  try {
+    const res = await fetch(`${API_URL}/api/branding-contact/${programId}`, {
+      method: 'PUT',
+      headers: {
+        ...((typeof getAuthHeaders === "function") ? getAuthHeaders() : {}),
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(config)
+    });
+    if (res.ok) {
+      if (successMsg) {
+        successMsg.textContent = "Saved!";
+        successMsg.style.display = 'block';
+      } else {
+        alert("Saved!");
+      }
+      // Optionally re-load
+      await loadBrandingContactFromApi();
+    } else {
+      errorMsg.textContent = "Failed to save. Please try again.";
+      errorMsg.style.display = 'block';
+    }
+  } catch (e) {
+    errorMsg.textContent = "Could not save branding/contact config.";
+    errorMsg.style.display = 'block';
+  }
 }
 
 // Logout button handler
