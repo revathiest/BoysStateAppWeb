@@ -41,6 +41,63 @@ test('program creation posts JSON with credentials', async () => {
   );
 });
 
+test('program creation success clears fields', async () => {
+  const form = {};
+  const nameInput = { value: 'X' };
+  const yearInput = { value: '2024' };
+  const successEl = { classList: { add: jest.fn(), remove: jest.fn() }, innerHTML: '' };
+  const doc = {
+    getElementById: jest.fn(id => {
+      switch (id) {
+        case 'createProgramForm': return form;
+        case 'name': return nameInput;
+        case 'year': return yearInput;
+        case 'createBtn': return { disabled: false };
+        case 'formError': return { classList: { add: jest.fn(), remove: jest.fn() }, innerHTML: '' };
+        case 'formSuccess': return successEl;
+      }
+      return {};
+    })
+  };
+  const fetchMock = jest.fn().mockResolvedValue({ status: 201, json: () => ({ id: 1, name: 'X', year: 2024 }) });
+  global.window = { API_URL: 'http://api.test' };
+  global.document = doc;
+  global.fetch = fetchMock;
+  require('../public/js/programs-create.js');
+  await form.onsubmit({ preventDefault: () => {} });
+  expect(successEl.innerHTML).toContain('Program created');
+  expect(nameInput.value).toBe('');
+  expect(yearInput.value).toBe('');
+});
+
+test('program creation uses auth headers when provided', async () => {
+  const form = {};
+  const nameInput = { value: 'N' };
+  const yearInput = { value: '2024' };
+  const doc = {
+    getElementById: jest.fn(id => {
+      switch (id) {
+        case 'createProgramForm': return form;
+        case 'name': return nameInput;
+        case 'year': return yearInput;
+        case 'createBtn': return { disabled: false };
+        case 'formError': return { classList: { add: jest.fn(), remove: jest.fn() }, innerHTML: '' };
+        case 'formSuccess': return { classList: { add: jest.fn(), remove: jest.fn() }, innerHTML: '' };
+      }
+      return {};
+    })
+  };
+  const fetchMock = jest.fn().mockResolvedValue({ status: 400, json: () => ({ error: 'bad' }) });
+  const headersFn = jest.fn(() => ({ Authorization: 'Bearer t' }));
+  global.window = { API_URL: 'http://api.test' };
+  global.getAuthHeaders = headersFn;
+  global.document = doc;
+  global.fetch = fetchMock;
+  require('../public/js/programs-create.js');
+  await form.onsubmit({ preventDefault: () => {} });
+  expect(headersFn).toHaveBeenCalled();
+});
+
 test('program creation validates required fields', async () => {
   const form = {};
   const nameInput = { value: '' };
