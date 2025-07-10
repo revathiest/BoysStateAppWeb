@@ -1,4 +1,4 @@
-const { getAuthHeaders, clearAuthToken, storeAuthToken } = require('../public/js/authHelper.js');
+const { getAuthHeaders, clearAuthToken, storeAuthToken, storeUser, getUsername } = require('../public/js/authHelper.js');
 
 describe('auth helper functions', () => {
   let storage;
@@ -29,5 +29,17 @@ describe('auth helper functions', () => {
 
   test('getAuthHeaders without token', () => {
     expect(getAuthHeaders()).toEqual({});
+  });
+
+  test('storeAuthToken ignores empty values', () => {
+    storeAuthToken('');
+    expect(sessionStorage.getItem('authToken')).toBeUndefined();
+  });
+
+  test('storeUser and getUsername work together', () => {
+    storeUser('alice');
+    expect(getUsername()).toBe('alice');
+    storeUser();
+    expect(getUsername()).toBe('alice');
   });
 });
