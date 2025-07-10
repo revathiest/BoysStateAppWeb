@@ -48,8 +48,10 @@ test('getFilters converts values and trims search', () => {
   };
   loadModule(ctx);
   const filters = ctx.getFilters();
-  expect(filters.start).toContain('T00:00:00');
-  expect(filters.end).toContain('T23:59:59');
+  const expectedStart = new Date('2023-01-01T00:00:00').toISOString();
+  const expectedEnd = new Date('2023-01-02T23:59:59').toISOString();
+  expect(filters.start).toBe(expectedStart);
+  expect(filters.end).toBe(expectedEnd);
   expect(filters.level).toBe('warn');
   expect(filters.source).toBe('server');
   expect(filters.search).toBe('test');
