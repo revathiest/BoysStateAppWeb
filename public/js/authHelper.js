@@ -7,6 +7,33 @@ function getAuthHeaders() {
   return token ? { 'Authorization': `Bearer ${token}` } : {};
 }
 
+function parseJwt(token) {
+  try {
+    const payload = token.split('.')[1];
+    return JSON.parse(atob(payload));
+  } catch {
+    return null;
+  }
+}
+
+function isTokenExpired(token) {
+  const data = parseJwt(token);
+  if (!data || !data.exp) return true;
+  return Date.now() >= data.exp * 1000;
+}
+
+function requireAuth() {
+  const page = (window.location.pathname || '').split('/').pop();
+  if (page === '' || page === 'index.html' || page === 'login.html' || page === 'register.html') {
+    return;
+  }
+  const token = sessionStorage.getItem('authToken');
+  if (!token || isTokenExpired(token)) {
+    clearAuthToken();
+    if (window.location) window.location.href = 'login.html';
+  }
+}
+
 function clearAuthToken() {
   sessionStorage.removeItem('authToken');
 }
@@ -24,5 +51,16 @@ function getUsername(){
 }
 
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { getAuthHeaders, clearAuthToken, storeAuthToken, storeUser, getUsername};
+  module.exports = {
+    getAuthHeaders,
+    clearAuthToken,
+    storeAuthToken,
+    storeUser,
+    getUsername,
+    parseJwt,
+    isTokenExpired,
+    requireAuth
+  };
+} else if (typeof document !== 'undefined' && typeof document.addEventListener === 'function') {
+  document.addEventListener('DOMContentLoaded', requireAuth);
 }
