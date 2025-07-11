@@ -122,6 +122,7 @@ This document describes agents and modules specific to the web-based administrat
 ## 4. Development & Testing Standards (Admin Portal)
 
 * Automated tests for all new features/fixes and logic
+* If tests do not meet coverage requirements, increase coverage.  Do NOT decrease requirements.
 * Changes require code review and passing tests before merge
 * All admin features must include security/integration tests
 * Regression tests required for any bug fixes or API changes
