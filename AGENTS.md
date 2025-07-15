@@ -25,6 +25,8 @@ This document describes agents and modules specific to the web-based administrat
 * Configure program branding, settings, feature toggles
 * Manage integrations (Google, Discord, etc.)
 * Manage elections, results, and audit logs
+* Define and publish program-specific application forms for delegate admissions
+* Review submitted applications, accept or reject applicants, and trigger automatic delegate onboarding for accepted applicants
 
 ### 1.2. Counselor Agent
 
@@ -99,7 +101,31 @@ This document describes agents and modules specific to the web-based administrat
 * Track and report on progress/achievement history
 * Manage notifications to parents/delegates about awards/milestones
 
-### 2.7. Integration Agents (Planned)
+### 2.7. Application/Admissions Agent (NEW)
+
+**Description:**  
+Enables program admins to define, publish, and manage online application forms for delegate admission. Presents secure, public-facing application forms for external applicants, and manages the end-to-end admission workflow.
+
+**Responsibilities:**
+* Provides an admin UI for staff to:
+  * Build and edit application forms with various question types (text, essay, dropdown, multi-choice, file upload, etc)
+  * Set required/optional questions and organize into sections/pages
+  * Preview, publish, and set application open/close dates and public URL
+  * View, search, filter, and export submitted applications
+  * Accept/reject applications (triggers backend to auto-designate accepted applicants as delegates)
+* Presents a secure, user-friendly public application form for external applicants (no login required)
+  * Includes anti-bot measures (e.g., CAPTCHA)
+  * Provides applicant confirmation/receipt on submission
+* Notifies staff/admins of new submissions and applicant status changes
+* On acceptance, triggers onboarding and portal access for new delegates
+* Ensures all actions are tracked/audited for program admins
+
+**Key UI Flows:**
+* **Admin:** Application builder, manage admissions, trigger onboarding
+* **Applicant:** Fill out application, receive confirmation, optional follow-up
+* **Delegate:** On acceptance, gains delegate portal access and onboarding prompt
+
+### 2.8. Integration Agents (Planned)
 
 **Google Calendar Agent:** Manage Google Calendar integration for schedule sync and sharing.
 
