@@ -19,6 +19,18 @@ const FIELD_TYPES = [
     { value: "address", label: "Address" },
     { value: "repeating_group", label: "Repeating Group" }
     ];
+
+// Determine the programId from URL or stored selection
+function getProgramId() {
+  const params = new URLSearchParams(window.location.search);
+  return (
+    params.get('programId') ||
+    localStorage.getItem('lastSelectedProgramId') ||
+    ''
+  );
+}
+
+const programId = getProgramId();
     
     // Helpers for rendering
     function renderFieldTypeOptions(selected) {
@@ -265,8 +277,29 @@ const FIELD_TYPES = [
       const description = document.getElementById('app-description').value.trim();
       // Remove empty or invalid questions
       const filteredQuestions = questions.filter(q => q.text.trim() !== "");
-      // TODO: Replace with API call
-      alert("Application Saved!\n\n" + JSON.stringify({ title, description, questions: filteredQuestions }, null, 2));
+      if (!programId) {
+        alert('Missing program id');
+        return;
+      }
+      const payload = { title, description, questions: filteredQuestions };
+      try {
+        const res = await fetch(`${window.API_URL}/api/programs/${encodeURIComponent(programId)}/application`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(typeof getAuthHeaders === 'function' ? getAuthHeaders() : {})
+          },
+          credentials: 'include',
+          body: JSON.stringify(payload)
+        });
+        if (res.ok || res.status === 201) {
+          alert('Application Saved!');
+        } else {
+          alert('Failed to save application');
+        }
+      } catch {
+        alert('Failed to save application');
+      }
     };
     
     renderQuestions();
