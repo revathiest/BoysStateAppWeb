@@ -16,8 +16,7 @@ const FIELD_TYPES = [
     { value: "section", label: "Section/Header" },
     { value: "static_text", label: "Static Text / Instructions" },
     { value: "boolean", label: "Yes/No (Boolean)" },
-    { value: "address", label: "Address" },
-    { value: "repeating_group", label: "Repeating Group" }
+    { value: "address", label: "Address" }
     ];
 
 // Determine the programId from URL or stored selection
@@ -129,27 +128,6 @@ const programId = getProgramId();
         optionsHTML = `<div class="ml-4 mt-2"><span class="text-xs text-gray-500">Will render as Yes/No toggle.</span></div>`;
       } else if(q.type === "address") {
         optionsHTML = `<div class="ml-4 mt-2"><span class="text-xs text-gray-500">Standard US address fields.</span></div>`;
-      } else if(q.type === "repeating_group") {
-        optionsHTML = `
-          <div class="ml-4 mt-2">
-            <label class="block text-xs text-gray-500 mb-1">Fields in this group</label>
-            <div id="repeat-fields-${idx}">
-              ${(q.fields || []).map((field, fidx) => `
-                <div class="flex gap-2 items-center mb-1">
-                  <input type="text" class="border rounded px-2 py-1 flex-1 text-sm" value="${field.text}" disabled />
-                  <span class="text-xs text-gray-500">${FIELD_TYPES.find(t=>t.value===field.type)?.label || field.type}</span>
-                  <button type="button" class="text-red-600 hover:underline text-xs" data-remove-repeat-field="${fidx}" data-qidx="${idx}">Remove</button>
-                </div>`).join('')}
-            </div>
-            <div class="flex mt-2 gap-2">
-              <select id="repeat-add-type-${idx}" class="border rounded px-2 py-1 text-sm">
-                ${renderFieldTypeOptions("short_answer")}
-              </select>
-              <input type="text" class="border rounded px-2 py-1 text-sm" placeholder="Field label..." id="repeat-add-label-${idx}" />
-              <button type="button" class="bg-gray-200 text-xs px-2 py-1 rounded" data-add-repeat-field="${idx}">Add Field</button>
-            </div>
-          </div>
-        `;
       }
       return `
         <div class="border rounded-xl p-4 bg-gray-50 flex flex-col gap-2">
@@ -244,32 +222,6 @@ const programId = getProgramId();
           questions[idx].maxFiles = parseInt(input.value) || 1;
         });
       });
-      // Repeating group: remove field
-      builderRoot.querySelectorAll('button[data-remove-repeat-field]').forEach(btn => {
-        btn.addEventListener('click', e => {
-          const idx = +btn.dataset.qidx;
-          const fidx = +btn.dataset.removeRepeatField;
-          (questions[idx].fields = questions[idx].fields || []).splice(fidx, 1);
-          renderQuestions();
-        });
-      });
-      // Repeating group: add field
-      builderRoot.querySelectorAll('button[data-add-repeat-field]').forEach(btn => {
-        btn.addEventListener('click', e => {
-          const idx = +btn.dataset.addRepeatField;
-          const sel = document.getElementById(`repeat-add-type-${idx}`);
-          const labelInput = document.getElementById(`repeat-add-label-${idx}`);
-          if (labelInput.value.trim()) {
-            (questions[idx].fields = questions[idx].fields || []).push({
-              type: sel.value,
-              text: labelInput.value.trim(),
-              required: false
-            });
-            labelInput.value = '';
-            renderQuestions();
-          }
-        });
-      });
     }
     
     // Default data structure per question type
@@ -279,9 +231,6 @@ const programId = getProgramId();
       }
       if (type === "file") {
         return { type, text, required, accept: ".pdf,.jpg", maxFiles: 1 };
-      }
-      if (type === "repeating_group") {
-        return { type, text, required, fields: [] };
       }
       // section/static_text/boolean/address/date/date_range/phone/number/email/paragraph/short_answer
       return { type, text, required };
