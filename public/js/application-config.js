@@ -136,7 +136,7 @@ const programId = getProgramId();
             <select class="border rounded px-2 py-2 text-sm" data-type-idx="${idx}">
               ${renderFieldTypeOptions(q.type)}
             </select>
-            <input type="checkbox" class="ml-2" ${q.required ? 'checked' : ''} data-required-idx="${idx}" title="Required" />
+            <input type="checkbox" class="ml-2" ${q.required ? 'checked' : ''} data-required-idx="${idx}" title="Required" /> Required
             <button type="button" class="text-red-600 hover:underline ml-2" data-remove="${idx}">Remove</button>
           </div>
           ${optionsHTML}
