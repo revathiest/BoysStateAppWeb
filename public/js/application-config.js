@@ -44,19 +44,40 @@ const programId = getProgramId();
     const createBtn = document.getElementById('create-application-form');
     const card = document.getElementById('create-form-card');
     const builderRoot = document.getElementById('application-builder-root');
-    
+
     if (createBtn) {
     createBtn.addEventListener('click', () => {
     card.style.display = 'none';
     renderApplicationBuilder();
     });
     }
-    
-    function renderApplicationBuilder() {
+
+    async function loadExistingApplication() {
+      if (!programId || !window.API_URL) return;
+      try {
+        const res = await fetch(`${window.API_URL}/api/programs/${encodeURIComponent(programId)}/application`, {
+          headers: {
+            ...(typeof getAuthHeaders === 'function' ? getAuthHeaders() : {})
+          },
+          credentials: 'include'
+        });
+        if (res.ok) {
+          const data = await res.json();
+          card.style.display = 'none';
+          renderApplicationBuilder(data);
+        }
+      } catch {
+        // ignore errors, user can create new
+      }
+    }
+
+    function renderApplicationBuilder(appData = {}) {
     builderRoot.innerHTML = `       <form id="application-builder-form" class="bg-white rounded-2xl shadow-lg p-8 sm:p-12 max-w-4xl w-full mx-auto border-t-4 border-legend-gold flex flex-col gap-6">         <div>           <label class="block text-lg font-bold text-legend-blue mb-2">Application Title</label>           <input type="text" id="app-title" class="border rounded-xl px-4 py-2 w-full" placeholder="e.g. 2025 Boys State Delegate Application" required />         </div>         <div>           <label class="block text-base font-semibold text-gray-700 mb-2">Application Description</label>           <textarea id="app-description" class="border rounded-xl px-4 py-2 w-full min-h-[60px]" placeholder="Describe this application form"></textarea>         </div>         <div>           <label class="block text-base font-semibold text-gray-700 mb-2">Questions</label>           <div id="questions-list" class="flex flex-col gap-4"></div>           <button type="button" id="add-question-btn" class="mt-6 bg-legend-blue hover:bg-legend-gold text-white font-bold py-2 px-4 rounded-xl shadow transition">             + Add Question           </button>         </div>         <button type="submit" class="bg-legend-blue hover:bg-legend-gold text-white font-bold py-2 px-8 rounded-xl shadow transition self-center mt-4">
               Save Application         </button>       </form>
         `;
-    let questions = [];
+    let questions = Array.isArray(appData.questions) ? appData.questions : [];
+    document.getElementById('app-title').value = appData.title || '';
+    document.getElementById('app-description').value = appData.description || '';
     
     // --- Question rendering and editing ---
     function renderQuestions() {
@@ -271,7 +292,7 @@ const programId = getProgramId();
       renderQuestions();
     };
     
-    document.getElementById('application-builder-form').onsubmit = function(e) {
+    document.getElementById('application-builder-form').onsubmit = async function(e) {
       e.preventDefault();
       const title = document.getElementById('app-title').value.trim();
       const description = document.getElementById('app-description').value.trim();
@@ -303,7 +324,11 @@ const programId = getProgramId();
     };
     
     renderQuestions();
-    
+
+    }
+    loadExistingApplication();
+    if (typeof module !== 'undefined' && module.exports) {
+      module.exports = { loadExistingApplication, renderApplicationBuilder };
     }
     });
     
