@@ -19,6 +19,23 @@
   </nav>
   
   <main class="flex flex-col items-stretch p-6 lg:p-10 bg-gray-50 min-h-screen">
+
+<!-- Copy Link Button next to textarea -->
+<div class="flex items-center gap-3 mb-6" style="max-width:900px;">
+  <span class="font-semibold text-blue-900 whitespace-nowrap flex-shrink-0">Public Application Link:</span>
+  <textarea id="publicApplicationUrl"
+  readonly
+  rows="1"
+  class="flex-1 min-w-0 px-2 py-1 rounded border border-gray-300 bg-white text-blue-900 resize-none"
+  style="height:2.4rem; overflow:hidden; font-size:1rem; line-height:1.5; box-sizing:border-box; resize:none;"></textarea>
+  <button type="button" id="copyLinkBtn"
+    class="ml-2 px-3 py-1 rounded bg-legend-blue text-white hover:bg-legend-gold font-medium flex-shrink-0"
+    style="border:none; cursor:pointer;">
+    Copy Link
+  </button>
+  <span id="copyStatus" class="ml-2 text-green-600 text-xs font-medium" style="display:none;">Copied!</span>
+</div>
+
     <a href="programs-config.html" class="inline-flex items-center text-legend-blue font-semibold mb-4 hover:underline group self-start">
       <span class="mr-2 text-lg">&larr;</span>
       Back to Program Configuration

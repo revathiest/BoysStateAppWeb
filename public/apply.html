@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Program Application – Boys State App</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="tailwind.css">
+  <link rel="stylesheet" href="logo.css">
+</head>
+<body class="bg-gray-50 min-h-screen flex flex-col">
+
+  <!-- Header/Branding -->
+  <nav class="bg-legend-blue text-white px-6 py-4 flex items-center gap-3">
+    <img src="images/Boys State Shield White on Blue.png" alt="Logo" class="w-8 h-8 p-1 rounded-full" />
+    <span class="text-xl font-semibold">Boys State App <span class="text-sm font-normal text-legend-gold ml-2">Admissions</span></span>
+  </nav>
+
+  <main class="flex-grow flex flex-col items-center p-6">
+    <div class="max-w-xl w-full bg-white rounded-2xl shadow-lg p-6 mt-8">
+
+      <h1 class="text-3xl font-extrabold text-legend-blue mb-2" id="programTitle">Program Application</h1>
+      <div id="programBranding" class="mb-6"></div>
+
+      <div id="disclaimer" class="mb-6 text-gray-600 text-sm border-b pb-4">
+        <strong>Privacy Notice:</strong> This application collects personal data for program admissions only. All information is managed per COPPA, FERPA, and GDPR. This site is not affiliated with, endorsed by, or managed by the American Legion.
+      </div>
+
+      <form id="applicationForm" class="space-y-6">
+        <!-- Application fields will be dynamically rendered here -->
+      </form>
+
+      <div id="formStatus" class="mt-4 text-center text-green-700 font-semibold hidden"></div>
+    </div>
+  </main>
+
+  <footer class="text-center text-xs text-gray-500 mt-8 py-4 border-t">
+    &copy; 2025 Boys State App. Not affiliated with or endorsed by the American Legion.
+  </footer>
+
+  <script src="js/config.js"></script>
+  <script src="js/apply.js"></script>
+</body>
+</html>

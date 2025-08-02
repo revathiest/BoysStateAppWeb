@@ -271,6 +271,27 @@ const programId = getProgramId();
         alert('Failed to save application');
       }
     };
+
+    // Set the public application link using the global programId variable
+    if (typeof programId !== 'undefined' && programId) {
+      document.getElementById('publicApplicationUrl').value =
+        location.origin + '/apply.html?programId=' + encodeURIComponent(programId);
+    } else {
+      document.getElementById('publicApplicationUrl').value =
+        'Program ID not available.';
+    }
+
+    document.getElementById('copyLinkBtn').onclick = function() {
+      const textarea = document.getElementById('publicApplicationUrl');
+      textarea.select();
+      textarea.setSelectionRange(0, 99999); // Mobile
+      navigator.clipboard.writeText(textarea.value).then(function() {
+        const status = document.getElementById('copyStatus');
+        status.style.display = '';
+        setTimeout(() => status.style.display = 'none', 1200);
+      });
+    };
+    
     
     renderQuestions();
 
