@@ -101,29 +101,41 @@ This document describes agents and modules specific to the web-based administrat
 * Track and report on progress/achievement history
 * Manage notifications to parents/delegates about awards/milestones
 
-### 2.7. Application/Admissions Agent (NEW)
+### 2.7. Application/Admissions Agent
 
 **Description:**  
-Enables program admins to define, publish, and manage online application forms for delegate admission. Presents secure, public-facing application forms for external applicants, and manages the end-to-end admission workflow.
+Enables program admins to define, publish, and manage online application forms for delegate admission. Presents a secure, public-facing application form for external applicants (no login required) and manages the complete admission workflow.
 
 **Responsibilities:**
-* Provides an admin UI for staff to:
-  * Build and edit application forms with various question types (text, essay, dropdown, multi-choice, file upload, etc)
-  * Set required/optional questions and organize into sections/pages
-  * Preview, publish, and set application open/close dates and public URL
-  * View, search, filter, and export submitted applications
-  * Accept/reject applications (triggers backend to auto-designate accepted applicants as delegates)
-* Presents a secure, user-friendly public application form for external applicants (no login required)
-  * Includes anti-bot measures (e.g., CAPTCHA)
-  * Provides applicant confirmation/receipt on submission
-* Notifies staff/admins of new submissions and applicant status changes
-* On acceptance, triggers onboarding and portal access for new delegates
-* Ensures all actions are tracked/audited for program admins
+- Admin UI for staff to:
+  - Build and edit application forms with question types (text, essay, dropdown, multi-choice, file upload, etc)
+  - Set required/optional questions and organize into sections/pages
+  - Preview, publish, and **generate a non-guessable public application URL** (using a UUID/token, not just programId), with configurable open/close dates
+  - **Copy and share the public application link** with prospective applicants
+  - Unpublish or regenerate the public application link as needed
+  - View, search, filter, and export submitted applications
+  - Accept/reject applications (triggers backend to auto-designate accepted applicants as delegates)
+- Presents a secure, **public, unauthenticated application form**:
+  - **No login required for access or submission**
+  - Strong anti-bot protections (e.g., CAPTCHA), plus rate limiting for abuse prevention
+  - Program branding, details, open/close dates, and mandatory compliance/affiliation disclaimers (COPPA, FERPA, GDPR, non-affiliation) are clearly shown
+  - Confirmation/receipt with unique reference ID on successful submission
+- Notifies staff/admins of new submissions and applicant status changes
+- On acceptance, triggers onboarding and portal access for new delegates
+- Ensures all actions are tracked/audited (including link copies, publishes, unpublishes)
+- All file uploads are scanned for malware/abuse (if uploads enabled)
 
 **Key UI Flows:**
-* **Admin:** Application builder, manage admissions, trigger onboarding
-* **Applicant:** Fill out application, receive confirmation, optional follow-up
-* **Delegate:** On acceptance, gains delegate portal access and onboarding prompt
+- **Admin:** Application builder, publish/copy public link, manage admissions, trigger onboarding
+- **Applicant:** Access public form, complete and submit, receive confirmation, optional follow-up
+- **Delegate:** On acceptance, gains delegate portal access and onboarding prompt
+
+**Security, Compliance, and Audit:**
+- Public application links must be **non-sequential, unguessable**, and regeneratable
+- All public submissions are logged (timestamp, IP, browser info), never userId
+- All required privacy and non-affiliation disclaimers must appear before data entry
+- All admin link publish/copy/unpublish actions are auditable
+- Automated tests and documentation required for all public access flows
 
 ### 2.8. Integration Agents (Planned)
 
