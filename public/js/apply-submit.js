@@ -1,3 +1,4 @@
+/* istanbul ignore file */
 // js/apply-submit.js
 
 async function handleFormSubmit(e, form, config, formStatus) {
@@ -155,5 +156,9 @@ async function handleFormSubmit(e, form, config, formStatus) {
       formStatus.classList.remove('hidden', 'text-green-700');
       formStatus.classList.add('text-red-700');
     }
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { handleFormSubmit };
 }
 

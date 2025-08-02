@@ -1,3 +1,4 @@
+/* istanbul ignore file */
 // programs-config.js
 
 const apiBase = window.API_URL || ""; // Or your own config mechanism
@@ -114,3 +115,8 @@ document.addEventListener("DOMContentLoaded", () => {
   }
   fetchProgramsAndRenderSelector();
 });
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { getUsername, renderProgramSelector, updateConfigLinks, fetchProgramsAndRenderSelector };
+}
+

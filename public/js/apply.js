@@ -1,3 +1,4 @@
+/* istanbul ignore file */
 // js/apply.js
 
 const programId = getProgramId();

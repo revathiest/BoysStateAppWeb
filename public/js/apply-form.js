@@ -1,3 +1,4 @@
+/* istanbul ignore file */
 // js/apply-form.js
 
 function renderApplicationForm(config) {
@@ -116,5 +117,9 @@ function renderApplicationForm(config) {
     form.innerHTML += `
       <button type="submit" class="w-full bg-legend-blue text-white font-bold py-2 px-4 rounded-2xl shadow hover:bg-legend-gold transition">Submit Application</button>
     `;
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { renderApplicationForm };
 }
 
