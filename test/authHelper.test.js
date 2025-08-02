@@ -96,4 +96,38 @@ describe('auth helper functions', () => {
     requireAuth();
     expect(global.window.location.href).toBe('');
   });
+
+  test('isTokenExpired returns true when token missing exp', () => {
+    const token = 'x.' + Buffer.from(JSON.stringify({})).toString('base64') + '.y';
+    expect(isTokenExpired(token)).toBe(true);
+  });
+
+  test('requireAuth redirects when token expired', () => {
+    const exp = Math.floor(Date.now() / 1000) - 5;
+    const token = 'x.' + Buffer.from(JSON.stringify({ exp })).toString('base64') + '.y';
+    storage.authToken = token;
+    const loc = { href: '', pathname: '/dash.html' };
+    global.window = { location: loc };
+    global.document = { addEventListener: (ev, fn) => fn() };
+    requireAuth();
+    expect(loc.href).toBe('login.html');
+  });
+
+  test('requireAuth ignores index and register pages', () => {
+    ['index.html', 'register.html', ''].forEach(page => {
+      global.window = { location: { href: 'start', pathname: `/${page}` } };
+      global.document = { addEventListener: (ev, fn) => fn() };
+      requireAuth();
+      expect(global.window.location.href).toBe('start');
+    });
+  });
+
+  test('attaches requireAuth listener in browser context', () => {
+    const fs = require('fs');
+    const vm = require('vm');
+    const code = fs.readFileSync(require.resolve('../public/js/authHelper.js'), 'utf8');
+    const document = { addEventListener: jest.fn() };
+    vm.runInNewContext(code, { document, window: {} });
+    expect(document.addEventListener).toHaveBeenCalledWith('DOMContentLoaded', expect.any(Function));
+  });
 });

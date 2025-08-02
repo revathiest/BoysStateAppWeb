@@ -237,3 +237,108 @@ test('cancel buttons navigate home', () => {
   registerHandler();
   expect(global.window.location.href).toBe('/');
 });
+
+test('login success stores token and user', async () => {
+  let handler;
+  const loginForm = { addEventListener: jest.fn((ev, fn) => { if (ev === 'submit') handler = fn; }) };
+  const msgEl = { textContent: '', classList: { remove: jest.fn(), add: jest.fn() } };
+  const doc = {
+    getElementById: jest.fn(id => {
+      switch (id) {
+        case 'loginForm': return loginForm;
+        case 'loginEmail': return { value: 'user@example.com' };
+        case 'loginPassword': return { value: 'secret' };
+        case 'loginMessage': return msgEl;
+        case 'cancelLogin': return null;
+        case 'cancelRegister': return null;
+        case 'registerForm': return null;
+      }
+      return null;
+    }),
+    querySelectorAll: jest.fn(() => []),
+    addEventListener: jest.fn((ev, fn) => { if (ev === 'DOMContentLoaded') fn(); })
+  };
+  const fetchMock = jest.fn().mockResolvedValue({ ok: true, json: () => ({ token: 't' }) });
+  const storeAuthToken = jest.fn();
+  const storeUser = jest.fn();
+  global.window = { API_URL: 'http://api.test', logToServer: jest.fn(), location: { href: '' } };
+  global.document = doc;
+  global.fetch = fetchMock;
+  global.console = { error: jest.fn() };
+  global.alert = jest.fn();
+  global.storeAuthToken = storeAuthToken;
+  global.storeUser = storeUser;
+
+  jest.useFakeTimers();
+  require('../public/js/auth.js');
+  await handler({ preventDefault: () => {} });
+  jest.runAllTimers();
+  expect(storeAuthToken).toHaveBeenCalledWith('t');
+  expect(storeUser).toHaveBeenCalledWith('user@example.com');
+  expect(global.window.location.href).toBe('/public/console.html');
+  jest.useRealTimers();
+});
+
+test('login handles invalid JSON without server logging', async () => {
+  let handler;
+  const loginForm = { addEventListener: jest.fn((ev, fn) => { if (ev === 'submit') handler = fn; }) };
+  const msgEl = { textContent: '', classList: { remove: jest.fn(), add: jest.fn() } };
+  const doc = {
+    getElementById: jest.fn(id => {
+      switch (id) {
+        case 'loginForm': return loginForm;
+        case 'loginEmail': return { value: 'x' };
+        case 'loginPassword': return { value: 'y' };
+        case 'loginMessage': return msgEl;
+        case 'cancelLogin': return null;
+        case 'cancelRegister': return null;
+        case 'registerForm': return null;
+      }
+      return null;
+    }),
+    querySelectorAll: jest.fn(() => []),
+    addEventListener: jest.fn((ev, fn) => { if (ev === 'DOMContentLoaded') fn(); })
+  };
+  const fetchMock = jest.fn().mockResolvedValue({ ok: true, json: () => { throw new Error('bad'); } });
+  global.window = { API_URL: 'http://api.test', location: { href: '' } }; // no logToServer
+  global.document = doc;
+  global.fetch = fetchMock;
+  global.console = { error: jest.fn() };
+  global.alert = jest.fn();
+
+  require('../public/js/auth.js');
+  await handler({ preventDefault: () => {} });
+  expect(global.console.error).toHaveBeenCalled();
+});
+
+test('register handles invalid JSON without server logging', async () => {
+  let handler;
+  const registerForm = { addEventListener: jest.fn((ev, fn) => { if (ev === 'submit') handler = fn; }) };
+  const msgEl = { textContent: '', classList: { remove: jest.fn(), add: jest.fn() } };
+  const doc = {
+    getElementById: jest.fn(id => {
+      switch(id){
+        case 'registerForm': return registerForm;
+        case 'regEmail': return { value: 'a@b.com' };
+        case 'regPassword': return { value: 'p' };
+        case 'registerMessage': return msgEl;
+        case 'cancelLogin': return null;
+        case 'cancelRegister': return null;
+        case 'loginForm': return null;
+      }
+      return null;
+    }),
+    querySelectorAll: jest.fn(() => []),
+    addEventListener: jest.fn((ev, fn) => { if (ev === 'DOMContentLoaded') fn(); })
+  };
+  const fetchMock = jest.fn().mockResolvedValue({ status: 201, json: () => { throw new Error('bad'); } });
+  global.window = { API_URL: 'http://api.test', location: { href: '' } };
+  global.document = doc;
+  global.fetch = fetchMock;
+  global.console = { error: jest.fn() };
+  global.alert = jest.fn();
+
+  require('../public/js/auth.js');
+  await handler({ preventDefault: () => {} });
+  expect(global.console.error).toHaveBeenCalled();
+});

@@ -47,3 +47,52 @@ test('logger stringifies circular objects', () => {
   const body = JSON.parse(fetchMock.mock.calls[0][1].body);
   expect(body.message).toBe('[object Object]');
 });
+
+test('logger uses provided programId without auth headers', () => {
+  jest.resetModules();
+  const fetchMock = jest.fn().mockResolvedValue({});
+  global.window = { API_URL: 'http://api.test' }; // no getAuthHeaders
+  global.fetch = fetchMock;
+  global.console = { log: () => {}, warn: () => {}, error: () => {} };
+  require('../public/js/clientLogger.js');
+  window.logToServer('msg', { programId: 'abc', level: 'warn' });
+  const [url, opts] = fetchMock.mock.calls[0];
+  expect(url).toBe('http://api.test/logs');
+  const body = JSON.parse(opts.body);
+  expect(body.programId).toBe('abc');
+  expect(opts.headers.Authorization).toBeUndefined();
+});
+
+test('logger derives programId from window values', () => {
+  jest.resetModules();
+  const fetchMock = jest.fn().mockResolvedValue({});
+  global.window = { API_URL: 'http://api.test', programId: 'p1' };
+  global.fetch = fetchMock;
+  global.console = { log: () => {}, warn: () => {}, error: () => {} };
+  require('../public/js/clientLogger.js');
+  console.log('hi');
+  let body = JSON.parse(fetchMock.mock.calls[0][1].body);
+  expect(body.programId).toBe('p1');
+
+  jest.resetModules();
+  const fetchMock2 = jest.fn().mockResolvedValue({});
+  global.window = { API_URL: 'http://api.test', selectedProgramId: 'p2' };
+  global.fetch = fetchMock2;
+  global.console = { log: () => {}, warn: () => {}, error: () => {} };
+  require('../public/js/clientLogger.js');
+  console.log('hi');
+  body = JSON.parse(fetchMock2.mock.calls[0][1].body);
+  expect(body.programId).toBe('p2');
+});
+
+test('logger stringifies plain objects', () => {
+  jest.resetModules();
+  const fetchMock = jest.fn().mockResolvedValue({});
+  global.window = { API_URL: 'http://api.test' };
+  global.fetch = fetchMock;
+  global.console = { log: () => {}, warn: () => {}, error: () => {} };
+  require('../public/js/clientLogger.js');
+  console.log({ foo: 'bar' });
+  const body = JSON.parse(fetchMock.mock.calls[0][1].body);
+  expect(body.message).toBe('{"foo":"bar"}');
+});

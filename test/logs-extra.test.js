@@ -105,3 +105,58 @@ test('fetchLogs handles server error', async () => {
   expect(fetchMock).toHaveBeenCalled();
   expect(pager.appendChild).not.toHaveBeenCalled();
 });
+
+test('loadPrograms populates selector on success', async () => {
+  const select = { innerHTML:'', appendChild: jest.fn() };
+  const applyBtn = { addEventListener: jest.fn() };
+  const filtersForm = { addEventListener: jest.fn() };
+  const doc = {
+    getElementById: jest.fn(id => {
+      if (id === 'apply') return applyBtn;
+      if (id === 'filters') return filtersForm;
+      return select;
+    }),
+    querySelector: jest.fn(() => ({ innerHTML:'', appendChild: jest.fn() })),
+    querySelectorAll: jest.fn(() => []),
+    addEventListener: jest.fn(),
+    createElement: jest.fn(() => ({ value:'', textContent:'', appendChild: jest.fn() }))
+  };
+  const programs = [{ programId:'1', programName:'P1' }, { programId:'2', programName:'P2' }];
+  const fetchMock = jest.fn().mockResolvedValue({ ok:true, json: async () => ({ programs }) });
+  const ctx = {
+    window:{ API_URL:'http://api.test' },
+    document: doc,
+    fetch: fetchMock,
+    console:{ log: jest.fn(), error: jest.fn() },
+    sessionStorage:{ getItem: ()=>'user1' },
+    alert: jest.fn()
+  };
+  loadModule(ctx);
+  const res = await ctx.loadPrograms();
+  expect(res.length).toBe(2);
+  expect(select.appendChild).toHaveBeenCalledTimes(2);
+});
+
+test('fetchLogs redirects on unauthorized', async () => {
+  const tbody = { innerHTML:'', appendChild: jest.fn() };
+  const pager = { innerHTML:'', appendChild: jest.fn() };
+  const doc = {
+    querySelector: jest.fn(() => tbody),
+    getElementById: jest.fn(id => { if(id==='pager') return pager; return { value:'p1', addEventListener: jest.fn() }; }),
+    createElement: jest.fn(() => ({ setAttribute: jest.fn(), appendChild: jest.fn(), textContent:'' })),
+    addEventListener: jest.fn()
+  };
+  const fetchMock = jest.fn().mockResolvedValue({ ok:false, status:401 });
+  const ctx = {
+    window:{ API_URL:'http://api.test', logToServer: jest.fn(), location:{ href:'' } },
+    document: doc,
+    fetch: fetchMock,
+    console:{ log: jest.fn(), error: jest.fn() },
+    URLSearchParams,
+    sessionStorage:{ getItem: ()=>'abc' },
+    alert: jest.fn()
+  };
+  loadModule(ctx);
+  await ctx.fetchLogs({ programId:'p1' });
+  expect(ctx.window.location.href).toBe('login.html');
+});
