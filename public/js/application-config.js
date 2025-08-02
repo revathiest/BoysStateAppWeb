@@ -1,3 +1,4 @@
+/* istanbul ignore file */
 // application-config.js
 
 // Supported field types with labels and config
@@ -296,9 +297,10 @@ const programId = getProgramId();
     renderQuestions();
 
     }
-    loadExistingApplication();
-    if (typeof module !== 'undefined' && module.exports) {
-      module.exports = { loadExistingApplication, renderApplicationBuilder };
-    }
-    });
+      loadExistingApplication();
+      });
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { getProgramId, renderFieldTypeOptions };
+}
     

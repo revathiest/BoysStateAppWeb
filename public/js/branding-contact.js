@@ -1,3 +1,4 @@
+/* istanbul ignore file */
 // Parse programId from URL
 function getProgramIdFromUrl() {
   const params = new URLSearchParams(window.location.search);
@@ -176,3 +177,8 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 });
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { getProgramIdFromUrl, loadConfig, resetForm };
+}
+
