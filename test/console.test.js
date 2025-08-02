@@ -129,3 +129,26 @@ test('logout button click navigates to login page', async () => {
   clickHandler();
   expect(global.window.location.href).toBe('login.html');
 });
+
+test('console handles non-401 failure without redirect', async () => {
+  let ready;
+  const logoutBtn = { addEventListener: jest.fn() };
+  const document = {
+    getElementById: jest.fn(id => {
+      if (id === 'logoutBtn') return logoutBtn;
+      if (id === 'main-content') return { classList: { remove: jest.fn() } };
+      return null;
+    }),
+    addEventListener: jest.fn((ev, fn) => { if (ev === 'DOMContentLoaded') ready = fn; })
+  };
+  const fetchMock = jest.fn().mockResolvedValue({ ok: false, status: 500 });
+  global.window = { API_URL: 'http://api.test', logToServer: jest.fn(), location: { href: '' } };
+  global.document = document;
+  global.fetch = fetchMock;
+  global.console = { error: jest.fn(), log: jest.fn() };
+  global.alert = jest.fn();
+
+  require('../public/js/console.js');
+  await ready();
+  expect(global.window.location.href).toBe('');
+});
