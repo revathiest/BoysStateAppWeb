@@ -12,3 +12,7 @@ async function fetchApplicationConfig(programId) {
     return await response.json();
 }
 
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = { getProgramId, fetchApplicationConfig };
+}
+

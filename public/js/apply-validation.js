@@ -144,3 +144,7 @@ function addValidationListeners(form, config) {
       });
 }
 
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = { validateField, addValidationListeners };
+}
+
