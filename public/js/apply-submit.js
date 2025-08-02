@@ -13,7 +13,7 @@ async function handleFormSubmit(e, form, config, formStatus) {
       return;
     }
 
-    const data = {};
+    const answers = [];
     let errors = [];
 
     for (const q of config.questions) {
@@ -92,7 +92,7 @@ async function handleFormSubmit(e, form, config, formStatus) {
 
         case "file":
           const files = form[name]?.files;
-          value = files && files.length > 0 ? files : null;
+          value = files && files.length > 0 ? Array.from(files).map(f => f.name) : null;
           if (q.required && (!files || files.length === 0)) {
             errors.push(`Please upload a file for: "${q.text}"`);
           }
@@ -122,7 +122,7 @@ async function handleFormSubmit(e, form, config, formStatus) {
         // Add more as needed!
       }
 
-      data[q.id] = value;
+      answers.push({ questionId: q.id, value });
     }
 
     if (errors.length) {
@@ -132,12 +132,28 @@ async function handleFormSubmit(e, form, config, formStatus) {
       return;
     }
 
-    // TODO: Post data to backend here!
-    // await fetch(`${window.API_URL}/api/public/applications/${programId}/submit`, {method:'POST', body:JSON.stringify(data)})
+    const programId = getProgramId();
+    try {
+      const response = await fetch(`${window.API_URL}/api/programs/${encodeURIComponent(programId)}/application/responses`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ answers })
+      });
 
-    formStatus.textContent = "Application submitted! Thank you for applying.";
-    formStatus.classList.remove('hidden', 'text-red-700');
-    formStatus.classList.add('text-green-700');
-    form.reset();
+      if (!response.ok) {
+        throw new Error('Failed to submit application');
+      }
+
+      formStatus.textContent = "Application submitted! Thank you for applying.";
+      formStatus.classList.remove('hidden', 'text-red-700');
+      formStatus.classList.add('text-green-700');
+      form.reset();
+    } catch (err) {
+      formStatus.textContent = "Submission failed. Please try again later.";
+      formStatus.classList.remove('hidden', 'text-green-700');
+      formStatus.classList.add('text-red-700');
+    }
 }
 
