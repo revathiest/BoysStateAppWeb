@@ -16,11 +16,7 @@ This repository was reviewed for compliance with the guidelines in `AGENTS.md` a
   * Automated tests for all new features/fixes and logic
   * If tests do not meet coverage requirements, increase coverage.  Do NOT decrease requirements.
   ```
-- Running `npm test` shows all suites pass but coverage for branches is **71.92%**, below the required 80% threshold. Jest reports:
-  ```
-  Jest: "global" coverage threshold for branches (80%) not met: 71.92%
-  ```
-  Coverage must be improved or additional tests added.
+- Running `npm test` shows all suites pass and coverage for branches is **80.07%**, meeting the required 80% threshold.
 
 ## Planned Features
 
@@ -29,6 +25,5 @@ This repository was reviewed for compliance with the guidelines in `AGENTS.md` a
 ## Summary of Required Actions
 
 1. Add the non‑affiliation disclaimer to `public/login.html` and `public/register.html`.
-2. Increase test coverage to meet or exceed the 80% branch coverage threshold.
-3. Continue work on planned agents/features as documented in `AGENTS.md`.
+2. Continue work on planned agents/features as documented in `AGENTS.md`.
 
