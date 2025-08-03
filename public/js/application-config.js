@@ -34,6 +34,34 @@ const programId = getProgramId();
 let currentYear;
 let currentType = 'delegate';
 
+function showError(msg) {
+  const box = document.getElementById('errorBox');
+  if (box) {
+    box.textContent = msg;
+    box.style.display = 'block';
+  }
+}
+
+function clearError() {
+  const box = document.getElementById('errorBox');
+  if (box) {
+    box.textContent = '';
+    box.style.display = 'none';
+  }
+}
+
+function showSuccess(msg) {
+  const box = document.getElementById('successBox');
+  if (box) {
+    box.textContent = msg;
+    box.style.display = 'block';
+    setTimeout(() => {
+      box.style.display = 'none';
+      box.textContent = '';
+    }, 2000);
+  }
+}
+
 async function createOrCopyApplication({ programId, year, type, copyFromYear = null, fetchFn = fetch }) {
   if (!programId || !year || !type) {
     throw new Error('Missing parameters');
@@ -118,11 +146,49 @@ async function createOrCopyApplication({ programId, year, type, copyFromYear = n
     const newAppType = document.getElementById('new-app-type');
     const copyYearSelect = document.getElementById('copy-from-year');
     const cancelNewApp = document.getElementById('cancel-new-app');
+    const createSubmit = document.getElementById('create-app-submit');
+    const currentSelHeading = document.getElementById('current-selection');
+    const noAppMsg = document.getElementById('no-app-message');
 
     let yearsList = [];
+    let existingApplications = {};
+
+    function updateCurrentSelection() {
+      if (currentYear && currentType && currentSelHeading) {
+        const typeLabel = currentType.charAt(0).toUpperCase() + currentType.slice(1);
+        currentSelHeading.textContent = `${currentYear} ${typeLabel} Application`;
+      }
+    }
 
     function updateCopyOptions() {
-      copyYearSelect.innerHTML = '<option value="">No</option>' + yearsList.map(y => `<option value="${y.year}">${y.year}</option>`).join('');
+      const yearVal = parseInt(newAppYear.value, 10);
+      const typeVal = newAppType.value;
+      const options = Object.keys(existingApplications)
+        .filter(y => existingApplications[y] && existingApplications[y][typeVal] && (!isNaN(yearVal) ? +y < yearVal : true));
+      if (options.length) {
+        copyYearSelect.disabled = false;
+        copyYearSelect.innerHTML = '<option value="">No</option>' + options.sort((a,b)=>b-a).map(y => `<option value="${y}">${y}</option>`).join('');
+      } else {
+        copyYearSelect.disabled = true;
+        copyYearSelect.innerHTML = '<option value="">No prior applications available</option>';
+      }
+    }
+
+    function validateNewAppForm() {
+      const year = parseInt(newAppYear.value, 10);
+      const type = newAppType.value;
+      let valid = true;
+      const yearErr = document.getElementById('year-error');
+      if (yearErr) yearErr.textContent = '';
+      if (!year) {
+        if (yearErr) yearErr.textContent = 'Year required';
+        valid = false;
+      } else if (existingApplications[year] && existingApplications[year][type]) {
+        if (yearErr) yearErr.textContent = 'Application already exists for this year/type';
+        valid = false;
+      }
+      if (createSubmit) createSubmit.disabled = !valid;
+      return valid;
     }
 
     async function refreshYears() {
@@ -135,6 +201,23 @@ async function createOrCopyApplication({ programId, year, type, copyFromYear = n
           credentials: 'include'
         });
         yearsList = res.ok ? await res.json() : [];
+        existingApplications = {};
+        for (const y of yearsList) {
+          existingApplications[y.year] = { delegate: false, staff: false };
+          for (const t of ['delegate','staff']) {
+            try {
+              const aRes = await fetch(`${window.API_URL}/api/programs/${encodeURIComponent(programId)}/application?year=${encodeURIComponent(y.year)}&type=${t}`, {
+                headers: {
+                  ...(typeof getAuthHeaders === 'function' ? getAuthHeaders() : {})
+                },
+                credentials: 'include'
+              });
+              existingApplications[y.year][t] = aRes.ok;
+            } catch {
+              existingApplications[y.year][t] = false;
+            }
+          }
+        }
         yearSelect.innerHTML = yearsList.map(y => `<option value="${y.year}">${y.year}</option>`).join('');
         if (yearsList.length) {
           currentYear = yearSelect.value || yearsList[0].year;
@@ -155,48 +238,82 @@ async function createOrCopyApplication({ programId, year, type, copyFromYear = n
 
     yearSelect.addEventListener('change', () => {
       currentYear = yearSelect.value;
+      updateCurrentSelection();
       loadExistingApplication(currentYear, currentType);
       setPublicLink();
     });
 
     typeSelect.addEventListener('change', () => {
       currentType = typeSelect.value;
+      updateCurrentSelection();
       loadExistingApplication(currentYear, currentType);
-      updateCopyOptions();
       setPublicLink();
     });
 
     newAppBtn.addEventListener('click', () => {
+      clearError();
       newAppForm.classList.remove('hidden');
       newAppYear.value = '';
       newAppType.value = currentType;
       updateCopyOptions();
+      validateNewAppForm();
     });
 
-    cancelNewApp.addEventListener('click', () => newAppForm.classList.add('hidden'));
+    cancelNewApp.addEventListener('click', () => {
+      newAppForm.classList.add('hidden');
+      newAppYear.value = '';
+      const yearErr = document.getElementById('year-error');
+      if (yearErr) yearErr.textContent = '';
+    });
+
+    newAppYear.addEventListener('input', () => {
+      updateCopyOptions();
+      validateNewAppForm();
+    });
+
+    newAppType.addEventListener('change', () => {
+      updateCopyOptions();
+      validateNewAppForm();
+    });
 
     newAppForm.addEventListener('submit', async e => {
       e.preventDefault();
-      const year = parseInt(newAppYear.value);
+      if (!validateNewAppForm()) return;
+      const year = parseInt(newAppYear.value, 10);
       const type = newAppType.value;
-      const copyFrom = copyYearSelect.value || null;
+      const copyFrom = copyYearSelect.disabled ? null : (copyYearSelect.value || null);
+      if (createSubmit) {
+        createSubmit.disabled = true;
+        createSubmit.textContent = 'Creating...';
+      }
+      clearError();
       try {
         await createOrCopyApplication({ programId, year, type, copyFromYear: copyFrom });
         newAppForm.classList.add('hidden');
+        newAppYear.value = '';
+        copyYearSelect.value = '';
+        showSuccess('Application created');
         await refreshYears();
         currentYear = String(year);
         currentType = type;
         yearSelect.value = currentYear;
         typeSelect.value = currentType;
+        updateCurrentSelection();
         loadExistingApplication(currentYear, currentType);
         setPublicLink();
       } catch (err) {
-        alert(err.message || 'Failed to create application');
+        showError(err.message || 'Failed to create application');
+      } finally {
+        if (createSubmit) {
+          createSubmit.disabled = false;
+          createSubmit.textContent = 'Create';
+        }
       }
     });
 
     async function loadExistingApplication(year, type) {
       if (!programId || !window.API_URL || !year) return;
+      builderRoot.innerHTML = '<div class="text-center p-4" id="loading">Loading...</div>';
       try {
         const res = await fetch(`${window.API_URL}/api/programs/${encodeURIComponent(programId)}/application?year=${encodeURIComponent(year)}&type=${encodeURIComponent(type)}`, {
           headers: {
@@ -208,13 +325,17 @@ async function createOrCopyApplication({ programId, year, type, copyFromYear = n
           const data = await res.json();
           card.style.display = 'none';
           renderApplicationBuilder(data);
+          clearError();
         } else {
           card.style.display = '';
           builderRoot.innerHTML = '';
+          if (noAppMsg) noAppMsg.textContent = `No application form defined for ${year} ${type}.`;
         }
       } catch {
         card.style.display = '';
         builderRoot.innerHTML = '';
+        if (noAppMsg) noAppMsg.textContent = `No application form defined for ${year} ${type}.`;
+        showError('Failed to load application');
       }
     }
 
@@ -231,13 +352,14 @@ async function createOrCopyApplication({ programId, year, type, copyFromYear = n
     refreshYears().then(() => {
       if (yearSelect.value) {
         currentYear = yearSelect.value;
+        updateCurrentSelection();
         loadExistingApplication(currentYear, currentType);
         setPublicLink();
       }
     });
 
     function renderApplicationBuilder(appData = {}) {
-    builderRoot.innerHTML = `       <form id="application-builder-form" class="bg-white rounded-2xl shadow-lg p-8 sm:p-12 max-w-4xl w-full mx-auto border-t-4 border-legend-gold flex flex-col gap-6">         <div>           <label class="block text-lg font-bold text-legend-blue mb-2">Application Title</label>           <input type="text" id="app-title" class="border rounded-xl px-4 py-2 w-full" placeholder="e.g. 2025 Boys State Delegate Application" required />         </div>         <div>           <label class="block text-base font-semibold text-gray-700 mb-2">Application Description</label>           <textarea id="app-description" class="border rounded-xl px-4 py-2 w-full min-h-[60px]" placeholder="Describe this application form"></textarea>         </div>         <div>           <label class="block text-base font-semibold text-gray-700 mb-2">Questions</label>           <div id="questions-list" class="flex flex-col gap-4"></div>           <button type="button" id="add-question-btn" class="mt-6 bg-legend-blue hover:bg-legend-gold text-white font-bold py-2 px-4 rounded-xl shadow transition">             + Add Question           </button>         </div>         <button type="submit" class="bg-legend-blue hover:bg-legend-gold text-white font-bold py-2 px-8 rounded-xl shadow transition self-center mt-4">
+    builderRoot.innerHTML = `       <form id="application-builder-form" class="bg-white rounded-2xl shadow-lg p-8 sm:p-12 max-w-4xl w-full mx-auto border-t-4 border-legend-gold flex flex-col gap-6">         <div>           <label class="block text-lg font-bold text-legend-blue mb-2" for="app-title">Application Title</label>           <input type="text" id="app-title" aria-label="Application title" class="border rounded-xl px-4 py-2 w-full" placeholder="e.g. 2025 Boys State Delegate Application" required />         </div>         <div>           <label class="block text-base font-semibold text-gray-700 mb-2" for="app-description">Application Description</label>           <textarea id="app-description" aria-label="Application description" class="border rounded-xl px-4 py-2 w-full min-h-[60px]" placeholder="Describe this application form"></textarea>         </div>         <div>           <label class="block text-base font-semibold text-gray-700 mb-2" for="questions-list">Questions</label>           <div id="questions-list" class="flex flex-col gap-4"></div>           <button type="button" id="add-question-btn" aria-label="Add question" class="mt-6 bg-legend-blue hover:bg-legend-gold text-white font-bold py-2 px-4 rounded-xl shadow transition">             + Add Question           </button>         </div>         <button type="submit" class="bg-legend-blue hover:bg-legend-gold text-white font-bold py-2 px-8 rounded-xl shadow transition self-center mt-4">
               Save Application         </button>       </form>
         `;
     let questions = Array.isArray(appData.questions) ? appData.questions : [];
@@ -265,12 +387,14 @@ async function createOrCopyApplication({ programId, year, type, copyFromYear = n
             <div id="opts-${idx}">
               ${q.options.map((opt, oidx) => `
                 <div class="flex gap-2 items-center mb-1">
-                  <input type="text" class="border rounded px-2 py-1 flex-1 text-sm" value="${opt}" data-optidx="${oidx}" data-qidx="${idx}" />
+                  <label for="q${idx}-opt-${oidx}" class="sr-only">Option ${oidx + 1}</label>
+                  <input id="q${idx}-opt-${oidx}" type="text" aria-label="Option ${oidx + 1}" class="border rounded px-2 py-1 flex-1 text-sm" value="${opt}" data-optidx="${oidx}" data-qidx="${idx}" />
                   <button type="button" class="text-red-600 hover:underline text-xs" data-remove-opt="${oidx}" data-qidx="${idx}">Remove</button>
                 </div>`).join('')}
             </div>
             <div class="flex mt-2 gap-2">
-              <input type="text" class="border rounded px-2 py-1 text-sm" placeholder="Add option..." id="add-opt-${idx}" />
+              <label for="add-opt-${idx}" class="sr-only">New option</label>
+              <input type="text" id="add-opt-${idx}" aria-label="New option" class="border rounded px-2 py-1 text-sm" placeholder="Add option..." />
               <button type="button" class="bg-gray-200 text-xs px-2 py-1 rounded" data-add-opt="${idx}">Add</button>
             </div>
           </div>
@@ -279,12 +403,12 @@ async function createOrCopyApplication({ programId, year, type, copyFromYear = n
         optionsHTML = `
           <div class="ml-4 mt-2 flex gap-4 items-center">
             <div>
-              <label class="block text-xs text-gray-500 mb-1">Allowed Types (comma, e.g. .pdf,.jpg)</label>
-              <input type="text" class="border rounded px-2 py-1 text-sm" placeholder=".pdf,.jpg" value="${q.accept || ''}" data-file-accept="${idx}" />
+              <label class="block text-xs text-gray-500 mb-1" for="file-accept-${idx}">Allowed Types (comma, e.g. .pdf,.jpg)</label>
+              <input id="file-accept-${idx}" type="text" aria-label="Allowed file types" class="border rounded px-2 py-1 text-sm" placeholder=".pdf,.jpg" value="${q.accept || ''}" data-file-accept="${idx}" />
             </div>
             <div>
-              <label class="block text-xs text-gray-500 mb-1">Max Files</label>
-              <input type="number" min="1" class="border rounded px-2 py-1 text-sm w-20" placeholder="1" value="${q.maxFiles || 1}" data-file-maxfiles="${idx}" />
+              <label class="block text-xs text-gray-500 mb-1" for="file-max-${idx}">Max Files</label>
+              <input id="file-max-${idx}" type="number" min="1" aria-label="Max files" class="border rounded px-2 py-1 text-sm w-20" placeholder="1" value="${q.maxFiles || 1}" data-file-maxfiles="${idx}" />
             </div>
           </div>
         `;
@@ -298,11 +422,16 @@ async function createOrCopyApplication({ programId, year, type, copyFromYear = n
       return `
         <div class="border rounded-xl p-4 bg-gray-50 flex flex-col gap-2">
           <div class="flex gap-2 items-center mb-2">
-            <input type="text" class="border rounded px-3 py-2 flex-1" placeholder="Question text/label" value="${q.text || ''}" data-idx="${idx}" />
-            <select class="border rounded px-2 py-2 text-sm" data-type-idx="${idx}">
+            <label for="q-text-${idx}" class="sr-only">Question text</label>
+            <input id="q-text-${idx}" type="text" aria-label="Question text" class="border rounded px-3 py-2 flex-1" placeholder="Question text/label" value="${q.text || ''}" data-idx="${idx}" />
+            <label for="q-type-${idx}" class="sr-only">Field type</label>
+            <select id="q-type-${idx}" aria-label="Field type" class="border rounded px-2 py-2 text-sm" data-type-idx="${idx}">
               ${renderFieldTypeOptions(q.type)}
             </select>
-            <input type="checkbox" class="ml-2" ${q.required ? 'checked' : ''} data-required-idx="${idx}" title="Required" /> Required
+            <div class="flex items-center ml-2">
+              <input id="q-req-${idx}" type="checkbox" class="" ${q.required ? 'checked' : ''} data-required-idx="${idx}" aria-label="Required" />
+              <label for="q-req-${idx}" class="ml-1">Required</label>
+            </div>
             <button type="button" class="text-red-600 hover:underline ml-2" data-remove="${idx}">Remove</button>
           </div>
           ${optionsHTML}
@@ -414,10 +543,16 @@ async function createOrCopyApplication({ programId, year, type, copyFromYear = n
       // Remove empty or invalid questions
       const filteredQuestions = questions.filter(q => q.text.trim() !== "");
       if (!programId || !currentYear || !currentType) {
-        alert('Missing program id');
+        showError('Missing program id');
         return;
       }
       const payload = { year: currentYear, type: currentType, title, description, questions: filteredQuestions };
+      const saveBtn = document.querySelector('#application-builder-form button[type="submit"]');
+      if (saveBtn) {
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Saving...';
+      }
+      clearError();
       try {
         const res = await fetch(`${window.API_URL}/api/programs/${encodeURIComponent(programId)}/application`, {
           method: 'PUT',
@@ -429,12 +564,17 @@ async function createOrCopyApplication({ programId, year, type, copyFromYear = n
           body: JSON.stringify(payload)
         });
         if (res.ok || res.status === 201) {
-          alert('Application Saved!');
+          showSuccess('Application saved');
         } else {
-          alert('Failed to save application');
+          showError('Failed to save application');
         }
       } catch {
-        alert('Failed to save application');
+        showError('Failed to save application');
+      } finally {
+        if (saveBtn) {
+          saveBtn.disabled = false;
+          saveBtn.textContent = 'Save Application';
+        }
       }
     };
 
@@ -446,6 +586,7 @@ async function createOrCopyApplication({ programId, year, type, copyFromYear = n
         const status = document.getElementById('copyStatus');
         status.style.display = '';
         setTimeout(() => status.style.display = 'none', 1200);
+        showSuccess('Link copied');
       });
     };
     
