@@ -84,8 +84,9 @@ function renderApplicationForm(config) {
             <input type="text" name="${name}_line1" placeholder="Address line 1" class="w-full border rounded px-3 py-2 mb-2" ${required}>
             <input type="text" name="${name}_line2" placeholder="Address line 2" class="w-full border rounded px-3 py-2 mb-2">
             <div class="flex gap-2">
-              <input type="text" name="${name}_city" placeholder="City" class="flex-1 border rounded px-3 py-2" ${required}>
-              <input type="text" name="${name}_state" placeholder="State" class="w-20 border rounded px-3 py-2" ${required}>
+              <input type="text" name="${name}_city" list="${name}_city_list" placeholder="City" class="flex-1 border rounded px-3 py-2" ${required}>
+              <datalist id="${name}_city_list"></datalist>
+              <select name="${name}_state" class="w-20 border rounded px-3 py-2" ${required}></select>
               <input type="text" name="${name}_zip" placeholder="ZIP" class="w-24 border rounded px-3 py-2" ${required}>
             </div>`;
           break;

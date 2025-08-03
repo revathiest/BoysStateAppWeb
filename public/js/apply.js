@@ -16,6 +16,7 @@ document.addEventListener('DOMContentLoaded', async function() {
       const formStatus = document.getElementById('formStatus');
 
       addValidationListeners(form, config);
+      try { initAddressHelpers(form); } catch {}
 
       form.onsubmit = async function (e) {
         await handleFormSubmit(e, form, config, formStatus);
