@@ -16,7 +16,8 @@ module.exports = {                               // Use ts-jest for TypeScript s
     'src/**/*.{js,ts}',
     'public/**/*.{js,ts}',
     '!**/node_modules/**',
-    '!**/__mocks__/**'
+    '!**/__mocks__/**',
+    '!public/js/config.js'
   ],
     coverageThreshold: {
       global: {
