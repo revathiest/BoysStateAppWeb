@@ -137,6 +137,19 @@ describe('application-config.js', () => {
     expect(elements['publicApplicationUrl'].value).toContain('apply.html?programId=p1');
     expect(elements['publicApplicationUrl'].value).toContain('year=2024');
     expect(elements['publicApplicationUrl'].value).toContain('type=delegate');
+
+    await new Promise(r => setTimeout(r, 0));
+
+    const yearInputHandler = elements['new-app-year'].addEventListener.mock.calls.find(([ev]) => ev === 'input')[1];
+    elements['new-app-year'].value = '2025';
+    yearInputHandler();
+    expect(elements['copy-from-year'].innerHTML).not.toBe('');
+    expect(elements['create-app-submit'].disabled).toBe(false);
+
+    elements['new-app-year'].value = '';
+    yearInputHandler();
+    expect(elements['year-error'].textContent).toBe('Year required');
+    expect(elements['create-app-submit'].disabled).toBe(true);
   });
 
   test('createOrCopyApplication creates year and copies from previous', async () => {

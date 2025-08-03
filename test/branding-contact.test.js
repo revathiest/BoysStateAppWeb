@@ -88,8 +88,20 @@ describe('branding-contact.js', () => {
     expect(elements.welcomeMessage.value).toBe('');
   });
 
+  test('loadBrandingContactFromApi handles fetch error', async () => {
+    global.fetch = jest.fn(() => Promise.reject(new Error('fail')));
+    await funcs.loadBrandingContactFromApi();
+    expect(elements.errorMsg.style.display).toBe('block');
+  });
+
   test('saveConfig handles failure', async () => {
     global.fetch = jest.fn(() => Promise.resolve({ ok: false }));
+    await funcs.saveConfig();
+    expect(elements.errorMsg.style.display).toBe('block');
+  });
+
+  test('saveConfig handles fetch error', async () => {
+    global.fetch = jest.fn(() => Promise.reject(new Error('boom')));
     await funcs.saveConfig();
     expect(elements.errorMsg.style.display).toBe('block');
   });
