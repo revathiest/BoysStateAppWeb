@@ -1,4 +1,3 @@
-/* istanbul ignore file */
 // js/apply-form.js
 
 function renderApplicationForm(config) {

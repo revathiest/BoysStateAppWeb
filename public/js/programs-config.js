@@ -1,4 +1,3 @@
-/* istanbul ignore file */
 // programs-config.js
 
 const apiBase = window.API_URL || ""; // Or your own config mechanism

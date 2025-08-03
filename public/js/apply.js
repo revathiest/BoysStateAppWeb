@@ -1,10 +1,8 @@
-/* istanbul ignore file */
 // js/apply.js
 
 const programId = getProgramId();
 
 document.addEventListener('DOMContentLoaded', async function() {
-    debugger;
     if (!programId) {
       document.getElementById('applicationForm').innerHTML = '<div class="text-red-700">No program selected. Please use a valid application link.</div>';
       return;

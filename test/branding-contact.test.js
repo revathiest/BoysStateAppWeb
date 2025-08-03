@@ -47,5 +47,14 @@ describe('branding-contact.js', () => {
     expect(document.getElementById('primaryColor').value).toBe('#111');
     expect(document.getElementById('contactFacebook').value).toBe('f');
   });
+
+  test('resetForm clears fields to defaults', () => {
+    // populate some values first
+    document.getElementById('welcomeMessage').value = 'x';
+    document.getElementById('primaryColor').value = '#000';
+    funcs.resetForm();
+    expect(document.getElementById('welcomeMessage').value).toBe('');
+    expect(document.getElementById('primaryColor').value).toBe('#0C2340');
+  });
 });
 
