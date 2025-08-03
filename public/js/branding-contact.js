@@ -178,6 +178,6 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { getProgramIdFromUrl, loadConfig, resetForm };
+  module.exports = { getProgramIdFromUrl, loadConfig, resetForm, loadBrandingContactFromApi, saveConfig };
 }
 

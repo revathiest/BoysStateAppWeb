@@ -44,6 +44,17 @@ describe('programs-config.js', () => {
     expect(linkA.href).toBe('a?programId=p2');
   });
 
+  test('renderProgramSelector handles no programs', () => {
+    funcs.renderProgramSelector([], null);
+    expect(global.container.innerHTML).toContain('No programs found');
+  });
+
+  test('updateConfigLinks updates hrefs', () => {
+    funcs.updateConfigLinks('xyz');
+    expect(global.link.href).toBe('page?programId=xyz');
+    expect(global.window.selectedProgramId).toBe('xyz');
+  });
+
   test('fetchProgramsAndRenderSelector fetches and renders', async () => {
     global.localStorage.getItem = jest.fn(() => 'user');
     global.getAuthHeaders = () => ({});
@@ -54,6 +65,26 @@ describe('programs-config.js', () => {
     await funcs.fetchProgramsAndRenderSelector();
     expect(global.fetch).toHaveBeenCalled();
     expect(global.container.innerHTML).toContain('Prog1');
+  });
+
+  test('getUsername falls back to sessionStorage', () => {
+    global.localStorage.getItem = jest.fn(() => null);
+    global.sessionStorage.getItem = jest.fn(() => 'sess');
+    expect(funcs.getUsername()).toBe('sess');
+  });
+
+  test('fetchProgramsAndRenderSelector shows message when no user', async () => {
+    global.localStorage.getItem = jest.fn(() => null);
+    await funcs.fetchProgramsAndRenderSelector();
+    expect(global.container.innerHTML).toContain('No user found');
+  });
+
+  test('fetchProgramsAndRenderSelector handles errors', async () => {
+    global.localStorage.getItem = jest.fn(() => 'user');
+    global.getAuthHeaders = () => ({});
+    global.fetch = jest.fn(() => Promise.reject(new Error('fail')));
+    await funcs.fetchProgramsAndRenderSelector();
+    expect(global.container.innerHTML).toContain('Error loading programs');
   });
 });
 
