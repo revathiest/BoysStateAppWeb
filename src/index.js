@@ -43,6 +43,7 @@ const publicDir = path.join(__dirname, '..', 'public');
 // will simply return no matches.
 let cityToStates = {};
 let zipToStates = {};
+let zipToCities = {};
 let cityList = [];
 try {
   const zPath = path.join(__dirname, '..', 'docs', 'zipData.json');
@@ -54,11 +55,14 @@ try {
     if (!cityToStates[c].includes(state)) cityToStates[c].push(state);
     if (!zipToStates[zip]) zipToStates[zip] = [];
     if (!zipToStates[zip].includes(state)) zipToStates[zip].push(state);
+    if (!zipToCities[zip]) zipToCities[zip] = [];
+    if (!zipToCities[zip].includes(c)) zipToCities[zip].push(c);
   });
   cityList = Object.keys(cityToStates);
 } catch {
   cityToStates = {};
   zipToStates = {};
+  zipToCities = {};
   cityList = [];
 }
 
@@ -145,13 +149,17 @@ function createServer() {
       const result = {};
       if (cityQuery) {
         const prefix = cityQuery.toUpperCase();
-        result.cities = cityList.filter(c => c.startsWith(prefix)).slice(0, 10);
-        if (cityToStates[prefix]) {
-          result.states = cityToStates[prefix];
+        const matches = cityList.filter(c => c.startsWith(prefix));
+        result.cities = matches.slice(0, 10);
+        if (matches.length) {
+          const stateSet = new Set();
+          matches.forEach(c => cityToStates[c].forEach(s => stateSet.add(s)));
+          result.states = Array.from(stateSet);
         }
       }
       if (zipQuery) {
         result.states = zipToStates[zipQuery] || [];
+        result.cities = zipToCities[zipQuery] || [];
       }
       res.writeHead(200, { 'Content-Type': 'application/json' });
       return res.end(JSON.stringify(result));

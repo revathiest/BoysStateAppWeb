@@ -37,11 +37,15 @@ function initAddressHelpers(form) {
         if (!res.ok) return;
         const data = await res.json();
         const errDiv = document.getElementById(`err_${base}`);
-        if (data.states && stateSelect.value && !data.states.includes(stateSelect.value)) {
-          errDiv.textContent = 'ZIP code does not match selected state.';
-        } else if (errDiv.textContent === 'ZIP code does not match selected state.') {
-          errDiv.textContent = '';
+        let err = '';
+        const enteredState = stateSelect.value;
+        const enteredCity = cityInput.value.trim().toUpperCase();
+        if (data.states && enteredState && !data.states.includes(enteredState)) {
+          err = 'ZIP code does not match selected state.';
+        } else if (data.cities && enteredCity && !data.cities.includes(enteredCity)) {
+          err = 'ZIP code does not match entered city.';
         }
+        errDiv.textContent = err;
       } catch {}
     });
   });
