@@ -32,6 +32,37 @@ describe('handleFormSubmit', () => {
     expect(form.reset).toHaveBeenCalled();
   });
 
+  test('includes address answers in payload', async () => {
+    global.validateField = jest.fn().mockReturnValue(true);
+    const form = {
+      q_addr_line1: { value: '123 Main St' },
+      q_addr_line2: { value: 'Apt 4' },
+      q_addr_city: { value: 'Springfield' },
+      q_addr_state: { value: 'IL' },
+      q_addr_zip: { value: '62704' },
+      reset: jest.fn()
+    };
+    const formStatus = { textContent: '', classList: { remove: jest.fn(), add: jest.fn() } };
+    const config = { questions: [{ id: 'addr', type: 'address', text: 'Address', required: true }] };
+    await handleFormSubmit({ preventDefault(){} }, form, config, formStatus);
+    expect(global.fetch).toHaveBeenCalled();
+    const [, options] = global.fetch.mock.calls[0];
+    expect(JSON.parse(options.body)).toEqual({
+      answers: [
+        {
+          questionId: 'addr',
+          value: {
+            line1: '123 Main St',
+            line2: 'Apt 4',
+            city: 'Springfield',
+            state: 'IL',
+            zip: '62704'
+          }
+        }
+      ]
+    });
+  });
+
   test('handles multiple question types and validations', async () => {
     global.validateField = jest.fn().mockReturnValue(true);
     const form = {
