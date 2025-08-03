@@ -1,5 +1,7 @@
 // application-config.js
 
+// Wrap in IIFE to avoid polluting global scope and redeclaration errors
+(function () {
 // Import shared modules (CommonJS for tests, globals for browser)
 let FIELD_TYPES, renderFieldTypeOptions, getProgramId, createOrCopyApplication, showError, clearError, showSuccess, renderApplicationBuilder;
 if (typeof module !== 'undefined' && module.exports) {
@@ -249,9 +251,9 @@ let currentType = 'delegate';
       }
     });
 
-    });
+      });
 
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = { getProgramId, renderFieldTypeOptions, createOrCopyApplication };
 }
-    
+})();
