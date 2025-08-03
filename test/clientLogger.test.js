@@ -96,3 +96,16 @@ test('logger stringifies plain objects', () => {
   const body = JSON.parse(fetchMock.mock.calls[0][1].body);
   expect(body.message).toBe('{"foo":"bar"}');
 });
+
+test('logger sends error stack when provided', () => {
+  jest.resetModules();
+  const fetchMock = jest.fn().mockResolvedValue({});
+  global.window = { API_URL: 'http://api.test' };
+  global.fetch = fetchMock;
+  global.console = { log: () => {}, warn: () => {}, error: () => {} };
+  require('../public/js/clientLogger.js');
+  const err = new Error('boom');
+  window.logToServer('oops', { error: err, level: 'error' });
+  const body = JSON.parse(fetchMock.mock.calls[0][1].body);
+  expect(body.error).toContain('boom');
+});
