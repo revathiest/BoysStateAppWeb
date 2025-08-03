@@ -23,7 +23,6 @@ async function handleFormSubmit(e, form, config, formStatus) {
       switch (q.type) {
         case "short_answer":
         case "paragraph":
-        case "address":
         case "section":
         case "static_text":
           value = form[name]?.value?.trim();
