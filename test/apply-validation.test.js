@@ -1,4 +1,4 @@
-const { validateField, addValidationListeners } = require('../public/js/apply-validation.js');
+const { validateField, addValidationListeners, formatPhoneNumber } = require('../public/js/apply-validation.js');
 
 describe('validateField', () => {
   beforeEach(() => {
@@ -69,9 +69,18 @@ describe('validateField', () => {
     expect(validateField(q, form)).toBe(false);
     expect(errEl.textContent).toBe('Please enter a valid phone number.');
     errEl.textContent = '';
-    form = { q_5: { value: '123-456-7890' } };
+    form = { q_5: { value: '(123) 456-7890' } };
     expect(validateField(q, form)).toBe(true);
     expect(errEl.textContent).toBe('');
+  });
+
+  test('validates optional phone numbers when provided', () => {
+    const q = { id: 15, type: 'phone', required: false };
+    const errEl = { textContent: '' };
+    document.getElementById = jest.fn(() => errEl);
+    const form = { q_15: { value: '123' } };
+    expect(validateField(q, form)).toBe(false);
+    expect(errEl.textContent).toBe('Please enter a valid phone number.');
   });
 
   test('validates checkboxes', () => {
@@ -111,6 +120,11 @@ describe('validateField', () => {
     form = { q_8: { value: 'x' } };
     expect(validateField(q, form)).toBe(true);
     expect(errEl.textContent).toBe('');
+  });
+
+  test('formats phone numbers', () => {
+    expect(formatPhoneNumber('1234567890')).toBe('(123) 456-7890');
+    expect(formatPhoneNumber('(123)4567890')).toBe('(123) 456-7890');
   });
 
   test('validates dates', () => {
@@ -214,6 +228,7 @@ describe('addValidationListeners', () => {
       querySelectorAll: jest.fn(() => boxes),
       q_4_start: { addEventListener: jest.fn() },
       q_4_end: { addEventListener: jest.fn() },
+      q_phone: { addEventListener: jest.fn() },
       q_5: { addEventListener: jest.fn() },
       q_6_line1: { addEventListener: jest.fn() },
       q_6_city: { addEventListener: jest.fn() },
@@ -226,6 +241,7 @@ describe('addValidationListeners', () => {
         { id: 2, type: 'file' },
         { id: 3, type: 'checkbox' },
         { id: 4, type: 'date_range' },
+        { id: 'phone', type: 'phone' },
         { id: 5, type: 'boolean' },
         { id: 6, type: 'address' }
       ]
@@ -239,6 +255,7 @@ describe('addValidationListeners', () => {
     });
     expect(form.q_4_start.addEventListener).toHaveBeenCalledWith('change', expect.any(Function));
     expect(form.q_4_end.addEventListener).toHaveBeenCalledWith('change', expect.any(Function));
+    expect(form.q_phone.addEventListener).toHaveBeenCalledWith('input', expect.any(Function));
     expect(form.q_5.addEventListener).toHaveBeenCalledWith('change', expect.any(Function));
     ['line1','city','state','zip'].forEach(s => {
       expect(form[`q_6_${s}`].addEventListener).toHaveBeenCalledWith('input', expect.any(Function));

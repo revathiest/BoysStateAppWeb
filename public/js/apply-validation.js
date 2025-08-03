@@ -1,5 +1,17 @@
 // js/apply-validation.js
 
+function formatPhoneNumber(value) {
+    const digits = value.replace(/\D/g, '').slice(0, 10);
+    if (digits.length === 0) return '';
+    if (digits.length < 4) return `(${digits}`;
+    if (digits.length < 7) return `(${digits.slice(0,3)}) ${digits.slice(3)}`;
+    return `(${digits.slice(0,3)}) ${digits.slice(3,6)}-${digits.slice(6)}`;
+}
+
+function isValidPhoneNumber(value) {
+    return value ? value.replace(/\D/g, '').length === 10 : false;
+}
+
 function validateField(q, form) {
     const name = `q_${q.id}`;
     let err = "";
@@ -25,7 +37,8 @@ function validateField(q, form) {
         break;
       case "phone":
         const phone = form[name]?.value?.trim();
-        if (q.required && (!phone || !/^[0-9+\-()\s]{7,}$/.test(phone))) {
+        const validDigits = isValidPhoneNumber(phone);
+        if ((q.required && !validDigits) || (!q.required && phone && !validDigits)) {
           err = "Please enter a valid phone number.";
         }
         break;
@@ -100,17 +113,25 @@ function addValidationListeners(form, config) {
     config.questions.forEach(q => {
         const name = `q_${q.id}`;
         switch (q.type) {
-          case "short_answer":
-          case "paragraph":
-          case "email":
-          case "number":
-          case "phone":
-          case "date":
-          case "dropdown":
-            if (form[name]) {
-              form[name].addEventListener('input', () => validateField(q, form));
-            }
-            break;
+      case "short_answer":
+      case "paragraph":
+      case "email":
+      case "number":
+      case "date":
+      case "dropdown":
+        if (form[name]) {
+          form[name].addEventListener('input', () => validateField(q, form));
+        }
+        break;
+      case "phone":
+        if (form[name]) {
+          const el = form[name];
+          el.addEventListener('input', () => {
+            el.value = formatPhoneNumber(el.value);
+            validateField(q, form);
+          });
+        }
+        break;
           case "file":
             if (form[name]) {
               form[name].addEventListener('change', () => validateField(q, form));
@@ -148,6 +169,6 @@ function addValidationListeners(form, config) {
 }
 
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { validateField, addValidationListeners };
+    module.exports = { validateField, addValidationListeners, formatPhoneNumber, isValidPhoneNumber };
 }
 

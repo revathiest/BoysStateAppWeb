@@ -110,7 +110,7 @@ describe('handleFormSubmit', () => {
       q_short: { value: 'a' },
       q_email: { value: 'test@example.com' },
       q_number: { value: '1' },
-      q_phone: { value: '1234567' },
+      q_phone: { value: '(123) 456-7890' },
       q_dropdown: { value: 'x' },
       q_date: { value: '2024-01-01' },
       q_range_start: { value: '2024-01-01' },
