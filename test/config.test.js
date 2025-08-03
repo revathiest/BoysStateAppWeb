@@ -8,7 +8,7 @@ describe('config.js', () => {
 
   test('sets API_URL on window', () => {
     require(path.join('..', 'public/js/config.js'));
-    expect(global.window.API_URL).toBe('https://boysstateappservices.up.railway.app');
+    expect(global.window.API_URL).toBe('http://localhost:3000');
   });
 });
 

@@ -1,4 +1,3 @@
-/* istanbul ignore file */
 // Parse programId from URL
 function getProgramIdFromUrl() {
   const params = new URLSearchParams(window.location.search);

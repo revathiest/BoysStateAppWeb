@@ -5,9 +5,13 @@ describe('programs-config.js', () => {
     jest.resetModules();
     global.window = { API_URL: 'http://api.test' };
     const link = { href: 'page?programId=YOUR_PROGRAM_ID' };
-    const container = { innerHTML: '' };
+    const container = { innerHTML: '', addEventListener: jest.fn() };
     global.document = {
-      getElementById: id => (id === 'program-selector' ? container : null),
+      getElementById: id => {
+        if (id === 'program-selector') return container;
+        if (id === 'program-select') return { addEventListener: jest.fn() };
+        return null;
+      },
       querySelectorAll: () => [link],
       addEventListener: jest.fn()
     };
@@ -26,6 +30,30 @@ describe('programs-config.js', () => {
     funcs.renderProgramSelector([{ programId: 'p1', programName: 'Prog' }], 'p1');
     expect(global.container.innerHTML).toContain('Prog');
     expect(global.link.href).toBe('page?programId=p1');
+  });
+
+  test('renderProgramSelector renders dropdown for multiple programs', () => {
+    const linkA = { href: 'a?programId=YOUR_PROGRAM_ID' };
+    const linkB = { href: 'b?programId=YOUR_PROGRAM_ID' };
+    document.querySelectorAll = () => [linkA, linkB];
+    funcs.renderProgramSelector([
+      { programId: 'p1', programName: 'P1' },
+      { programId: 'p2', programName: 'P2' }
+    ], 'p2');
+    expect(global.container.innerHTML).toContain('<select');
+    expect(linkA.href).toBe('a?programId=p2');
+  });
+
+  test('fetchProgramsAndRenderSelector fetches and renders', async () => {
+    global.localStorage.getItem = jest.fn(() => 'user');
+    global.getAuthHeaders = () => ({});
+    global.fetch = jest.fn(() => Promise.resolve({
+      ok: true,
+      json: () => Promise.resolve({ programs: [{ programId: 'p1', programName: 'Prog1' }] })
+    }));
+    await funcs.fetchProgramsAndRenderSelector();
+    expect(global.fetch).toHaveBeenCalled();
+    expect(global.container.innerHTML).toContain('Prog1');
   });
 });
 

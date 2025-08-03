@@ -1,4 +1,3 @@
-/* istanbul ignore file */
 // js/apply-submit.js
 
 async function handleFormSubmit(e, form, config, formStatus) {

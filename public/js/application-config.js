@@ -1,4 +1,3 @@
-/* istanbul ignore file */
 // application-config.js
 
 // Supported field types with labels and config
