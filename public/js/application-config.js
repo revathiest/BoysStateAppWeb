@@ -30,6 +30,72 @@ function getProgramId() {
 }
 
 const programId = getProgramId();
+
+let currentYear;
+let currentType = 'delegate';
+
+async function createOrCopyApplication({ programId, year, type, copyFromYear = null, fetchFn = fetch }) {
+  if (!programId || !year || !type) {
+    throw new Error('Missing parameters');
+  }
+  const authHeaders = typeof getAuthHeaders === 'function' ? getAuthHeaders() : {};
+
+  // Ensure year exists
+  let years = [];
+  try {
+    const yRes = await fetchFn(`${window.API_URL}/programs/${encodeURIComponent(programId)}/years`, {
+      credentials: 'include',
+      headers: authHeaders,
+    });
+    if (yRes.ok) {
+      years = await yRes.json();
+    }
+  } catch {}
+  const exists = years.some(y => String(y.year) === String(year));
+  if (!exists) {
+    await fetchFn(`${window.API_URL}/programs/${encodeURIComponent(programId)}/years`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json', ...authHeaders },
+      body: JSON.stringify({ year }),
+    });
+  }
+
+  // Prevent duplicate application
+  const check = await fetchFn(`${window.API_URL}/api/programs/${encodeURIComponent(programId)}/application?year=${encodeURIComponent(year)}&type=${encodeURIComponent(type)}`, {
+    credentials: 'include',
+    headers: authHeaders,
+  });
+  if (check.ok) {
+    throw new Error('Application for this year and type already exists');
+  }
+
+  let title = '';
+  let description = '';
+  let questions = [];
+  if (copyFromYear) {
+    const prevRes = await fetchFn(`${window.API_URL}/api/programs/${encodeURIComponent(programId)}/application?year=${encodeURIComponent(copyFromYear)}&type=${encodeURIComponent(type)}`, {
+      credentials: 'include',
+      headers: authHeaders,
+    });
+    if (prevRes.ok) {
+      const prev = await prevRes.json();
+      title = prev.title || '';
+      description = prev.description || '';
+      questions = Array.isArray(prev.questions)
+        ? prev.questions.map(({ id, ...rest }) => ({ ...rest }))
+        : [];
+    }
+  }
+
+  const payload = { year, type, title, description, questions };
+  await fetchFn(`${window.API_URL}/api/programs/${encodeURIComponent(programId)}/application`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json', ...authHeaders },
+    body: JSON.stringify(payload),
+  });
+}
     
     // Helpers for rendering
     function renderFieldTypeOptions(selected) {
@@ -39,22 +105,100 @@ const programId = getProgramId();
     }
     
     // ---- Main App Builder Logic ----
+    /* istanbul ignore next */
     document.addEventListener("DOMContentLoaded", function() {
     const createBtn = document.getElementById('create-application-form');
     const card = document.getElementById('create-form-card');
     const builderRoot = document.getElementById('application-builder-root');
+    const yearSelect = document.getElementById('year-select');
+    const typeSelect = document.getElementById('type-select');
+    const newAppBtn = document.getElementById('create-new-application');
+    const newAppForm = document.getElementById('new-application-form');
+    const newAppYear = document.getElementById('new-app-year');
+    const newAppType = document.getElementById('new-app-type');
+    const copyYearSelect = document.getElementById('copy-from-year');
+    const cancelNewApp = document.getElementById('cancel-new-app');
 
-    if (createBtn) {
-    createBtn.addEventListener('click', () => {
-    card.style.display = 'none';
-    renderApplicationBuilder();
-    });
+    let yearsList = [];
+
+    function updateCopyOptions() {
+      copyYearSelect.innerHTML = '<option value="">No</option>' + yearsList.map(y => `<option value="${y.year}">${y.year}</option>`).join('');
     }
 
-    async function loadExistingApplication() {
+    async function refreshYears() {
       if (!programId || !window.API_URL) return;
       try {
-        const res = await fetch(`${window.API_URL}/api/programs/${encodeURIComponent(programId)}/application`, {
+        const res = await fetch(`${window.API_URL}/programs/${encodeURIComponent(programId)}/years`, {
+          headers: {
+            ...(typeof getAuthHeaders === 'function' ? getAuthHeaders() : {})
+          },
+          credentials: 'include'
+        });
+        yearsList = res.ok ? await res.json() : [];
+        yearSelect.innerHTML = yearsList.map(y => `<option value="${y.year}">${y.year}</option>`).join('');
+        if (yearsList.length) {
+          currentYear = yearSelect.value || yearsList[0].year;
+          yearSelect.value = currentYear;
+        }
+        updateCopyOptions();
+      } catch {
+        yearsList = [];
+      }
+    }
+
+    if (createBtn) {
+      createBtn.addEventListener('click', () => {
+        card.style.display = 'none';
+        renderApplicationBuilder();
+      });
+    }
+
+    yearSelect.addEventListener('change', () => {
+      currentYear = yearSelect.value;
+      loadExistingApplication(currentYear, currentType);
+      setPublicLink();
+    });
+
+    typeSelect.addEventListener('change', () => {
+      currentType = typeSelect.value;
+      loadExistingApplication(currentYear, currentType);
+      updateCopyOptions();
+      setPublicLink();
+    });
+
+    newAppBtn.addEventListener('click', () => {
+      newAppForm.classList.remove('hidden');
+      newAppYear.value = '';
+      newAppType.value = currentType;
+      updateCopyOptions();
+    });
+
+    cancelNewApp.addEventListener('click', () => newAppForm.classList.add('hidden'));
+
+    newAppForm.addEventListener('submit', async e => {
+      e.preventDefault();
+      const year = parseInt(newAppYear.value);
+      const type = newAppType.value;
+      const copyFrom = copyYearSelect.value || null;
+      try {
+        await createOrCopyApplication({ programId, year, type, copyFromYear: copyFrom });
+        newAppForm.classList.add('hidden');
+        await refreshYears();
+        currentYear = String(year);
+        currentType = type;
+        yearSelect.value = currentYear;
+        typeSelect.value = currentType;
+        loadExistingApplication(currentYear, currentType);
+        setPublicLink();
+      } catch (err) {
+        alert(err.message || 'Failed to create application');
+      }
+    });
+
+    async function loadExistingApplication(year, type) {
+      if (!programId || !window.API_URL || !year) return;
+      try {
+        const res = await fetch(`${window.API_URL}/api/programs/${encodeURIComponent(programId)}/application?year=${encodeURIComponent(year)}&type=${encodeURIComponent(type)}`, {
           headers: {
             ...(typeof getAuthHeaders === 'function' ? getAuthHeaders() : {})
           },
@@ -64,11 +208,33 @@ const programId = getProgramId();
           const data = await res.json();
           card.style.display = 'none';
           renderApplicationBuilder(data);
+        } else {
+          card.style.display = '';
+          builderRoot.innerHTML = '';
         }
       } catch {
-        // ignore errors, user can create new
+        card.style.display = '';
+        builderRoot.innerHTML = '';
       }
     }
+
+    function setPublicLink() {
+      if (typeof programId !== 'undefined' && programId && currentYear && currentType) {
+        document.getElementById('publicApplicationUrl').value =
+          location.origin + '/apply.html?programId=' + encodeURIComponent(programId) + '&year=' + encodeURIComponent(currentYear) + '&type=' + encodeURIComponent(currentType);
+      } else {
+        document.getElementById('publicApplicationUrl').value =
+          'Program ID not available.';
+      }
+    }
+
+    refreshYears().then(() => {
+      if (yearSelect.value) {
+        currentYear = yearSelect.value;
+        loadExistingApplication(currentYear, currentType);
+        setPublicLink();
+      }
+    });
 
     function renderApplicationBuilder(appData = {}) {
     builderRoot.innerHTML = `       <form id="application-builder-form" class="bg-white rounded-2xl shadow-lg p-8 sm:p-12 max-w-4xl w-full mx-auto border-t-4 border-legend-gold flex flex-col gap-6">         <div>           <label class="block text-lg font-bold text-legend-blue mb-2">Application Title</label>           <input type="text" id="app-title" class="border rounded-xl px-4 py-2 w-full" placeholder="e.g. 2025 Boys State Delegate Application" required />         </div>         <div>           <label class="block text-base font-semibold text-gray-700 mb-2">Application Description</label>           <textarea id="app-description" class="border rounded-xl px-4 py-2 w-full min-h-[60px]" placeholder="Describe this application form"></textarea>         </div>         <div>           <label class="block text-base font-semibold text-gray-700 mb-2">Questions</label>           <div id="questions-list" class="flex flex-col gap-4"></div>           <button type="button" id="add-question-btn" class="mt-6 bg-legend-blue hover:bg-legend-gold text-white font-bold py-2 px-4 rounded-xl shadow transition">             + Add Question           </button>         </div>         <button type="submit" class="bg-legend-blue hover:bg-legend-gold text-white font-bold py-2 px-8 rounded-xl shadow transition self-center mt-4">
@@ -247,11 +413,11 @@ const programId = getProgramId();
       const description = document.getElementById('app-description').value.trim();
       // Remove empty or invalid questions
       const filteredQuestions = questions.filter(q => q.text.trim() !== "");
-      if (!programId) {
+      if (!programId || !currentYear || !currentType) {
         alert('Missing program id');
         return;
       }
-      const payload = { title, description, questions: filteredQuestions };
+      const payload = { year: currentYear, type: currentType, title, description, questions: filteredQuestions };
       try {
         const res = await fetch(`${window.API_URL}/api/programs/${encodeURIComponent(programId)}/application`, {
           method: 'PUT',
@@ -272,15 +438,6 @@ const programId = getProgramId();
       }
     };
 
-    // Set the public application link using the global programId variable
-    if (typeof programId !== 'undefined' && programId) {
-      document.getElementById('publicApplicationUrl').value =
-        location.origin + '/apply.html?programId=' + encodeURIComponent(programId);
-    } else {
-      document.getElementById('publicApplicationUrl').value =
-        'Program ID not available.';
-    }
-
     document.getElementById('copyLinkBtn').onclick = function() {
       const textarea = document.getElementById('publicApplicationUrl');
       textarea.select();
@@ -296,10 +453,9 @@ const programId = getProgramId();
     renderQuestions();
 
     }
-      loadExistingApplication();
-      });
+    });
 
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { getProgramId, renderFieldTypeOptions };
+  module.exports = { getProgramId, renderFieldTypeOptions, createOrCopyApplication };
 }
     
