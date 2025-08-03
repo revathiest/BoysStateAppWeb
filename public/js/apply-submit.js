@@ -111,10 +111,11 @@ async function handleFormSubmit(e, form, config, formStatus) {
         case "address":
           // For address, check line1, city, state, zip (if required)
           const line1 = form[`${name}_line1`]?.value?.trim();
+          const line2 = form[`${name}_line2`]?.value?.trim();
           const city = form[`${name}_city`]?.value?.trim();
           const state = form[`${name}_state`]?.value?.trim();
           const zip = form[`${name}_zip`]?.value?.trim();
-          value = { line1, city, state, zip };
+          value = { line1,line2, city, state, zip };
           if (q.required && (!line1 || !city || !state || !zip)) {
             errors.push(`Please complete the address for: "${q.text}"`);
           }
