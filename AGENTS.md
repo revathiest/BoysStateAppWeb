@@ -165,3 +165,4 @@ Enables program admins to define, publish, and manage online application forms f
 * All admin features must include security/integration tests
 * Regression tests required for any bug fixes or API changes
 * Documentation/spec for future/planned agents must be maintained in this file
+* Files are NOT to be ignored just to boost coverage.  Instead, new tests are to be created.
