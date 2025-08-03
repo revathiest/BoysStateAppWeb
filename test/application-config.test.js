@@ -3,7 +3,7 @@ describe('application-config.js', () => {
     jest.resetModules();
     global.window = { location: { search: '' } };
     global.localStorage = { getItem: jest.fn(() => null) };
-    global.document = { addEventListener: jest.fn() };
+    global.document = { addEventListener: jest.fn(), getElementById: jest.fn() };
   });
 
   test('getProgramId reads from query', () => {
@@ -34,6 +34,8 @@ describe('application-config.js', () => {
       onsubmit: null,
       select: jest.fn(),
       setSelectionRange: jest.fn(),
+      disabled: false,
+      textContent: '',
     });
     const builderRoot = makeEl();
     builderRoot.querySelectorAll = sel => {
@@ -74,17 +76,29 @@ describe('application-config.js', () => {
     elements['new-app-type'] = makeEl();
     elements['copy-from-year'] = makeEl();
     elements['cancel-new-app'] = makeEl();
+    elements['errorBox'] = makeEl();
+    elements['successBox'] = makeEl();
+    elements['current-selection'] = makeEl();
+    elements['no-app-message'] = makeEl();
+    elements['create-app-submit'] = makeEl();
+    elements['year-error'] = makeEl();
     global.window = { API_URL: 'http://api.test', location: { search: '?programId=p1', origin: 'https://example.com' } };
     global.location = { origin: 'https://example.com' };
+    elements['saveBtn'] = makeEl();
     global.document = {
       getElementById: id => elements[id] || (elements[id] = makeEl()),
       querySelectorAll: jest.fn(() => []),
+      querySelector: sel => (sel === '#application-builder-form button[type="submit"]' ? elements['saveBtn'] : makeEl()),
       addEventListener: (ev, fn) => { if (ev === 'DOMContentLoaded') ready = fn; },
     };
     global.localStorage = { getItem: jest.fn(() => null) };
     global.fetch = jest.fn()
       // GET years
       .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve([{ year: 2024 }]) })
+      // Check existing application for delegate
+      .mockResolvedValueOnce({ ok: true })
+      // Check existing application for staff
+      .mockResolvedValueOnce({ ok: false })
       // GET application for year/type
       .mockResolvedValueOnce({
         ok: true,
@@ -97,7 +111,6 @@ describe('application-config.js', () => {
       // PUT save
       .mockResolvedValue({ ok: true });
     global.navigator = { clipboard: { writeText: jest.fn(() => Promise.resolve()) } };
-    global.alert = jest.fn();
 
     require('../public/js/application-config.js');
     await ready();

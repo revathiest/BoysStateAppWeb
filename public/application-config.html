@@ -15,20 +15,23 @@
       <img src="images/Boys State Shield White on Blue.png" alt="Logo" class="w-8 h-8 p-1 rounded-full" />
       <span class="text-xl font-semibold">Boys State App <span class="text-sm font-normal text-legend-gold ml-2">Admin Portal</span></span>
     </div>
-    <button id="logoutBtn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-2xl shadow transition">Logout</button>
+    <button id="logoutBtn" type="button" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-2xl shadow transition" aria-label="Logout">Logout</button>
   </nav>
-  
+
   <main class="flex flex-col items-stretch p-6 lg:p-10 bg-gray-50 min-h-screen">
+
+    <div id="errorBox" class="bg-red-100 text-red-700 p-2 rounded mb-4" style="display:none"></div>
+    <div id="successBox" class="bg-green-100 text-green-700 p-2 rounded mb-4" style="display:none"></div>
 
 <!-- Copy Link Button next to textarea -->
 <div class="flex items-center gap-3 mb-6" style="max-width:900px;">
   <span class="font-semibold text-blue-900 whitespace-nowrap flex-shrink-0">Public Application Link:</span>
-  <textarea id="publicApplicationUrl"
+  <textarea id="publicApplicationUrl" aria-label="Public application link"
   readonly
   rows="1"
   class="flex-1 min-w-0 px-2 py-1 rounded border border-gray-300 bg-white text-blue-900 resize-none"
   style="height:2.4rem; overflow:hidden; font-size:1rem; line-height:1.5; box-sizing:border-box; resize:none;"></textarea>
-  <button type="button" id="copyLinkBtn"
+  <button type="button" id="copyLinkBtn" aria-label="Copy public application link"
     class="ml-2 px-3 py-1 rounded bg-legend-blue text-white hover:bg-legend-gold font-medium flex-shrink-0"
     style="border:none; cursor:pointer;">
     Copy Link
@@ -49,42 +52,45 @@
     <div class="flex flex-wrap items-center gap-4 mb-6">
       <div class="flex items-center gap-2">
         <label for="year-select" class="font-semibold text-legend-blue">Year:</label>
-        <select id="year-select" class="border rounded px-2 py-1"></select>
+        <select id="year-select" aria-label="Select year" class="border rounded px-2 py-1"></select>
       </div>
       <div class="flex items-center gap-2">
         <label for="type-select" class="font-semibold text-legend-blue">Type:</label>
-        <select id="type-select" class="border rounded px-2 py-1">
+        <select id="type-select" aria-label="Select application type" class="border rounded px-2 py-1">
           <option value="delegate">Delegate</option>
           <option value="staff">Staff</option>
         </select>
       </div>
-      <button id="create-new-application" class="bg-legend-blue hover:bg-legend-gold text-white font-bold py-2 px-4 rounded-xl shadow transition">
+      <button id="create-new-application" type="button" aria-label="Create new application" class="bg-legend-blue hover:bg-legend-gold text-white font-bold py-2 px-4 rounded-xl shadow transition">
         Create New Application
       </button>
     </div>
+
+    <h2 id="current-selection" class="text-xl font-bold text-legend-blue mb-4"></h2>
 
     <!-- New Application Form (hidden by default) -->
     <form id="new-application-form" class="hidden bg-white rounded-2xl shadow-lg p-6 max-w-2xl w-full mx-auto mb-6">
       <div class="mb-4">
         <label class="block text-sm font-semibold text-gray-700 mb-1" for="new-app-year">Year</label>
-        <input type="number" id="new-app-year" class="border rounded px-2 py-1 w-full" />
+        <input type="number" id="new-app-year" aria-label="Application year" class="border rounded px-2 py-1 w-full" />
+        <span id="year-error" class="text-sm text-red-600"></span>
       </div>
       <div class="mb-4">
         <label class="block text-sm font-semibold text-gray-700 mb-1" for="new-app-type">Type</label>
-        <select id="new-app-type" class="border rounded px-2 py-1 w-full">
+        <select id="new-app-type" aria-label="Application type" class="border rounded px-2 py-1 w-full">
           <option value="delegate">Delegate</option>
           <option value="staff">Staff</option>
         </select>
       </div>
-      <div class="mb-4">
-        <label class="block text-sm font-semibold text-gray-700 mb-1" for="copy-from-year">Copy From Previous Year?</label>
-        <select id="copy-from-year" class="border rounded px-2 py-1 w-full">
+      <fieldset class="mb-4">
+        <legend class="block text-sm font-semibold text-gray-700 mb-1">Copy From Previous Year?</legend>
+        <select id="copy-from-year" aria-label="Copy from previous year" class="border rounded px-2 py-1 w-full">
           <option value="">No</option>
         </select>
-      </div>
+      </fieldset>
       <div class="flex justify-end gap-4">
-        <button type="button" id="cancel-new-app" class="px-4 py-2 rounded border">Cancel</button>
-        <button type="submit" class="bg-legend-blue hover:bg-legend-gold text-white font-bold py-2 px-4 rounded-xl shadow transition">Create</button>
+        <button type="button" id="cancel-new-app" class="px-4 py-2 rounded border" aria-label="Cancel new application">Cancel</button>
+        <button type="submit" id="create-app-submit" class="bg-legend-blue hover:bg-legend-gold text-white font-bold py-2 px-4 rounded-xl shadow transition">Create</button>
       </div>
     </form>
   
@@ -92,8 +98,8 @@
     <div class="flex flex-col items-center w-full">
       <!-- Card is visible by default -->
       <div id="create-form-card" class="bg-white rounded-2xl shadow-lg p-8 sm:p-12 max-w-4xl w-full mx-auto border-t-4 border-legend-gold flex flex-col items-center">
-        <span class="text-lg font-semibold text-gray-400 mb-2">No application form yet</span>
-        <button id="create-application-form" class="bg-legend-blue hover:bg-legend-gold text-white font-bold py-2 px-4 rounded-xl shadow mt-2 transition">
+        <span id="no-app-message" class="text-lg font-semibold text-gray-400 mb-2"></span>
+        <button id="create-application-form" type="button" aria-label="Create application form" class="bg-legend-blue hover:bg-legend-gold text-white font-bold py-2 px-4 rounded-xl shadow mt-2 transition">
           + Create Application Form
         </button>
       </div>
