@@ -64,6 +64,16 @@ describe('application-config.js', () => {
     elements['add-opt-0'] = { value: 'c' };
     elements['publicApplicationUrl'] = makeEl();
     elements['copyStatus'] = makeEl();
+    elements['create-application-form'] = makeEl();
+    elements['create-form-card'] = makeEl();
+    elements['year-select'] = makeEl();
+    elements['type-select'] = makeEl();
+    elements['create-new-application'] = makeEl();
+    elements['new-application-form'] = makeEl();
+    elements['new-app-year'] = makeEl();
+    elements['new-app-type'] = makeEl();
+    elements['copy-from-year'] = makeEl();
+    elements['cancel-new-app'] = makeEl();
     global.window = { API_URL: 'http://api.test', location: { search: '?programId=p1', origin: 'https://example.com' } };
     global.location = { origin: 'https://example.com' };
     global.document = {
@@ -72,20 +82,29 @@ describe('application-config.js', () => {
       addEventListener: (ev, fn) => { if (ev === 'DOMContentLoaded') ready = fn; },
     };
     global.localStorage = { getItem: jest.fn(() => null) };
-    global.fetch = jest.fn(() => Promise.resolve({
-      ok: true,
-      json: () => Promise.resolve({
-        title: 'Title',
-        description: 'Desc',
-        questions: [{ type: 'dropdown', text: 'Q1', order: 1, options: ['a', 'b'] }],
-      }),
-    }));
+    global.fetch = jest.fn()
+      // GET years
+      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve([{ year: 2024 }]) })
+      // GET application for year/type
+      .mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({
+          title: 'Title',
+          description: 'Desc',
+          questions: [{ type: 'dropdown', text: 'Q1', order: 1, options: ['a', 'b'] }],
+        }),
+      })
+      // PUT save
+      .mockResolvedValue({ ok: true });
     global.navigator = { clipboard: { writeText: jest.fn(() => Promise.resolve()) } };
     global.alert = jest.fn();
 
     require('../public/js/application-config.js');
     await ready();
     await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
+    await new Promise(r => setTimeout(r, 0));
 
     handlers.inputIdx({ target: { value: 'New' } });
     handlers.reqChange({});
@@ -103,6 +122,91 @@ describe('application-config.js', () => {
 
     expect(global.fetch).toHaveBeenCalled();
     expect(elements['publicApplicationUrl'].value).toContain('apply.html?programId=p1');
+    expect(elements['publicApplicationUrl'].value).toContain('year=2024');
+    expect(elements['publicApplicationUrl'].value).toContain('type=delegate');
+  });
+
+  test('createOrCopyApplication creates year and copies from previous', async () => {
+    const { createOrCopyApplication } = require('../public/js/application-config.js');
+    global.window = { API_URL: 'http://api.test' };
+    const fetchMock = jest.fn()
+      // GET years (missing desired year)
+      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve([{ year: 2024 }]) })
+      // POST create year
+      .mockResolvedValueOnce({ ok: true })
+      // GET application check (not found)
+      .mockResolvedValueOnce({ ok: false })
+      // GET previous application
+      .mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ title: 'Old', description: 'D', questions: [{ id: 1, type: 'short_answer', text: 'Q' }] }),
+      })
+      // POST create application
+      .mockResolvedValueOnce({ ok: true });
+
+    await createOrCopyApplication({ programId: 'p1', year: 2025, type: 'delegate', copyFromYear: 2024, fetchFn: fetchMock });
+    expect(fetchMock).toHaveBeenCalledTimes(5);
+    const body = JSON.parse(fetchMock.mock.calls[4][1].body);
+    expect(body.year).toBe(2025);
+    expect(body.questions[0].id).toBeUndefined();
+  });
+
+  test('createOrCopyApplication prevents duplicates', async () => {
+    const { createOrCopyApplication } = require('../public/js/application-config.js');
+    global.window = { API_URL: 'http://api.test' };
+    const fetchMock = jest.fn()
+      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve([{ year: 2025 }]) })
+      .mockResolvedValueOnce({ ok: true });
+
+    await expect(createOrCopyApplication({ programId: 'p1', year: 2025, type: 'delegate', fetchFn: fetchMock }))
+      .rejects.toThrow('Application for this year and type already exists');
+  });
+
+  test('createOrCopyApplication creates without copy when year exists', async () => {
+    const { createOrCopyApplication } = require('../public/js/application-config.js');
+    global.window = { API_URL: 'http://api.test' };
+    const fetchMock = jest.fn()
+      // GET years (contains desired year)
+      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve([{ year: 2025 }]) })
+      // GET application check (not found)
+      .mockResolvedValueOnce({ ok: false })
+      // POST create application
+      .mockResolvedValueOnce({ ok: true });
+
+    await createOrCopyApplication({ programId: 'p1', year: 2025, type: 'staff', fetchFn: fetchMock });
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    const body = JSON.parse(fetchMock.mock.calls[2][1].body);
+    expect(body.type).toBe('staff');
+    expect(body.questions).toEqual([]);
+  });
+
+  test('createOrCopyApplication handles missing previous year', async () => {
+    const { createOrCopyApplication } = require('../public/js/application-config.js');
+    global.window = { API_URL: 'http://api.test' };
+    const fetchMock = jest.fn()
+      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve([{ year: 2024 }]) }) // years
+      .mockResolvedValueOnce({ ok: true }) // post create year
+      .mockResolvedValueOnce({ ok: false }) // check not found
+      .mockResolvedValueOnce({ ok: false }) // previous year missing
+      .mockResolvedValueOnce({ ok: true }); // post create
+
+    await createOrCopyApplication({ programId: 'p1', year: 2025, type: 'delegate', copyFromYear: 2024, fetchFn: fetchMock });
+    expect(fetchMock).toHaveBeenCalledTimes(5);
+    const body = JSON.parse(fetchMock.mock.calls[4][1].body);
+    expect(body.questions).toEqual([]);
+  });
+
+  test('createOrCopyApplication handles year fetch failure', async () => {
+    const { createOrCopyApplication } = require('../public/js/application-config.js');
+    global.window = { API_URL: 'http://api.test' };
+    const fetchMock = jest.fn()
+      .mockRejectedValueOnce(new Error('fail')) // years fetch fails
+      .mockResolvedValueOnce({ ok: true }) // post create year
+      .mockResolvedValueOnce({ ok: false }) // check not found
+      .mockResolvedValueOnce({ ok: true }); // post create
+
+    await createOrCopyApplication({ programId: 'p1', year: 2025, type: 'delegate', fetchFn: fetchMock });
+    expect(fetchMock).toHaveBeenCalledTimes(4);
   });
 });
 
