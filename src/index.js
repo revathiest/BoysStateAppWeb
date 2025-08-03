@@ -37,6 +37,31 @@ const logger = require('./logger');
 
 const publicDir = path.join(__dirname, '..', 'public');
 
+// Load zip/city/state data from JSON generated from the XLS source.
+// The conversion should produce an array of {zip, city, state} records
+// and be stored at docs/zipData.json. If the file is missing, lookups
+// will simply return no matches.
+let cityToStates = {};
+let zipToStates = {};
+let cityList = [];
+try {
+  const zPath = path.join(__dirname, '..', 'docs', 'zipData.json');
+  const raw = fs.readFileSync(zPath, 'utf8');
+  const rows = JSON.parse(raw);
+  rows.forEach(({ city, state, zip }) => {
+    const c = city.toUpperCase();
+    if (!cityToStates[c]) cityToStates[c] = [];
+    if (!cityToStates[c].includes(state)) cityToStates[c].push(state);
+    if (!zipToStates[zip]) zipToStates[zip] = [];
+    if (!zipToStates[zip].includes(state)) zipToStates[zip].push(state);
+  });
+  cityList = Object.keys(cityToStates);
+} catch {
+  cityToStates = {};
+  zipToStates = {};
+  cityList = [];
+}
+
 function hashPassword(password) {
   return new Promise((resolve, reject) => {
     const salt = randomBytes(16).toString('hex');
@@ -112,6 +137,25 @@ function createServer() {
     }
     const cookies = parseCookies(req.headers.cookie);
     req.user = cookies.username;
+
+    if (req.method === 'GET' && req.url.startsWith('/api/zip-info')) {
+      const urlObj = new URL(req.url, `http://${req.headers.host}`);
+      const cityQuery = urlObj.searchParams.get('city');
+      const zipQuery = urlObj.searchParams.get('zip');
+      const result = {};
+      if (cityQuery) {
+        const prefix = cityQuery.toUpperCase();
+        result.cities = cityList.filter(c => c.startsWith(prefix)).slice(0, 10);
+        if (cityToStates[prefix]) {
+          result.states = cityToStates[prefix];
+        }
+      }
+      if (zipQuery) {
+        result.states = zipToStates[zipQuery] || [];
+      }
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify(result));
+    }
 
     if (req.method === 'POST' && req.url === '/register') {
       const { username, password } = await parseBody(req);
