@@ -1,4 +1,4 @@
-const { validateField, addValidationListeners, formatPhoneNumber } = require('../public/js/apply-validation.js');
+const { validateField, addValidationListeners, formatPhoneNumber, isValidPhoneNumber } = require('../public/js/apply-validation.js');
 
 describe('validateField', () => {
   beforeEach(() => {
@@ -276,5 +276,20 @@ describe('addValidationListeners', () => {
     addValidationListeners(form, config);
     // No listeners should be attached and no errors thrown
     expect(form.querySelectorAll).not.toHaveBeenCalled();
+  });
+});
+
+describe('phone utilities', () => {
+  test('formatPhoneNumber formats various lengths', () => {
+    expect(formatPhoneNumber('')).toBe('');
+    expect(formatPhoneNumber('1')).toBe('(1');
+    expect(formatPhoneNumber('1234')).toBe('(123) 4');
+    expect(formatPhoneNumber('1234567890')).toBe('(123) 456-7890');
+  });
+
+  test('isValidPhoneNumber validates correctly', () => {
+    expect(isValidPhoneNumber('(123) 456-7890')).toBe(true);
+    expect(isValidPhoneNumber('1234567')).toBe(false);
+    expect(isValidPhoneNumber('')).toBe(false);
   });
 });
