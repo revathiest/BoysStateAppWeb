@@ -1,5 +1,9 @@
 // js/apply-submit.js
 
+function isValidPhoneNumber(value) {
+    return value ? value.replace(/\D/g, '').length === 10 : false;
+}
+
 async function handleFormSubmit(e, form, config, formStatus) {
     e.preventDefault();
     let valid = true;
@@ -44,7 +48,7 @@ async function handleFormSubmit(e, form, config, formStatus) {
 
         case "phone":
           value = form[name]?.value?.trim();
-          if (q.required && (!value || !/^[0-9+\-()\s]{7,}$/.test(value))) {
+          if ((q.required && !isValidPhoneNumber(value)) || (!q.required && value && !isValidPhoneNumber(value))) {
             errors.push(`Please enter a valid phone number for: "${q.text}"`);
           }
           break;

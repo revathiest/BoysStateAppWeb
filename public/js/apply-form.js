@@ -54,7 +54,7 @@ function renderApplicationForm(config) {
             </div>`;
           break;
         case "phone":
-          field = `<input type="tel" id="${name}" name="${name}" class="w-full border rounded px-3 py-2" ${required} pattern="[0-9\\-\\s\\(\\)]*">`;
+          field = `<input type="tel" id="${name}" name="${name}" class="w-full border rounded px-3 py-2" ${required} placeholder="(123) 456-7890" pattern="\\(\\d{3}\\) \\d{3}-\\d{4}">`;
           break;
         case "number":
           field = `<input type="number" id="${name}" name="${name}" class="w-full border rounded px-3 py-2" ${required}>`;
