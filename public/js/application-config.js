@@ -1,136 +1,25 @@
 // application-config.js
 
-// Supported field types with labels and config
-const FIELD_TYPES = [
-    { value: "short_answer", label: "Short Answer" },
-    { value: "paragraph", label: "Paragraph" },
-    { value: "dropdown", label: "Dropdown (Select)" },
-    { value: "radio", label: "Radio Buttons" },
-    { value: "checkbox", label: "Checkboxes" },
-    { value: "date", label: "Date Picker" },
-    { value: "date_range", label: "Date Range" },
-    { value: "phone", label: "Phone Number" },
-    { value: "number", label: "Number" },
-    { value: "email", label: "Email" },
-    { value: "file", label: "Document Upload" },
-    { value: "section", label: "Section/Header" },
-    { value: "static_text", label: "Static Text / Instructions" },
-    { value: "boolean", label: "Yes/No (Boolean)" },
-    { value: "address", label: "Address" }
-    ];
-
-// Determine the programId from URL or stored selection
-function getProgramId() {
-  const params = new URLSearchParams(window.location.search);
-  return (
-    params.get('programId') ||
-    localStorage.getItem('lastSelectedProgramId') ||
-    ''
-  );
+// Import shared modules (CommonJS for tests, globals for browser)
+let FIELD_TYPES, renderFieldTypeOptions, getProgramId, createOrCopyApplication, showError, clearError, showSuccess;
+if (typeof module !== 'undefined' && module.exports) {
+  ({ FIELD_TYPES, renderFieldTypeOptions } = require('./application-field-types.js'));
+  ({ getProgramId, createOrCopyApplication } = require('./application-service.js'));
+  ({ showError, clearError, showSuccess } = require('./application-messages.js'));
+} else {
+  FIELD_TYPES = window.FIELD_TYPES;
+  renderFieldTypeOptions = window.renderFieldTypeOptions;
+  getProgramId = window.getProgramId;
+  createOrCopyApplication = window.createOrCopyApplication;
+  showError = window.showError;
+  clearError = window.clearError;
+  showSuccess = window.showSuccess;
 }
 
 const programId = getProgramId();
 
 let currentYear;
 let currentType = 'delegate';
-
-function showError(msg) {
-  const box = document.getElementById('errorBox');
-  if (box) {
-    box.textContent = msg;
-    box.style.display = 'block';
-  }
-}
-
-function clearError() {
-  const box = document.getElementById('errorBox');
-  if (box) {
-    box.textContent = '';
-    box.style.display = 'none';
-  }
-}
-
-function showSuccess(msg) {
-  const box = document.getElementById('successBox');
-  if (box) {
-    box.textContent = msg;
-    box.style.display = 'block';
-    setTimeout(() => {
-      box.style.display = 'none';
-      box.textContent = '';
-    }, 2000);
-  }
-}
-
-async function createOrCopyApplication({ programId, year, type, copyFromYear = null, fetchFn = fetch }) {
-  if (!programId || !year || !type) {
-    throw new Error('Missing parameters');
-  }
-  const authHeaders = typeof getAuthHeaders === 'function' ? getAuthHeaders() : {};
-
-  // Ensure year exists
-  let years = [];
-  try {
-    const yRes = await fetchFn(`${window.API_URL}/programs/${encodeURIComponent(programId)}/years`, {
-      credentials: 'include',
-      headers: authHeaders,
-    });
-    if (yRes.ok) {
-      years = await yRes.json();
-    }
-  } catch {}
-  const exists = years.some(y => String(y.year) === String(year));
-  if (!exists) {
-    await fetchFn(`${window.API_URL}/programs/${encodeURIComponent(programId)}/years`, {
-      method: 'POST',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json', ...authHeaders },
-      body: JSON.stringify({ year }),
-    });
-  }
-
-  // Prevent duplicate application
-  const check = await fetchFn(`${window.API_URL}/api/programs/${encodeURIComponent(programId)}/application?year=${encodeURIComponent(year)}&type=${encodeURIComponent(type)}`, {
-    credentials: 'include',
-    headers: authHeaders,
-  });
-  if (check.ok) {
-    throw new Error('Application for this year and type already exists');
-  }
-
-  let title = '';
-  let description = '';
-  let questions = [];
-  if (copyFromYear) {
-    const prevRes = await fetchFn(`${window.API_URL}/api/programs/${encodeURIComponent(programId)}/application?year=${encodeURIComponent(copyFromYear)}&type=${encodeURIComponent(type)}`, {
-      credentials: 'include',
-      headers: authHeaders,
-    });
-    if (prevRes.ok) {
-      const prev = await prevRes.json();
-      title = prev.title || '';
-      description = prev.description || '';
-      questions = Array.isArray(prev.questions)
-        ? prev.questions.map(({ id, ...rest }) => ({ ...rest }))
-        : [];
-    }
-  }
-
-  const payload = { year, type, title, description, questions };
-  await fetchFn(`${window.API_URL}/api/programs/${encodeURIComponent(programId)}/application`, {
-    method: 'POST',
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json', ...authHeaders },
-    body: JSON.stringify(payload),
-  });
-}
-    
-    // Helpers for rendering
-    function renderFieldTypeOptions(selected) {
-    return FIELD_TYPES.map(
-    t => `<option value="${t.value}"${selected === t.value ? " selected" : ""}>${t.label}</option>`
-    ).join("");
-    }
     
     // ---- Main App Builder Logic ----
     /* istanbul ignore next */
