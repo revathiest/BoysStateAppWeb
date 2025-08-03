@@ -24,6 +24,7 @@ test('zip-info endpoint returns matching states', async () => {
   res = await fetch(`http://127.0.0.1:${port}/api/zip-info?zip=78401`);
   data = await res.json();
   expect(data.states).toEqual(['TX']);
+  expect(data.cities).toEqual(['CORPUS CHRISTI']);
 
   await stopServer(app);
 });
