@@ -92,6 +92,63 @@ test('loadPrograms handles failure', async () => {
   expect(result).toEqual([]);
 });
 
+test('loadPrograms returns [] when response not ok', async () => {
+  const fetchMock = jest.fn().mockResolvedValue({ ok: false, json: () => ({}) });
+  const document = {
+    getElementById: jest.fn(() => ({ innerHTML: '', appendChild: jest.fn(), addEventListener: jest.fn() })),
+    querySelector: jest.fn(() => ({ innerHTML: '', appendChild: jest.fn() })),
+    addEventListener: jest.fn(),
+    createElement: jest.fn(() => ({}))
+  };
+  const ctx = {
+    window: { API_URL: 'http://api.test', logToServer: jest.fn() },
+    sessionStorage: { getItem: () => 'abc' },
+    document,
+    fetch: fetchMock,
+    console: { log: jest.fn(), error: jest.fn() },
+    URLSearchParams
+  };
+  vm.createContext(ctx);
+  const helper = fs.readFileSync(path.join(__dirname, '../public/js/authHelper.js'), 'utf8');
+  vm.runInNewContext('var window = globalThis.window; var sessionStorage = globalThis.sessionStorage;\n' + helper, ctx);
+  vm.runInNewContext(code, ctx);
+  const result = await ctx.loadPrograms();
+  expect(result).toEqual([]);
+});
+
+test('loadPrograms via require handles non-ok', async () => {
+  global.window = { API_URL: 'http://api.test', logToServer: jest.fn() };
+  const select = { innerHTML: '', appendChild: jest.fn() };
+  global.document = {
+    getElementById: jest.fn(id => (id === 'programId' ? select : { addEventListener: jest.fn(), value: '' })),
+    querySelector: jest.fn(() => ({ innerHTML: '', appendChild: jest.fn() })),
+    addEventListener: jest.fn(),
+    createElement: jest.fn(() => ({}))
+  };
+  global.fetch = jest.fn().mockResolvedValue({ ok: false });
+  const mod = require('../public/js/logs.js');
+  const res = await mod.loadPrograms();
+  expect(res).toEqual([]);
+});
+
+test('loadPrograms via require populates select', async () => {
+  global.window = { API_URL: 'http://api.test', logToServer: jest.fn() };
+  const select = { innerHTML: '', appendChild: jest.fn() };
+  global.document = {
+    getElementById: id => (id === 'programId' ? select : { addEventListener: jest.fn(), value: '' }),
+    querySelector: jest.fn(() => ({ innerHTML: '', appendChild: jest.fn() })),
+    addEventListener: jest.fn(),
+    createElement: jest.fn(() => ({}))
+  };
+  global.getUsername = () => 'u';
+  global.getAuthHeaders = () => ({});
+  global.fetch = jest.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve({ programs: [{ programId: '1', name: 'A' }] }) });
+  const mod = require('../public/js/logs.js');
+  const res = await mod.loadPrograms();
+  expect(select.appendChild).toHaveBeenCalled();
+  expect(res.length).toBe(1);
+});
+
 test('fetchLogs redirects on 401', async () => {
   const fetchMock = jest.fn().mockResolvedValue({ status: 401 });
   const document = {
@@ -138,22 +195,34 @@ test('fetchLogs renders logs and pager', async () => {
   expect(pager.appendChild).toHaveBeenCalled();
 });
 
+test('fetchLogs converts start/end to dateFrom/dateTo', async () => {
+  const fetchMock = jest.fn().mockResolvedValue({ ok: true, status: 200, json: () => ({ logs: [], total:0, page:1, pageSize:50 }) });
+  global.window = { API_URL: 'http://api.test', logToServer: jest.fn(), location:{ href:'' } };
+  global.document = { getElementById: jest.fn(() => ({ value: 'p', addEventListener: jest.fn() })), querySelector: jest.fn(() => ({ innerHTML: '', appendChild: jest.fn() })), addEventListener: jest.fn(), createElement: jest.fn(() => ({})) };
+  global.fetch = fetchMock;
+  const mod = require('../public/js/logs.js');
+  await mod.fetchLogs({ programId: 'p', start: '2023-01-01', end: '2023-01-02' });
+  const url = fetchMock.mock.calls[0][0];
+  expect(url).toContain('dateFrom=');
+  expect(url).toContain('dateTo=');
+});
 
-test('initialization triggers fetch on DOMContentLoaded', async () => {
-  let domFn;
-  let downloadFn;
+
+test('initialization triggers fetch and handlers on DOMContentLoaded', async () => {
+  let domFn, downloadFn, applyFn, filterFn, logoutFn;
   const table = {
     querySelectorAll: jest.fn(sel => {
       if (sel === 'thead th') return [{ textContent: 'h1' }, { textContent: 'h2' }];
-      if (sel === 'tbody tr') return [{ querySelectorAll: jest.fn(() => [{ textContent: 'a' }, { textContent: 'b' }]) }];
+      if (sel === 'tbody tr') return [{ querySelectorAll: jest.fn(() => [{ textContent: 'a,b' }, { textContent: 'c' }]) }];
       return [];
     }),
     querySelector: jest.fn(),
   };
   const document = {
     getElementById: jest.fn(id => {
-      if (id === 'apply' || id === 'filters') return { addEventListener: jest.fn() };
-      if (id === 'logoutBtn') return { addEventListener: jest.fn() };
+      if (id === 'apply') return { addEventListener: jest.fn((ev, fn) => { applyFn = fn; }) };
+      if (id === 'filters') return { addEventListener: jest.fn((ev, fn) => { filterFn = fn; }) };
+      if (id === 'logoutBtn') return { addEventListener: jest.fn((ev, fn) => { logoutFn = fn; }) };
       if (id === 'programId') return { addEventListener: jest.fn(), value: 'p' };
       if (id === 'download') return { addEventListener: jest.fn((ev, fn) => { downloadFn = fn; }) };
       if (id === 'logTable') return table;
@@ -166,7 +235,8 @@ test('initialization triggers fetch on DOMContentLoaded', async () => {
   };
   const fetchMock = jest.fn()
     .mockResolvedValueOnce({ ok: true, json: () => ({ programs: [] }) })
-    .mockResolvedValueOnce({ ok: true, status: 200, json: () => ({ logs: [], total: 0, page:1, pageSize:50 }) });
+    .mockResolvedValueOnce({ ok: true, status: 200, json: () => ({ logs: [], total: 0, page:1, pageSize:50 }) })
+    .mockResolvedValue({ ok: true, status:200, json: () => ({ logs: [], total:0, page:1, pageSize:50 }) });
   global.window = { API_URL: 'http://api.test', logToServer: jest.fn(), location:{ href:'' } };
   global.document = document;
   global.fetch = fetchMock;
@@ -179,6 +249,11 @@ test('initialization triggers fetch on DOMContentLoaded', async () => {
   expect(fetchMock).toHaveBeenCalled();
   downloadFn();
   expect(table.querySelectorAll).toHaveBeenCalled();
+  applyFn();
+  filterFn({ preventDefault: jest.fn() });
+  logoutFn();
+  expect(window.location.href).toBe('login.html');
+  expect(fetchMock.mock.calls.length).toBeGreaterThan(2);
 });
 
 test('DOMContentLoaded alerts when API_URL missing', async () => {
