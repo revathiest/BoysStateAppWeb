@@ -36,6 +36,7 @@ describe('application-config.js', () => {
       setSelectionRange: jest.fn(),
       disabled: false,
       textContent: '',
+      classList: { add: jest.fn(), remove: jest.fn() },
     });
     const builderRoot = makeEl();
     builderRoot.querySelectorAll = sel => {
@@ -95,10 +96,6 @@ describe('application-config.js', () => {
     global.fetch = jest.fn()
       // GET years
       .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve([{ year: 2024 }]) })
-      // Check existing application for delegate
-      .mockResolvedValueOnce({ ok: true })
-      // Check existing application for staff
-      .mockResolvedValueOnce({ ok: false })
       // GET application for year/type
       .mockResolvedValueOnce({
         ok: true,
@@ -108,6 +105,10 @@ describe('application-config.js', () => {
           questions: [{ type: 'dropdown', text: 'Q1', order: 1, options: ['a', 'b'] }],
         }),
       })
+      // Check existing application for delegate (when creating new year)
+      .mockResolvedValueOnce({ ok: true })
+      // Check existing application for staff (when creating new year)
+      .mockResolvedValueOnce({ ok: false })
       // PUT save
       .mockResolvedValue({ ok: true });
     global.navigator = { clipboard: { writeText: jest.fn(() => Promise.resolve()) } };
@@ -119,8 +120,7 @@ describe('application-config.js', () => {
     await Promise.resolve();
     await new Promise(r => setTimeout(r, 0));
 
-    expect(global.fetch.mock.calls[1][1].method).toBe('HEAD');
-    expect(global.fetch.mock.calls[2][1].method).toBe('HEAD');
+    expect(global.fetch.mock.calls[1][0]).toBe('http://api.test/api/programs/p1/application?year=2024&type=delegate');
 
     handlers.inputIdx({ target: { value: 'New' } });
     handlers.reqChange({});
@@ -145,6 +145,14 @@ describe('application-config.js', () => {
     expect(decoded).toEqual({ year: 2024, type: 'delegate' });
 
     await new Promise(r => setTimeout(r, 0));
+
+    const newAppClick = elements['create-new-application'].addEventListener.mock.calls.find(([ev]) => ev === 'click')[1];
+    await newAppClick();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(global.fetch.mock.calls[3][1].method).toBe('HEAD');
+    expect(global.fetch.mock.calls[4][1].method).toBe('HEAD');
 
     const yearInputHandler = elements['new-app-year'].addEventListener.mock.calls.find(([ev]) => ev === 'input')[1];
     elements['new-app-year'].value = '2025';
