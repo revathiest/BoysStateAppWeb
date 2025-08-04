@@ -45,6 +45,7 @@ let currentType = 'delegate';
 
     let yearsList = [];
     let existingApplications = {};
+    let existingAppsLoaded = false;
 
     function updateCurrentSelection() {
       if (currentYear && currentType && currentSelHeading) {
@@ -95,26 +96,7 @@ let currentType = 'delegate';
         });
         yearsList = res.ok ? await res.json() : [];
         existingApplications = {};
-        for (const y of yearsList) {
-          existingApplications[y.year] = { delegate: false, staff: false };
-          for (const t of ['delegate','staff']) {
-            try {
-              const aRes = await fetch(
-                `${window.API_URL}/api/programs/${encodeURIComponent(programId)}/application?year=${encodeURIComponent(y.year)}&type=${t}`,
-                {
-                  method: 'HEAD',
-                  headers: {
-                    ...(typeof getAuthHeaders === 'function' ? getAuthHeaders() : {})
-                  },
-                  credentials: 'include'
-                }
-              );
-              existingApplications[y.year][t] = aRes.ok;
-            } catch {
-              existingApplications[y.year][t] = false;
-            }
-          }
-        }
+        existingAppsLoaded = false;
         yearSelect.innerHTML = yearsList.map(y => `<option value="${y.year}">${y.year}</option>`).join('');
         if (yearsList.length) {
           currentYear = yearSelect.value || yearsList[0].year;
@@ -124,6 +106,29 @@ let currentType = 'delegate';
       } catch {
         yearsList = [];
       }
+    }
+
+    async function loadExistingAppStatus() {
+      if (existingAppsLoaded || !programId || !window.API_URL) return;
+      existingApplications = {};
+      for (const y of yearsList) {
+        existingApplications[y.year] = { delegate: false, staff: false };
+        for (const t of ['delegate', 'staff']) {
+          try {
+            const aRes = await fetch(`${window.API_URL}/api/programs/${encodeURIComponent(programId)}/application?year=${encodeURIComponent(y.year)}&type=${t}`, {
+              method: 'HEAD',
+              headers: {
+                ...(typeof getAuthHeaders === 'function' ? getAuthHeaders() : {})
+              },
+              credentials: 'include'
+            });
+            existingApplications[y.year][t] = aRes.ok;
+          } catch {
+            existingApplications[y.year][t] = false;
+          }
+        }
+      }
+      existingAppsLoaded = true;
     }
 
     if (createBtn) {
@@ -147,11 +152,12 @@ let currentType = 'delegate';
       setPublicLink();
     });
 
-    newAppBtn.addEventListener('click', () => {
+    newAppBtn.addEventListener('click', async () => {
       clearError();
       newAppForm.classList.remove('hidden');
       newAppYear.value = '';
       newAppType.value = currentType;
+      await loadExistingAppStatus();
       updateCopyOptions();
       validateNewAppForm();
     });
