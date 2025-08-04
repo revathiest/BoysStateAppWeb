@@ -119,6 +119,9 @@ describe('application-config.js', () => {
     await Promise.resolve();
     await new Promise(r => setTimeout(r, 0));
 
+    expect(global.fetch.mock.calls[1][1].method).toBe('HEAD');
+    expect(global.fetch.mock.calls[2][1].method).toBe('HEAD');
+
     handlers.inputIdx({ target: { value: 'New' } });
     handlers.reqChange({});
     handlers.removeOpt({});
