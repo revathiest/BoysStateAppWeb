@@ -1,5 +1,7 @@
 // application-builder.js
 
+// Wrap in IIFE to avoid redeclaration of globals
+(function () {
 // Import dependencies (CommonJS for tests, globals for browser)
 let renderFieldTypeOptions, showError, clearError, showSuccess;
 if (typeof module !== 'undefined' && module.exports) {
@@ -250,4 +252,5 @@ if (typeof module !== 'undefined' && module.exports) {
 } else {
   window.renderApplicationBuilder = renderApplicationBuilder;
 }
+})();
 
