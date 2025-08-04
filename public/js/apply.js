@@ -1,6 +1,6 @@
 // js/apply.js
 
-const programId = getProgramId();
+const { programId, year, type } = getApplicationParams();
 
 document.addEventListener('DOMContentLoaded', async function() {
     if (!programId) {
@@ -9,7 +9,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     try {
-      const config = await fetchApplicationConfig(programId);
+      const config = await fetchApplicationConfig(programId, year, type);
       renderApplicationForm(config);
 
       const form = document.getElementById('applicationForm');

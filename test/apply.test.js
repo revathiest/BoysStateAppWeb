@@ -8,7 +8,7 @@ describe('apply.js', () => {
       getElementById: id => (id === 'applicationForm' ? form : id === 'formStatus' ? formStatus : { innerHTML: '' }),
       addEventListener: (ev, fn) => { if (ev === 'DOMContentLoaded') ready = fn; }
     };
-    global.getProgramId = jest.fn().mockReturnValue('abc');
+    global.getApplicationParams = jest.fn().mockReturnValue({ programId: 'abc', year: '2024', type: 'delegate' });
     global.fetchApplicationConfig = jest.fn().mockResolvedValue({ questions: [] });
     global.renderApplicationForm = jest.fn();
     global.addValidationListeners = jest.fn();
@@ -17,7 +17,7 @@ describe('apply.js', () => {
     require('../public/js/apply.js');
     await ready();
 
-    expect(global.fetchApplicationConfig).toHaveBeenCalledWith('abc');
+    expect(global.fetchApplicationConfig).toHaveBeenCalledWith('abc', '2024', 'delegate');
     expect(global.renderApplicationForm).toHaveBeenCalled();
     expect(global.addValidationListeners).toHaveBeenCalled();
     expect(typeof form.onsubmit).toBe('function');
@@ -31,7 +31,7 @@ describe('apply.js', () => {
       getElementById: id => (id === 'applicationForm' ? form : { innerHTML: '' }),
       addEventListener: (ev, fn) => { if (ev === 'DOMContentLoaded') ready = fn; }
     };
-    global.getProgramId = jest.fn().mockReturnValue('');
+    global.getApplicationParams = jest.fn().mockReturnValue({ programId: '', year: '', type: '' });
     require('../public/js/apply.js');
     await ready();
     expect(form.innerHTML).toContain('No program selected');
@@ -45,7 +45,7 @@ describe('apply.js', () => {
       getElementById: id => (id === 'applicationForm' ? form : { innerHTML: '' }),
       addEventListener: (ev, fn) => { if (ev === 'DOMContentLoaded') ready = fn; }
     };
-    global.getProgramId = jest.fn().mockReturnValue('abc');
+    global.getApplicationParams = jest.fn().mockReturnValue({ programId: 'abc', year: '2024', type: 'delegate' });
     global.fetchApplicationConfig = jest.fn().mockRejectedValue(new Error('fail'));
     global.renderApplicationForm = jest.fn();
     global.addValidationListeners = jest.fn();
