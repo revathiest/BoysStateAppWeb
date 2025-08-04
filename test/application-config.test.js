@@ -135,8 +135,11 @@ describe('application-config.js', () => {
 
     expect(global.fetch).toHaveBeenCalled();
     expect(elements['publicApplicationUrl'].value).toContain('apply.html?programId=p1');
-    expect(elements['publicApplicationUrl'].value).toContain('year=2024');
-    expect(elements['publicApplicationUrl'].value).toContain('type=delegate');
+    expect(elements['publicApplicationUrl'].value).not.toContain('year=');
+    expect(elements['publicApplicationUrl'].value).not.toContain('type=');
+    const token = new URL(elements['publicApplicationUrl'].value).searchParams.get('token');
+    const decoded = JSON.parse(Buffer.from(token, 'base64').toString('utf-8'));
+    expect(decoded).toEqual({ year: 2024, type: 'delegate' });
 
     await new Promise(r => setTimeout(r, 0));
 

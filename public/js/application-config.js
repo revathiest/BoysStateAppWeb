@@ -232,10 +232,18 @@ let currentType = 'delegate';
       }
     }
 
+    function encodeToken(year, type) {
+      const json = JSON.stringify({ year, type });
+      return typeof btoa === 'function'
+        ? btoa(json)
+        : Buffer.from(json, 'utf-8').toString('base64');
+    }
+
     function setPublicLink() {
       if (typeof programId !== 'undefined' && programId && currentYear && currentType) {
+        const token = encodeToken(currentYear, currentType);
         document.getElementById('publicApplicationUrl').value =
-          location.origin + '/apply.html?programId=' + encodeURIComponent(programId) + '&year=' + encodeURIComponent(currentYear) + '&type=' + encodeURIComponent(currentType);
+          location.origin + '/apply.html?programId=' + encodeURIComponent(programId) + '&token=' + encodeURIComponent(token);
       } else {
         document.getElementById('publicApplicationUrl').value =
           'Program ID not available.';
