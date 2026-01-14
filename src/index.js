@@ -133,7 +133,10 @@ function createServer() {
   return http.createServer(async (req, res) => {
     const startTime = Date.now();
     res.on('finish', () => logRequest(req, res, startTime));
-    res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self'; style-src 'self'");
+    res.setHeader(
+      'Content-Security-Policy',
+      "default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self' http://localhost:3000 https://boysstateappservices.up.railway.app"
+    );
     setCorsHeaders(req, res);
     if (req.method === 'OPTIONS') {
       res.writeHead(204);
@@ -294,13 +297,22 @@ function createServer() {
       return res.end(JSON.stringify({ total: logs.length, items }));
     }
 
-    let filePath;
-    if (req.url === '/') {
-      filePath = path.join(__dirname, '..', 'index.html');
-    } else {
-      filePath = path.normalize(path.join(publicDir, req.url.slice(1)));
+    const requestUrl = new URL(req.url, `http://${req.headers.host}`);
+    let pathname = requestUrl.pathname;
+    try {
+      pathname = decodeURIComponent(pathname);
+    } catch {
+      // Use raw pathname if decoding fails.
     }
+    let filePath;
     const baseDir = path.join(__dirname, '..');
+    if (pathname === '/') {
+      filePath = path.join(baseDir, 'index.html');
+    } else if (pathname.startsWith('/public/')) {
+      filePath = path.normalize(path.join(baseDir, pathname.slice(1)));
+    } else {
+      filePath = path.normalize(path.join(publicDir, pathname.slice(1)));
+    }
 
     if (!filePath.startsWith(baseDir)) {
       res.writeHead(400);
