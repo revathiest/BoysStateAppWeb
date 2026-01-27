@@ -54,13 +54,17 @@ function renderProgramSelector(programs, selectedProgramId) {
 
 // Update all config links with selected programId
 function updateConfigLinks(programId) {
-  document
-    .querySelectorAll('a[href*="YOUR_PROGRAM_ID"]')
-    .forEach((link) => {
-      link.href = link.href.replace(/YOUR_PROGRAM_ID/g, programId);
-    });
+  if (!programId) return;
+  document.getElementById("brandingLink").href = `branding-contact.html?programId=${encodeURIComponent(programId)}`;
+  document.getElementById("groupingsLink").href = `programs-groupings.html?programId=${encodeURIComponent(programId)}`;
+  document.getElementById("partiesLink").href = `programs-parties.html?programId=${encodeURIComponent(programId)}`;
+  document.getElementById("positionsLink").href = `programs-positions.html?programId=${encodeURIComponent(programId)}`;
+  document.getElementById("staffLink").href = `programs-staff.html?programId=${encodeURIComponent(programId)}`;
+  document.getElementById("parentsLink").href = `programs-parents.html?programId=${encodeURIComponent(programId)}`;
   // Store for other navigation
   window.selectedProgramId = programId;
+  // Load years for this program
+  loadProgramYears(programId);
 }
 
 async function fetchProgramsAndRenderSelector() {
@@ -104,6 +108,160 @@ async function fetchProgramsAndRenderSelector() {
   }
 }
 
+// Year Management
+async function loadProgramYears(programId) {
+  const yearsList = document.getElementById('years-list');
+  if (!programId || !yearsList) return;
+
+  try {
+    const response = await fetch(`${apiBase}/programs/${encodeURIComponent(programId)}/years`, {
+      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+      credentials: 'include',
+    });
+
+    if (!response.ok) throw new Error('Failed to load years');
+    const years = await response.json();
+
+    // Get currently selected year (from localStorage or default to most recent)
+    let selectedYear = localStorage.getItem(`selectedYear_${programId}`);
+    if (!selectedYear && years.length > 0) {
+      selectedYear = years[0].year.toString();
+      localStorage.setItem(`selectedYear_${programId}`, selectedYear);
+    }
+    window.selectedYear = selectedYear ? parseInt(selectedYear) : null;
+
+    if (years.length === 0) {
+      yearsList.innerHTML = '<span class="text-gray-500 italic">No years configured yet. Click "Add Year" to get started.</span>';
+    } else if (years.length === 1) {
+      // Single year - just display it
+      yearsList.innerHTML = `
+        <div class="flex items-center gap-2">
+          <span class="text-gray-600 font-medium">Current Year:</span>
+          <span class="inline-block bg-legend-blue text-white px-4 py-2 rounded-full font-bold">${years[0].year}</span>
+        </div>
+      `;
+    } else {
+      // Multiple years - show dropdown selector
+      const options = years.map(y =>
+        `<option value="${y.year}" ${y.year == selectedYear ? 'selected' : ''}>${y.year}</option>`
+      ).join('');
+
+      yearsList.innerHTML = `
+        <div class="flex items-center gap-3">
+          <label for="year-selector" class="text-gray-600 font-medium">Selected Year:</label>
+          <select id="year-selector" class="border border-gray-300 rounded-lg px-3 py-2 font-semibold text-legend-blue focus:outline-none focus:ring-2 focus:ring-legend-blue">
+            ${options}
+          </select>
+        </div>
+      `;
+
+      // Add change listener
+      document.getElementById('year-selector').addEventListener('change', (e) => {
+        const newYear = e.target.value;
+        localStorage.setItem(`selectedYear_${programId}`, newYear);
+        window.selectedYear = parseInt(newYear);
+        // Dispatch event for other components to listen to
+        document.dispatchEvent(new CustomEvent('yearChanged', { detail: { year: newYear, programId } }));
+      });
+    }
+  } catch (err) {
+    yearsList.innerHTML = '<span class="text-red-600">Failed to load years</span>';
+    console.error('Error loading years:', err);
+  }
+}
+
+async function saveNewYear(programId, year) {
+  const statusDiv = document.getElementById('year-form-status');
+  statusDiv.classList.add('hidden');
+
+  try {
+    // Check if user wants to copy from previous year
+    const copyCheckbox = document.getElementById('copy-from-previous-checkbox');
+    const copyFromPreviousYear = copyCheckbox?.checked || false;
+
+    const requestBody = {
+      year: Number(year),
+      status: 'active',
+      ...(copyFromPreviousYear ? { copyFromPreviousYear: true } : {})
+    };
+
+    const response = await fetch(`${apiBase}/programs/${encodeURIComponent(programId)}/years`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+      credentials: 'include',
+      body: JSON.stringify(requestBody),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to create year');
+    }
+
+    // Success - reload years and hide form
+    await loadProgramYears(programId);
+    document.getElementById('add-year-form').classList.add('hidden');
+    document.getElementById('new-year-input').value = '';
+    if (copyCheckbox) copyCheckbox.checked = false;
+
+    const successMsg = copyFromPreviousYear
+      ? 'Year added successfully! Copied configuration from previous year.'
+      : 'Year added successfully!';
+    statusDiv.textContent = successMsg;
+    statusDiv.classList.remove('hidden', 'text-red-600');
+    statusDiv.classList.add('text-green-700');
+  } catch (err) {
+    statusDiv.textContent = err.message || 'Failed to create year';
+    statusDiv.classList.remove('hidden', 'text-green-700');
+    statusDiv.classList.add('text-red-600');
+  }
+}
+
+function setupYearManagement() {
+  const addYearBtn = document.getElementById('add-year-btn');
+  const addYearForm = document.getElementById('add-year-form');
+  const saveYearBtn = document.getElementById('save-year-btn');
+  const cancelYearBtn = document.getElementById('cancel-year-btn');
+  const newYearInput = document.getElementById('new-year-input');
+
+  if (!addYearBtn) return;
+
+  addYearBtn.addEventListener('click', () => {
+    addYearForm.classList.toggle('hidden');
+    newYearInput.focus();
+  });
+
+  cancelYearBtn.addEventListener('click', () => {
+    addYearForm.classList.add('hidden');
+    newYearInput.value = '';
+    const copyCheckbox = document.getElementById('copy-from-previous-checkbox');
+    if (copyCheckbox) copyCheckbox.checked = false;
+    document.getElementById('year-form-status').classList.add('hidden');
+  });
+
+  saveYearBtn.addEventListener('click', () => {
+    const year = newYearInput.value.trim();
+    const programId = window.selectedProgramId || document.getElementById('current-program-id')?.value;
+
+    if (!year || !programId) {
+      const statusDiv = document.getElementById('year-form-status');
+      statusDiv.textContent = 'Please enter a valid year';
+      statusDiv.classList.remove('hidden', 'text-green-700');
+      statusDiv.classList.add('text-red-600');
+      return;
+    }
+
+    saveNewYear(programId, year);
+  });
+
+  // Allow Enter key to save
+  newYearInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      saveYearBtn.click();
+    }
+  });
+}
+
 // On load
 document.addEventListener("DOMContentLoaded", () => {
   const logoutBtn = document.getElementById('logoutBtn');
@@ -113,9 +271,48 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
   fetchProgramsAndRenderSelector();
+  setupYearManagement();
+
+  // Fallback for direct selector <select> (if present):
+  const select = document.querySelector('#program-selector select');
+  if (select) {
+    // On change, update links
+    select.addEventListener('change', function() {
+      updateConfigLinks(this.value);
+      loadProgramYears(this.value);
+    });
+    // Also update immediately on page load to match current selection
+    if (select.value) {
+      updateConfigLinks(select.value);
+      loadProgramYears(select.value);
+    }
+  }
 });
 
+// Listen for custom programSelected event
+document.addEventListener("programSelected", function(e) {
+  updateConfigLinks(e.detail.programId);
+});
+
+// Utility function for other pages to get selected year
+function getSelectedYear(programId) {
+  if (!programId) {
+    programId = window.selectedProgramId || localStorage.getItem('lastSelectedProgramId');
+  }
+  return programId ? parseInt(localStorage.getItem(`selectedYear_${programId}`)) : null;
+}
+
+// Make it available globally
+window.getSelectedYear = getSelectedYear;
+
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { getUsername, renderProgramSelector, updateConfigLinks, fetchProgramsAndRenderSelector };
+  module.exports = {
+    getUsername,
+    renderProgramSelector,
+    updateConfigLinks,
+    fetchProgramsAndRenderSelector,
+    loadProgramYears,
+    getSelectedYear
+  };
 }
 

@@ -6,7 +6,7 @@
     const box = document.getElementById('errorBox');
     if (box) {
       box.textContent = msg;
-      box.style.display = 'block';
+      box.classList.remove('hidden');
     }
   }
 
@@ -14,7 +14,7 @@
     const box = document.getElementById('errorBox');
     if (box) {
       box.textContent = '';
-      box.style.display = 'none';
+      box.classList.add('hidden');
     }
   }
 
@@ -22,9 +22,9 @@
     const box = document.getElementById('successBox');
     if (box) {
       box.textContent = msg;
-      box.style.display = 'block';
+      box.classList.remove('hidden');
       setTimeout(() => {
-        box.style.display = 'none';
+        box.classList.add('hidden');
         box.textContent = '';
       }, 2000);
     }

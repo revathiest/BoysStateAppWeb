@@ -139,6 +139,81 @@ Enables program admins to define, publish, and manage online application forms f
 
 ### 2.8. Integration Agents (Planned)
 
+### 2.9. Application Review & User Management Agents
+
+**Description:**  
+Provides two distinct review systems—one for delegate applications and one for staff applications. Both are restricted to authorized program staff/admins but have separate workflows, roles, data handling, and onboarding logic.
+
+#### A. Delegate Application Review Agent
+
+**Responsibilities:**
+- Admin/staff UI for listing all **pending delegate applications**
+- Filter/search/sort by year, status (pending/accepted/rejected), school, etc.
+- View full application details, files, and metadata
+- **Accept** action:
+  - Creates a new delegate user account linked to the application and program
+  - Triggers delegate onboarding, notification, and portal access provisioning
+  - Records audit (who/when accepted, notes)
+- **Reject** action:
+  - Marks application as rejected
+  - (Optional) Triggers notification to applicant
+  - Audit logs all rejections, including who/when/why
+- Bulk actions: Accept/Reject multiple delegate applications
+- Data isolation: Only applications for the reviewer’s assigned program are visible
+- **No staff applications are visible or actionable in this UI**
+- Export/download permitted only for delegate application data
+- All actions audited and tested for compliance (COPPA, FERPA, etc.)
+
+**UI Flows:**
+- “Delegate Applications” dashboard (list, filters, actions)
+- Detailed view, approve/reject controls
+- Confirmation and status feedback for all actions
+
+---
+
+#### B. Staff Application Review Agent
+
+**Responsibilities:**
+- Admin UI for listing all **pending staff applications** (separate table/dashboard from delegates)
+- Filter/search/sort by staff type/role, status, year, etc.
+- View full application details, references, and supporting files
+- **Accept** action:
+  - Creates a staff user account (correct role/permissions per application)
+  - Triggers staff onboarding and access to admin/counselor portal features
+  - Full audit (who/when/why accepted)
+- **Reject** action:
+  - Marks application as rejected, with reason if provided
+  - Notification to applicant (if contact available)
+  - Full audit trail
+- Bulk Accept/Reject (where permitted)
+- Data isolation: Staff reviewers only see staff applications for their own program
+- **No delegate applications are visible or actionable in this UI**
+- Export/download permitted only for staff application data
+- Integration with background check or approval workflows (future/planned)
+- All review, accept, and reject actions are logged and auditable
+
+**UI Flows:**
+- “Staff Applications” dashboard (completely separate from delegates)
+- Details, review, approve/reject, status/history views
+
+---
+
+**Security, Compliance, and Audit (Both Agents):**
+- Strict role-based access: Only permitted users can review/approve/reject in each section
+- Reviewers cannot see or act on applications outside their program or type (delegate vs. staff)
+- All decisions/actions logged with user, timestamp, and action reason
+- Export, notification, and onboarding flows are separately tracked per agent
+- All review features require automated tests and OpenAPI docs
+
+---
+
+**Automated Testing & Documentation:**
+- Separate integration/unit tests for staff and delegate review flows (edge cases: double accept, re-review, etc.)
+- All new endpoints for each process are documented, with example payloads and required roles
+- Onboarding/user creation flows validated for each role
+
+---
+
 **Google Calendar Agent:** Manage Google Calendar integration for schedule sync and sharing.
 
 **Google Docs Agent:** Link/upload/view program documents/resources.

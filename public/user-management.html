@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>User Management – Application Review</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="tailwind.css">
+  <link rel="stylesheet" href="logo.css">
+</head>
+<body class="bg-gray-50 font-sans min-h-screen">
+
+  <!-- NAVBAR (reuse your portal navbar) -->
+  <nav class="bg-legend-blue text-white px-6 py-4 flex items-center justify-between shadow">
+    <div class="flex items-center gap-3">
+      <img src="images/Boys-State-Shield-White-on-Blue.png" alt="Logo" class="w-8 h-8 p-1 rounded-full" />
+      <span class="text-xl font-semibold">Boys State App <span class="text-sm font-normal text-legend-gold ml-2">Admin Portal</span></span>
+    </div>
+    <button id="logoutBtn" type="button" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-2xl shadow transition" aria-label="Logout">Logout</button>
+  </nav>
+
+  <main class="flex flex-col items-center p-6 lg:p-10 bg-gray-50 min-h-screen">
+    <a href="console.html" class="inline-flex items-center text-legend-blue font-semibold mb-4 hover:underline group self-start w-full max-w-4xl">
+      <span class="mr-2 text-lg">&larr;</span>
+      Back to Dashboard
+    </a>
+
+    <h1 class="text-3xl font-extrabold text-legend-blue mb-2 self-start w-full max-w-4xl">User Management</h1>
+    <p class="text-gray-700 mb-6 self-start w-full max-w-4xl">Review and manage delegate and staff applications for your program.</p>
+  
+    <!-- Tabs -->
+    <div class="w-full max-w-4xl mb-6 flex">
+      <button id="tab-delegate" class="flex-1 py-3 text-lg font-semibold rounded-t-2xl border-b-4 transition-all
+        border-legend-blue text-legend-blue bg-white shadow-sm focus:outline-none" type="button">
+        Delegate Applications
+      </button>
+      <button id="tab-staff" class="flex-1 py-3 text-lg font-semibold rounded-t-2xl border-b-4 transition-all
+        border-transparent text-gray-500 bg-gray-100 shadow-sm focus:outline-none hover:text-legend-blue" type="button">
+        Staff Applications
+      </button>
+    </div>
+  
+    <!-- Error/Success Boxes -->
+    <div id="errorBox" class="hidden bg-red-100 text-red-700 px-4 py-2 rounded-xl mb-4 w-full max-w-4xl shadow"></div>
+    <div id="successBox" class="hidden bg-green-100 text-green-700 px-4 py-2 rounded-xl mb-4 w-full max-w-4xl shadow"></div>
+  
+    <!-- Delegate Applications Card -->
+    <section id="delegate-applications-section" class="w-full max-w-4xl mb-10">
+      <div class="bg-white rounded-2xl shadow-lg p-6 border-t-4 border-legend-gold">
+        <h2 class="text-xl font-bold text-legend-blue mb-4">Pending Delegate Applications</h2>
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="py-3 px-4 text-left font-semibold">Name</th>
+                <th class="py-3 px-4 text-left font-semibold">Year</th>
+                <th class="py-3 px-4 text-left font-semibold">Status</th>
+                <th class="py-3 px-4 text-left font-semibold">Submitted</th>
+                <th class="py-3 px-4 text-left font-semibold">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="delegate-applications-table" class="bg-white divide-y divide-gray-100">
+              <!-- Populated by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  
+    <!-- Staff Applications Card -->
+    <section id="staff-applications-section" class="hidden w-full max-w-4xl mb-10">
+      <div class="bg-white rounded-2xl shadow-lg p-6 border-t-4 border-legend-gold">
+        <h2 class="text-xl font-bold text-legend-blue mb-4">Pending Staff Applications</h2>
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="py-3 px-4 text-left font-semibold">Name</th>
+                <th class="py-3 px-4 text-left font-semibold">Role</th>
+                <th class="py-3 px-4 text-left font-semibold">Year</th>
+                <th class="py-3 px-4 text-left font-semibold">Status</th>
+                <th class="py-3 px-4 text-left font-semibold">Submitted</th>
+                <th class="py-3 px-4 text-left font-semibold">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="staff-applications-table" class="bg-white divide-y divide-gray-100">
+              <!-- Populated by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  
+    <!-- Application Modal -->
+    <div id="application-modal" class="hidden fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+      <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-8 relative">
+        <button id="close-modal-btn" class="absolute top-3 right-3 text-gray-400 hover:text-gray-800 text-2xl" aria-label="Close">&times;</button>
+        <div id="application-modal-content"></div>
+      </div>
+    </div>
+  </main>  
+
+  <footer class="bg-legend-blue text-white border-t mt-8 py-4 text-center text-xs">
+    &copy; 2025 Boys State App Admin Portal. Not affiliated with or endorsed by the American Legion.
+  </footer>
+
+  <!-- Load your portal scripts -->
+  <script src="js/config.js"></script>
+  <script src="js/authHelper.js"></script>
+  <script src="js/application-field-types.js"></script>
+  <script src="js/application-messages.js"></script>
+  <script src="js/application-service.js"></script>
+  <script src="js/user-management.js"></script>
+</body>
+</html>
+
