@@ -136,9 +136,14 @@ async function handleFormSubmit(e, form, config, formStatus) {
       return;
     }
 
-    const programId = getProgramId();
+    const { programId, year, type } = getApplicationParams();
     try {
-      const response = await fetch(`${window.API_URL}/api/programs/${encodeURIComponent(programId)}/application/responses`, {
+      // Include year and type in URL to ensure response is saved to correct application
+      let url = `${window.API_URL}/api/programs/${encodeURIComponent(programId)}/application/responses`;
+      if (year && type) {
+        url += `?year=${encodeURIComponent(year)}&type=${encodeURIComponent(type)}`;
+      }
+      const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

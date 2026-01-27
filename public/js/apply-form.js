@@ -5,11 +5,46 @@ function renderApplicationForm(config) {
 
     // Set program title and description
     document.getElementById('programTitle').textContent = config.title || "Program Application";
-    document.getElementById('programBranding').innerHTML = config.description
+
+    // Check if application is closed
+    const now = new Date();
+    const closingDate = config.closingDate ? new Date(config.closingDate) : null;
+    const isClosed = closingDate && now > closingDate;
+
+    let brandingHTML = config.description
       ? `<div class="mb-4 text-gray-700">${config.description}</div>`
       : '';
 
+    if (closingDate) {
+      const dateStr = closingDate.toLocaleString('en-US', {
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+      });
+      if (isClosed) {
+        brandingHTML += `<div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+          <strong>Applications Closed:</strong> This application closed on ${dateStr}.
+        </div>`;
+      } else {
+        brandingHTML += `<div class="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded mb-4">
+          <strong>Application Deadline:</strong> ${dateStr}
+        </div>`;
+      }
+    }
+
+    document.getElementById('programBranding').innerHTML = brandingHTML;
+
     const form = document.getElementById('applicationForm');
+
+    // If closed, show message and don't render form
+    if (isClosed) {
+      form.innerHTML = '<div class="text-center py-8 text-gray-600"><p class="text-lg font-semibold">Applications are no longer being accepted.</p><p class="mt-2">Please contact the program administrators if you have questions.</p></div>';
+      return;
+    }
+
     form.innerHTML = "";
 
     // Sort by "order" just in case

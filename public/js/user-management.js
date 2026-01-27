@@ -7,15 +7,29 @@ function switchTab(tab) {
     const tabDelegate = document.getElementById('tab-delegate');
     const tabStaff = document.getElementById('tab-staff');
     if (tab === 'delegate') {
-      delegateSection.style.display = '';
-      staffSection.style.display = 'none';
-      tabDelegate.classList.add('border-b-2', 'font-bold');
-      tabStaff.classList.remove('border-b-2', 'font-bold');
+      // Show/hide sections
+      delegateSection.classList.remove('hidden');
+      staffSection.classList.add('hidden');
+
+      // Style delegate tab as active
+      tabDelegate.classList.add('border-legend-blue', 'text-legend-blue', 'bg-white');
+      tabDelegate.classList.remove('border-transparent', 'text-gray-500', 'bg-gray-100');
+
+      // Style staff tab as inactive
+      tabStaff.classList.remove('border-legend-blue', 'text-legend-blue', 'bg-white');
+      tabStaff.classList.add('border-transparent', 'text-gray-500', 'bg-gray-100');
     } else {
-      delegateSection.style.display = 'none';
-      staffSection.style.display = '';
-      tabStaff.classList.add('border-b-2', 'font-bold');
-      tabDelegate.classList.remove('border-b-2', 'font-bold');
+      // Show/hide sections
+      delegateSection.classList.add('hidden');
+      staffSection.classList.remove('hidden');
+
+      // Style staff tab as active
+      tabStaff.classList.add('border-legend-blue', 'text-legend-blue', 'bg-white');
+      tabStaff.classList.remove('border-transparent', 'text-gray-500', 'bg-gray-100');
+
+      // Style delegate tab as inactive
+      tabDelegate.classList.remove('border-legend-blue', 'text-legend-blue', 'bg-white');
+      tabDelegate.classList.add('border-transparent', 'text-gray-500', 'bg-gray-100');
     }
   }
   
@@ -251,10 +265,10 @@ function switchTab(tab) {
       ${answersHtml}
       ${extraFilesHtml}
     `;
-    modal.style.display = 'flex';
+    modal.classList.remove('hidden');
   }
-  
-  
+
+
   // Accept/Reject Application
   async function handleDecision(id, type, action) {
     try {
@@ -285,7 +299,7 @@ function switchTab(tab) {
   }
   
   function closeModal() {
-    document.getElementById('application-modal').style.display = 'none';
+    document.getElementById('application-modal').classList.add('hidden');
   }
   
   // Attach all event listeners
@@ -293,11 +307,17 @@ function switchTab(tab) {
     // Tab switching
     document.getElementById('tab-delegate').addEventListener('click', () => {
       switchTab('delegate');
-      loadDelegateApplications();
+      const programId = window.getProgramId ? window.getProgramId() : null;
+      if (programId) {
+        loadDelegateApplications();
+      }
     });
     document.getElementById('tab-staff').addEventListener('click', () => {
       switchTab('staff');
-      loadStaffApplications();
+      const programId = window.getProgramId ? window.getProgramId() : null;
+      if (programId) {
+        loadStaffApplications();
+      }
     });
   
     // Application actions (using event delegation)
@@ -331,6 +351,27 @@ function switchTab(tab) {
   document.addEventListener('DOMContentLoaded', () => {
     attachEventListeners();
     switchTab('delegate'); // Default tab
-    loadDelegateApplications();
+
+    // Check if programId is available before loading
+    const programId = window.getProgramId ? window.getProgramId() : null;
+    if (programId) {
+      loadDelegateApplications();
+    } else {
+      // Show a friendly message instead of an error
+      const tbody = document.getElementById('delegate-applications-table');
+      if (tbody) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="5" class="py-8 px-4 text-gray-500 text-center">
+              <svg class="inline w-12 h-12 mb-2 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+              </svg>
+              <div class="font-semibold">No program selected</div>
+              <div class="text-sm mt-1">Please select a program from the dashboard first.</div>
+            </td>
+          </tr>
+        `;
+      }
+    }
   });
   

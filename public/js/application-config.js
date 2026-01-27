@@ -116,7 +116,7 @@ let currentType = 'delegate';
         for (const t of ['delegate', 'staff']) {
           try {
             const aRes = await fetch(`${window.API_URL}/api/programs/${encodeURIComponent(programId)}/application?year=${encodeURIComponent(y.year)}&type=${t}`, {
-              method: 'HEAD',
+              method: 'GET',
               headers: {
                 ...(typeof getAuthHeaders === 'function' ? getAuthHeaders() : {})
               },
@@ -133,7 +133,7 @@ let currentType = 'delegate';
 
     if (createBtn) {
       createBtn.addEventListener('click', () => {
-        card.style.display = 'none';
+        card.classList.add('hidden');
         renderApplicationBuilder(builderRoot, {}, programId, currentYear, currentType);
       });
     }
@@ -226,16 +226,34 @@ let currentType = 'delegate';
         });
           if (res.ok) {
             const data = await res.json();
-            card.style.display = 'none';
+
+            // DEBUG: Log received data
+            console.log('[DEBUG] Received application data:', data);
+            console.log('[DEBUG] data.locked:', data.locked);
+            console.log('[DEBUG] Has locked field?', 'locked' in data);
+            console.log('[DEBUG] Locked includes questions?', data.locked && data.locked.includes('questions'));
+
+            card.classList.add('hidden');
+
+            // Render the form first
             renderApplicationBuilder(builderRoot, data, programId, year, type);
+
+            // Then check if questions are locked and show warning banner AFTER rendering
+            if (data.locked && data.locked.includes('questions')) {
+              console.log('[DEBUG] Showing locked warning banner');
+              showLockedWarning(builderRoot, data.message, programId, year, type);
+            } else {
+              console.log('[DEBUG] NOT showing locked warning banner');
+            }
+
             clearError();
           } else {
-            card.style.display = '';
+            card.classList.remove('hidden');
             builderRoot.innerHTML = '';
             if (noAppMsg) noAppMsg.textContent = `No application form defined for ${year} ${type}.`;
           }
       } catch {
-        card.style.display = '';
+        card.classList.remove('hidden');
         builderRoot.innerHTML = '';
         if (noAppMsg) noAppMsg.textContent = `No application form defined for ${year} ${type}.`;
         showError('Failed to load application');
@@ -257,6 +275,130 @@ let currentType = 'delegate';
       } else {
         document.getElementById('publicApplicationUrl').value =
           'Program ID not available.';
+      }
+    }
+
+    // Show locked warning banner with delete option
+    function showLockedWarning(builderRoot, message, programId, year, type) {
+      const warningBanner = document.createElement('div');
+      warningBanner.id = 'locked-warning-banner';
+      warningBanner.className = 'bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6 rounded-r-lg';
+      warningBanner.innerHTML = `
+        <div class="flex items-start">
+          <div class="flex-shrink-0">
+            <svg class="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+            </svg>
+          </div>
+          <div class="ml-3 flex-1">
+            <h3 class="text-sm font-medium text-yellow-800">Questions Are Locked</h3>
+            <div class="mt-2 text-sm text-yellow-700">
+              <p>${message || 'Questions cannot be modified because responses have been submitted.'}</p>
+            </div>
+            <div class="mt-4">
+              <button type="button" id="delete-all-responses-btn" class="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg shadow transition">
+                Delete All Responses to Unlock Editing
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+      builderRoot.insertBefore(warningBanner, builderRoot.firstChild);
+
+      // Attach delete handler
+      const deleteBtn = document.getElementById('delete-all-responses-btn');
+      if (deleteBtn) {
+        deleteBtn.onclick = () => confirmAndDeleteAllResponses(programId, year, type);
+      }
+    }
+
+    // Confirm and delete all responses
+    async function confirmAndDeleteAllResponses(programId, year, type) {
+      // Fetch response count first
+      const responseCountText = await getResponseCount(programId, year, type);
+
+      const confirmed = confirm(
+        `⚠️ WARNING: This action cannot be undone!\n\n` +
+        `You are about to delete ${responseCountText} for this application.\n\n` +
+        `After deletion:\n` +
+        `• All submitted application responses will be permanently deleted\n` +
+        `• Question editing will be unlocked\n` +
+        `• This cannot be reversed\n\n` +
+        `Are you absolutely sure you want to proceed?`
+      );
+
+      if (!confirmed) return;
+
+      // Second confirmation
+      const doubleConfirmed = confirm(
+        `Are you REALLY sure?\n\n` +
+        `Type YES in the next dialog to confirm deletion of ${responseCountText}.`
+      );
+
+      if (!doubleConfirmed) return;
+
+      const userInput = prompt(
+        `Type YES (all capitals) to confirm deletion of ${responseCountText}:`
+      );
+
+      if (userInput !== 'YES') {
+        showError('Deletion cancelled. You must type YES exactly to proceed.');
+        return;
+      }
+
+      // Proceed with deletion
+      try {
+        const res = await fetch(
+          `${window.API_URL}/api/programs/${encodeURIComponent(programId)}/application/responses/all?year=${encodeURIComponent(year)}&type=${encodeURIComponent(type)}`,
+          {
+            method: 'DELETE',
+            headers: {
+              'Content-Type': 'application/json',
+              ...(typeof getAuthHeaders === 'function' ? getAuthHeaders() : {})
+            },
+            credentials: 'include'
+          }
+        );
+
+        if (res.ok) {
+          const data = await res.json();
+          showSuccess(data.message || 'All responses deleted successfully. Questions are now unlocked.');
+          // Remove warning banner
+          const banner = document.getElementById('locked-warning-banner');
+          if (banner) banner.remove();
+          // Reload the application
+          loadExistingApplication(year, type);
+        } else {
+          const error = await res.json();
+          showError(error.error || 'Failed to delete responses');
+        }
+      } catch (err) {
+        showError(err.message || 'Failed to delete responses');
+      }
+    }
+
+    // Get response count for confirmation dialog
+    async function getResponseCount(programId, year, type) {
+      try {
+        const appType = type === 'delegate' ? 'delegate' : 'staff';
+        const res = await fetch(
+          `${window.API_URL}/api/programs/${encodeURIComponent(programId)}/applications/${appType}?year=${encodeURIComponent(year)}`,
+          {
+            headers: {
+              ...(typeof getAuthHeaders === 'function' ? getAuthHeaders() : {})
+            },
+            credentials: 'include'
+          }
+        );
+
+        if (res.ok) {
+          const responses = await res.json();
+          const count = Array.isArray(responses) ? responses.length : 0;
+          return count === 1 ? '1 response' : `${count} responses`;
+        }
+        return 'all responses';
+      } catch {
+        return 'all responses';
       }
     }
 

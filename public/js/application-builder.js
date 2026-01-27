@@ -15,10 +15,48 @@ if (typeof module !== 'undefined' && module.exports) {
 }
 
 function renderApplicationBuilder(builderRoot, appData = {}, programId, currentYear, currentType) {
-  builderRoot.innerHTML = `       <form id="application-builder-form" class="bg-white rounded-2xl shadow-lg p-8 sm:p-12 max-w-4xl w-full mx-auto border-t-4 border-legend-gold flex flex-col gap-6">         <div>           <label class="block text-lg font-bold text-legend-blue mb-2" for="app-title">Application Title</label>           <input type="text" id="app-title" aria-label="Application title" class="border rounded-xl px-4 py-2 w-full" placeholder="e.g. 2025 Boys State Delegate Application" required />         </div>         <div>           <label class="block text-base font-semibold text-gray-700 mb-2" for="app-description">Application Description</label>           <textarea id="app-description" aria-label="Application description" class="border rounded-xl px-4 py-2 w-full min-h-[60px]" placeholder="Describe this application form"></textarea>         </div>         <div>           <label class="block text-base font-semibold text-gray-700 mb-2" for="questions-list">Questions</label>           <div id="questions-list" class="flex flex-col gap-4"></div>           <button type="button" id="add-question-btn" aria-label="Add question" class="mt-6 bg-legend-blue hover:bg-legend-gold text-white font-bold py-2 px-4 rounded-xl shadow transition">             + Add Question           </button>         </div>         <button type="submit" class="bg-legend-blue hover:bg-legend-gold text-white font-bold py-2 px-8 rounded-xl shadow transition self-center mt-4">              Save Application         </button>       </form>        `;
+  builderRoot.innerHTML = `       <form id="application-builder-form" class="bg-white rounded-2xl shadow-lg p-8 sm:p-12 max-w-4xl w-full mx-auto border-t-4 border-legend-gold flex flex-col gap-6">         <div>           <label class="block text-lg font-bold text-legend-blue mb-2" for="app-title">Application Title</label>           <input type="text" id="app-title" aria-label="Application title" class="border rounded-xl px-4 py-2 w-full" placeholder="e.g. 2025 Boys State Delegate Application" required />         </div>         <div>           <label class="block text-base font-semibold text-gray-700 mb-2" for="app-description">Application Description</label>           <textarea id="app-description" aria-label="Application description" class="border rounded-xl px-4 py-2 w-full min-h-[60px]" placeholder="Describe this application form"></textarea>         </div>         <div>           <label class="block text-base font-semibold text-gray-700 mb-2" for="app-closing-date">Application Closing Date <span class="text-sm font-normal text-gray-500">(optional)</span></label>           <input type="datetime-local" id="app-closing-date" aria-label="Application closing date" class="border rounded-xl px-4 py-2 w-full max-w-md" />           <p class="text-xs text-gray-500 mt-1">After this date, applicants will not be able to submit applications.</p>         </div>         <div>           <label class="block text-base font-semibold text-gray-700 mb-2" for="questions-list">Questions</label>           <div id="questions-list" class="flex flex-col gap-4"></div>           <button type="button" id="add-question-btn" aria-label="Add question" class="mt-6 bg-legend-blue hover:bg-legend-gold text-white font-bold py-2 px-4 rounded-xl shadow transition">             + Add Question           </button>         </div>         <button type="submit" class="bg-legend-blue hover:bg-legend-gold text-white font-bold py-2 px-8 rounded-xl shadow transition self-center mt-4">              Save Application         </button>       </form>        `;
   let questions = Array.isArray(appData.questions) ? appData.questions : [];
+
+  // ALWAYS ensure the first two questions are "First Name" and "Last Name" (required, cannot be removed)
+  const hasFirstName = questions.length > 0 && questions[0].text === 'First Name';
+  const hasLastName = questions.length > 1 && questions[1].text === 'Last Name';
+
+  if (!hasFirstName || !hasLastName) {
+    // Remove any existing name fields that are in wrong positions
+    questions = questions.filter(q => q.text !== 'First Name' && q.text !== 'Last Name' && q.text !== 'Full Name');
+
+    // Insert required name fields at the beginning
+    questions.unshift(
+      {
+        type: 'short_answer',
+        text: 'Last Name',
+        required: true,
+        isSystemField: true // Mark as system field to prevent removal
+      },
+      {
+        type: 'short_answer',
+        text: 'First Name',
+        required: true,
+        isSystemField: true // Mark as system field to prevent removal
+      }
+    );
+  } else {
+    // Ensure existing name fields are marked as required and system fields
+    questions[0].required = true;
+    questions[0].isSystemField = true;
+    questions[1].required = true;
+    questions[1].isSystemField = true;
+  }
+
   document.getElementById('app-title').value = appData.title || '';
   document.getElementById('app-description').value = appData.description || '';
+  // Set closing date if it exists
+  if (appData.closingDate) {
+    const closingDate = new Date(appData.closingDate);
+    const localDateTime = new Date(closingDate.getTime() - closingDate.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+    document.getElementById('app-closing-date').value = localDateTime;
+  }
 
   // --- Question rendering and editing ---
   function renderQuestions() {
@@ -73,20 +111,29 @@ function renderApplicationBuilder(builderRoot, appData = {}, programId, currentY
     } else if(q.type === "address") {
       optionsHTML = `<div class="ml-4 mt-2"><span class="text-xs text-gray-500">Standard US address fields.</span></div>`;
     }
+
+    // System fields (First Name and Last Name) cannot be removed and are always required
+    const isSystemField = q.isSystemField || idx === 0 || idx === 1;
+    const removeButtonHTML = isSystemField
+      ? `<span class="text-xs text-gray-500 ml-2 px-2 py-1 bg-blue-100 rounded">Required Field</span>`
+      : `<button type="button" class="text-red-600 hover:underline ml-2" data-remove="${idx}">Remove</button>`;
+    const requiredCheckboxDisabled = isSystemField ? 'disabled' : '';
+    const requiredCheckboxTitle = isSystemField ? 'This field is always required' : '';
+
     return `
-        <div class="border rounded-xl p-4 bg-gray-50 flex flex-col gap-2">
+        <div class="border rounded-xl p-4 ${isSystemField ? 'bg-blue-50 border-blue-200' : 'bg-gray-50'} flex flex-col gap-2">
           <div class="flex gap-2 items-center mb-2">
             <label for="q-text-${idx}" class="sr-only">Question text</label>
-            <input id="q-text-${idx}" type="text" aria-label="Question text" class="border rounded px-3 py-2 flex-1" placeholder="Question text/label" value="${q.text || ''}" data-idx="${idx}" />
+            <input id="q-text-${idx}" type="text" aria-label="Question text" class="border rounded px-3 py-2 flex-1 ${isSystemField ? 'bg-gray-100' : ''}" placeholder="Question text/label" value="${q.text || ''}" data-idx="${idx}" ${isSystemField ? 'readonly' : ''} />
             <label for="q-type-${idx}" class="sr-only">Field type</label>
-            <select id="q-type-${idx}" aria-label="Field type" class="border rounded px-2 py-2 text-sm" data-type-idx="${idx}">
+            <select id="q-type-${idx}" aria-label="Field type" class="border rounded px-2 py-2 text-sm" data-type-idx="${idx}" ${isSystemField ? 'disabled' : ''}>
               ${renderFieldTypeOptions(q.type)}
             </select>
             <div class="flex items-center ml-2">
-              <input id="q-req-${idx}" type="checkbox" class="" ${q.required ? 'checked' : ''} data-required-idx="${idx}" aria-label="Required" />
+              <input id="q-req-${idx}" type="checkbox" class="" ${q.required ? 'checked' : ''} data-required-idx="${idx}" aria-label="Required" ${requiredCheckboxDisabled} title="${requiredCheckboxTitle}" />
               <label for="q-req-${idx}" class="ml-1">Required</label>
             </div>
-            <button type="button" class="text-red-600 hover:underline ml-2" data-remove="${idx}">Remove</button>
+            ${removeButtonHTML}
           </div>
           ${optionsHTML}
         </div>
@@ -120,10 +167,15 @@ function renderApplicationBuilder(builderRoot, appData = {}, programId, currentY
         questions[idx].required = chk.checked;
       });
     });
-    // Remove question
+    // Remove question (but not the first two fields which are always First Name and Last Name)
     builderRoot.querySelectorAll('button[data-remove]').forEach(btn => {
       btn.addEventListener('click', e => {
         const idx = +btn.dataset.remove;
+        // Prevent removing the first two fields (First Name and Last Name - system fields)
+        if (idx === 0 || idx === 1) {
+          if (showError) showError('The First Name and Last Name fields cannot be removed. They are required for all applications.');
+          return;
+        }
         questions.splice(idx, 1);
         renderQuestions();
       });
@@ -194,13 +246,21 @@ function renderApplicationBuilder(builderRoot, appData = {}, programId, currentY
     e.preventDefault();
     const title = document.getElementById('app-title').value.trim();
     const description = document.getElementById('app-description').value.trim();
+    const closingDateValue = document.getElementById('app-closing-date').value;
     // Remove empty or invalid questions
     const filteredQuestions = questions.filter(q => q.text.trim() !== "");
     if (!programId || !currentYear || !currentType) {
       showError('Missing program id');
       return;
     }
-    const payload = { year: currentYear, type: currentType, title, description, questions: filteredQuestions };
+    const payload = {
+      year: currentYear,
+      type: currentType,
+      title,
+      description,
+      closingDate: closingDateValue ? new Date(closingDateValue).toISOString() : null,
+      questions: filteredQuestions
+    };
     const saveBtn = document.querySelector('#application-builder-form button[type="submit"]');
     if (saveBtn) {
       saveBtn.disabled = true;
@@ -238,8 +298,8 @@ function renderApplicationBuilder(builderRoot, appData = {}, programId, currentY
     textarea.setSelectionRange(0, 99999); // Mobile
     navigator.clipboard.writeText(textarea.value).then(function() {
       const status = document.getElementById('copyStatus');
-      status.style.display = '';
-      setTimeout(() => status.style.display = 'none', 1200);
+      status.classList.remove('hidden');
+      setTimeout(() => status.classList.add('hidden'), 1200);
       showSuccess('Link copied');
     });
   };

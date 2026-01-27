@@ -19,6 +19,10 @@
   </nav>
 
   <main class="flex flex-col items-center p-6 lg:p-10 bg-gray-50 min-h-screen">
+    <a href="console.html" class="inline-flex items-center text-legend-blue font-semibold mb-4 hover:underline group self-start w-full max-w-4xl">
+      <span class="mr-2 text-lg">&larr;</span>
+      Back to Dashboard
+    </a>
 
     <h1 class="text-3xl font-extrabold text-legend-blue mb-2 self-start w-full max-w-4xl">User Management</h1>
     <p class="text-gray-700 mb-6 self-start w-full max-w-4xl">Review and manage delegate and staff applications for your program.</p>
@@ -36,8 +40,8 @@
     </div>
   
     <!-- Error/Success Boxes -->
-    <div id="errorBox" class="bg-red-100 text-red-700 px-4 py-2 rounded-xl mb-4 w-full max-w-4xl shadow" style="display:none"></div>
-    <div id="successBox" class="bg-green-100 text-green-700 px-4 py-2 rounded-xl mb-4 w-full max-w-4xl shadow" style="display:none"></div>
+    <div id="errorBox" class="hidden bg-red-100 text-red-700 px-4 py-2 rounded-xl mb-4 w-full max-w-4xl shadow"></div>
+    <div id="successBox" class="hidden bg-green-100 text-green-700 px-4 py-2 rounded-xl mb-4 w-full max-w-4xl shadow"></div>
   
     <!-- Delegate Applications Card -->
     <section id="delegate-applications-section" class="w-full max-w-4xl mb-10">
@@ -63,7 +67,7 @@
     </section>
   
     <!-- Staff Applications Card -->
-    <section id="staff-applications-section" class="w-full max-w-4xl mb-10" style="display:none;">
+    <section id="staff-applications-section" class="hidden w-full max-w-4xl mb-10">
       <div class="bg-white rounded-2xl shadow-lg p-6 border-t-4 border-legend-gold">
         <h2 class="text-xl font-bold text-legend-blue mb-4">Pending Staff Applications</h2>
         <div class="overflow-x-auto">
@@ -87,7 +91,7 @@
     </section>
   
     <!-- Application Modal -->
-    <div id="application-modal" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50" style="display:none;">
+    <div id="application-modal" class="hidden fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
       <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-8 relative">
         <button id="close-modal-btn" class="absolute top-3 right-3 text-gray-400 hover:text-gray-800 text-2xl" aria-label="Close">&times;</button>
         <div id="application-modal-content"></div>

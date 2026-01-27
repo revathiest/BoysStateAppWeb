@@ -20,8 +20,8 @@
 
   <main class="flex flex-col items-stretch p-6 lg:p-10 bg-gray-50 min-h-screen">
 
-    <div id="errorBox" class="bg-red-100 text-red-700 p-2 rounded mb-4" style="display:none"></div>
-    <div id="successBox" class="bg-green-100 text-green-700 p-2 rounded mb-4" style="display:none"></div>
+    <div id="errorBox" class="hidden bg-red-100 text-red-700 p-2 rounded mb-4"></div>
+    <div id="successBox" class="hidden bg-green-100 text-green-700 p-2 rounded mb-4"></div>
 
 <!-- Copy Link Button next to textarea -->
 <div class="flex items-center gap-3 mb-6 w-full max-w-8xl mx-auto">
@@ -29,14 +29,12 @@
   <textarea id="publicApplicationUrl" aria-label="Public application link"
   readonly
   rows="1"
-  class="flex-1 min-w-0 px-2 py-1 rounded border border-gray-300 bg-white text-blue-900 resize-none"
-  style="height:2.4rem; overflow:hidden; font-size:1rem; line-height:1.5; box-sizing:border-box; resize:none;"></textarea>
+  class="flex-1 min-w-0 px-2 py-1 rounded border border-gray-300 bg-white text-blue-900 resize-none h-10 overflow-hidden text-base leading-normal box-border"></textarea>
   <button type="button" id="copyLinkBtn" aria-label="Copy public application link"
-    class="ml-2 px-3 py-1 rounded bg-legend-blue text-white hover:bg-legend-gold font-medium flex-shrink-0"
-    style="border:none; cursor:pointer;">
+    class="ml-2 px-3 py-1 rounded bg-legend-blue text-white hover:bg-legend-gold font-medium flex-shrink-0 border-0 cursor-pointer">
     Copy Link
   </button>
-  <span id="copyStatus" class="ml-2 text-green-600 text-xs font-medium" style="display:none;">Copied!</span>
+  <span id="copyStatus" class="hidden ml-2 text-green-600 text-xs font-medium">Copied!</span>
 </div>
 
     <a href="programs-config.html" class="inline-flex items-center text-legend-blue font-semibold mb-4 hover:underline group self-start">

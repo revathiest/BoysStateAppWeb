@@ -12,7 +12,7 @@ document.addEventListener("DOMContentLoaded", async function() {
 
   if (!programId) {
     errorMsg.textContent = "Missing ?programId= in the URL!";
-    errorMsg.style.display = 'block';
+    errorMsg.classList.remove('hidden');
     formEls.forEach(el => el.disabled = true);
     programNameLabel.textContent = "";
     return;
@@ -20,7 +20,7 @@ document.addEventListener("DOMContentLoaded", async function() {
 
   // Loading indicator
   programNameLabel.textContent = "Loading program…";
-  errorMsg.style.display = 'none';
+  errorMsg.classList.add('hidden');
   formEls.forEach(el => el.disabled = true);
 
   try {
@@ -37,20 +37,20 @@ document.addEventListener("DOMContentLoaded", async function() {
         ? `${program.name}${program.year ? " (" + program.year + ")" : ""}`
         : `Program ${programId}`;
       programNameLabel.textContent = label;
-      errorMsg.style.display = 'none';
+      errorMsg.classList.add('hidden');
       formEls.forEach(el => el.disabled = false);
       // --- CHANGED: Fetch branding/contact data ---
       await loadBrandingContactFromApi(); // CHANGED
     } else {
       programNameLabel.textContent = `Program not found (${programId})`;
       errorMsg.textContent = "Program not found!";
-      errorMsg.style.display = 'block';
+      errorMsg.classList.remove('hidden');
       formEls.forEach(el => el.disabled = true);
     }
   } catch (e) {
     programNameLabel.textContent = `Failed to load program (${programId})`;
     errorMsg.textContent = "Could not load program info.";
-    errorMsg.style.display = 'block';
+    errorMsg.classList.remove('hidden');
     formEls.forEach(el => el.disabled = true);
   }
 });
@@ -59,7 +59,7 @@ document.addEventListener("DOMContentLoaded", async function() {
 async function loadBrandingContactFromApi() {
   const API_URL = window.API_URL;
   const errorMsg = document.getElementById('errorMsg');
-  errorMsg.style.display = 'none';
+  errorMsg.classList.add('hidden');
 
   try {
     const res = await fetch(`${API_URL}/api/branding-contact/${programId}`, {
@@ -74,7 +74,7 @@ async function loadBrandingContactFromApi() {
     }
   } catch (e) {
     errorMsg.textContent = "Could not load branding/contact config.";
-    errorMsg.style.display = 'block';
+    errorMsg.classList.remove('hidden');
   }
 }
 
@@ -116,8 +116,8 @@ async function saveConfig() {
   const API_URL = window.API_URL;
   const errorMsg = document.getElementById('errorMsg');
   const successMsg = document.getElementById('successMsg');
-  errorMsg.style.display = 'none';
-  if (successMsg) successMsg.style.display = 'none';
+  errorMsg.classList.add('hidden');
+  if (successMsg) successMsg.classList.add('hidden');
 
   const config = {
     welcomeMessage: document.getElementById('welcomeMessage').value.trim(),
@@ -151,7 +151,7 @@ async function saveConfig() {
     if (res.ok) {
       if (successMsg) {
         successMsg.textContent = "Saved!";
-        successMsg.style.display = 'block';
+        successMsg.classList.remove('hidden');
       } else {
         alert("Saved!");
       }
@@ -159,11 +159,11 @@ async function saveConfig() {
       await loadBrandingContactFromApi();
     } else {
       errorMsg.textContent = "Failed to save. Please try again.";
-      errorMsg.style.display = 'block';
+      errorMsg.classList.remove('hidden');
     }
   } catch (e) {
     errorMsg.textContent = "Could not save branding/contact config.";
-    errorMsg.style.display = 'block';
+    errorMsg.classList.remove('hidden');
   }
 }
 
@@ -174,6 +174,17 @@ document.addEventListener("DOMContentLoaded", () => {
     logoutBtn.addEventListener('click', () => {
       window.location.href = 'login.html';
     });
+  }
+
+  // Save and Cancel button handlers
+  const saveBtn = document.getElementById('saveBtn');
+  if (saveBtn) {
+    saveBtn.addEventListener('click', saveConfig);
+  }
+
+  const cancelBtn = document.getElementById('cancelBtn');
+  if (cancelBtn) {
+    cancelBtn.addEventListener('click', resetForm);
   }
 });
 
