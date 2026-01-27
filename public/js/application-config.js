@@ -217,21 +217,27 @@ let currentType = 'delegate';
     async function loadExistingApplication(year, type) {
       if (!programId || !window.API_URL || !year) return;
       builderRoot.innerHTML = '<div class="text-center p-4" id="loading">Loading...</div>';
+
       try {
-        const res = await fetch(`${window.API_URL}/api/programs/${encodeURIComponent(programId)}/application?year=${encodeURIComponent(year)}&type=${encodeURIComponent(type)}`, {
+        const url = `${window.API_URL}/api/programs/${encodeURIComponent(programId)}/application?year=${encodeURIComponent(year)}&type=${encodeURIComponent(type)}`;
+
+        const res = await fetch(url, {
           headers: {
             ...(typeof getAuthHeaders === 'function' ? getAuthHeaders() : {})
           },
           credentials: 'include'
         });
+
+          // Status 204 means no application found
+          if (res.status === 204) {
+            card.classList.remove('hidden');
+            builderRoot.innerHTML = '';
+            if (noAppMsg) noAppMsg.textContent = `No application form defined for ${year} ${type}.`;
+            return;
+          }
+
           if (res.ok) {
             const data = await res.json();
-
-            // DEBUG: Log received data
-            console.log('[DEBUG] Received application data:', data);
-            console.log('[DEBUG] data.locked:', data.locked);
-            console.log('[DEBUG] Has locked field?', 'locked' in data);
-            console.log('[DEBUG] Locked includes questions?', data.locked && data.locked.includes('questions'));
 
             card.classList.add('hidden');
 
@@ -240,10 +246,7 @@ let currentType = 'delegate';
 
             // Then check if questions are locked and show warning banner AFTER rendering
             if (data.locked && data.locked.includes('questions')) {
-              console.log('[DEBUG] Showing locked warning banner');
               showLockedWarning(builderRoot, data.message, programId, year, type);
-            } else {
-              console.log('[DEBUG] NOT showing locked warning banner');
             }
 
             clearError();
