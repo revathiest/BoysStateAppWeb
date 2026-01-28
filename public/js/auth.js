@@ -68,7 +68,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         msg.classList.remove('text-red-600');
         msg.classList.add('text-green-700');
         setTimeout(() => {
-          window.location.href = '/public/console.html';
+          window.location.href = '/console.html';
         }, 1000);
       } else {
         msg.textContent = data.error || 'Login failed.';
