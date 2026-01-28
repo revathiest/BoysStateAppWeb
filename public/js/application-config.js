@@ -274,7 +274,7 @@ let currentType = 'delegate';
       if (typeof programId !== 'undefined' && programId && currentYear && currentType) {
         const token = encodeToken(currentYear, currentType);
         document.getElementById('publicApplicationUrl').value =
-          location.origin + '/public/apply.html?programId=' + encodeURIComponent(programId) + '&token=' + encodeURIComponent(token);
+          location.origin + '/apply.html?programId=' + encodeURIComponent(programId) + '&token=' + encodeURIComponent(token);
       } else {
         document.getElementById('publicApplicationUrl').value =
           'Program ID not available.';
