@@ -307,7 +307,7 @@ function createServer() {
     let filePath;
     const baseDir = path.join(__dirname, '..');
     if (pathname === '/') {
-      filePath = path.join(baseDir, 'index.html');
+      filePath = path.join(publicDir, 'index.html');
     } else if (pathname.startsWith('/public/')) {
       filePath = path.normalize(path.join(baseDir, pathname.slice(1)));
     } else {
