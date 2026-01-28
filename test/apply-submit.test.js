@@ -5,6 +5,7 @@ describe('handleFormSubmit', () => {
     jest.resetModules();
     global.fetch = jest.fn().mockResolvedValue({ ok: true });
     global.getProgramId = jest.fn().mockReturnValue('p1');
+    global.getApplicationParams = jest.fn().mockReturnValue({ programId: 'p1', year: 2025, type: 'delegate' });
     global.window = { API_URL: 'http://api.test' };
   });
 
@@ -20,16 +21,16 @@ describe('handleFormSubmit', () => {
 
   test('submits when valid', async () => {
     global.validateField = jest.fn().mockReturnValue(true);
-    const form = { q_1: { value: 'A' }, reset: jest.fn() };
-    const formStatus = { textContent: '', classList: { remove: jest.fn(), add: jest.fn() } };
+    const form = { q_1: { value: 'A' }, reset: jest.fn(), style: {} };
+    const formStatus = { textContent: '', innerHTML: '', classList: { remove: jest.fn(), add: jest.fn() } };
     const config = { questions: [{ id: 1, type: 'short_answer', text: 'Name', required: true }] };
     await handleFormSubmit({ preventDefault(){} }, form, config, formStatus);
     expect(global.fetch).toHaveBeenCalledWith(
       expect.stringContaining('/application/responses'),
       expect.objectContaining({ method: 'POST' })
     );
-    expect(formStatus.textContent).toContain('Application submitted');
-    expect(form.reset).toHaveBeenCalled();
+    expect(formStatus.innerHTML).toContain('Application Submitted Successfully');
+    expect(form.style.display).toBe('none');
   });
 
   test('includes address answers in payload', async () => {
@@ -40,9 +41,10 @@ describe('handleFormSubmit', () => {
       q_addr_city: { value: 'Springfield' },
       q_addr_state: { value: 'IL' },
       q_addr_zip: { value: '62704' },
-      reset: jest.fn()
+      reset: jest.fn(),
+      style: {}
     };
-    const formStatus = { textContent: '', classList: { remove: jest.fn(), add: jest.fn() } };
+    const formStatus = { textContent: '', innerHTML: '', classList: { remove: jest.fn(), add: jest.fn() } };
     const config = { questions: [{ id: 'addr', type: 'address', text: 'Address', required: true }] };
     await handleFormSubmit({ preventDefault(){} }, form, config, formStatus);
     expect(global.fetch).toHaveBeenCalled();
@@ -82,9 +84,10 @@ describe('handleFormSubmit', () => {
       q_addr_zip: { value: '' },
       querySelectorAll: jest.fn().mockReturnValue([]),
       querySelector: jest.fn().mockReturnValue(null),
-      reset: jest.fn()
+      reset: jest.fn(),
+      style: {}
     };
-    const formStatus = { textContent: '', classList: { remove: jest.fn(), add: jest.fn() } };
+    const formStatus = { textContent: '', innerHTML: '', classList: { remove: jest.fn(), add: jest.fn() } };
     const config = {
       questions: [
         { id: 'short', type: 'short_answer', text: 'Short', required: true },
@@ -123,7 +126,8 @@ describe('handleFormSubmit', () => {
       q_addr_zip: { value: 'z' },
       querySelectorAll: jest.fn().mockReturnValue([{ value: 'v', checked: true }]),
       querySelector: jest.fn().mockReturnValue({ value: 'v' }),
-      reset: jest.fn()
+      reset: jest.fn(),
+      style: {}
     };
     const optConfig = { questions: config.questions.map(q => ({ ...q, required: false })) };
     await handleFormSubmit({ preventDefault(){} }, optForm, optConfig, formStatus);

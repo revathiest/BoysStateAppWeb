@@ -116,7 +116,7 @@ let currentType = 'delegate';
         for (const t of ['delegate', 'staff']) {
           try {
             const aRes = await fetch(`${window.API_URL}/api/programs/${encodeURIComponent(programId)}/application?year=${encodeURIComponent(y.year)}&type=${t}`, {
-              method: 'GET',
+              method: 'HEAD',
               headers: {
                 ...(typeof getAuthHeaders === 'function' ? getAuthHeaders() : {})
               },

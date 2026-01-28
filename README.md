@@ -2,65 +2,228 @@
 
 > **Disclaimer:**
 >
-> This project is being developed to support Boys State & Girls State programs affiliated with the American Legion, but is **not** created, funded, or officially supported by the American Legion. No endorsement or sponsorship is implied. All branding, configuration, and operational decisions are made independently by the app’s creators and participating programs.
+> This project is being developed to support Boys State & Girls State programs affiliated with the American Legion, but is **not** created, funded, or officially supported by the American Legion. No endorsement or sponsorship is implied. All branding, configuration, and operational decisions are made independently by the app's creators and participating programs.
 
 ## Overview
 
-This repository contains the **web-based admin portal** for Boys State App. The portal enables staff and administrators to manage programs, schedules, users, elections, integrations, logs, and resources securely via the web.
+This repository contains the **web-based admin portal** for Boys State App. The portal enables program administrators to manage programs, configure application forms, review applicants, and prepare for program execution.
 
-* Simple static HTML pages served by a lightweight Node server for local development
-* Admin login, program and user management
-* Schedule, notifications, and resource editing
-* Branding, integrations, and election management
-* Secure per-program access and audit logs
-* Future: Chat, progress tracking, resource library
+**Key Features:**
+- Program creation and configuration
+- Custom application form builder (delegate and staff applications)
+- Application review and acceptance workflow
+- Branding and contact information management
+- User authentication with JWT
+- Audit logging
+- Public application form (no authentication required)
 
-## Other Boys State App Repositories
+**Current Status:** Core features complete, ready for application collection phase. See [PROJECT_OVERVIEW.md](./PROJECT_OVERVIEW.md) for detailed feature status and roadmap.
 
-* [Mobile App](https://github.com/yourorg/boysstate-mobile): Mobile application for delegates, counselors, staff, and parents.
-* [Backend Services](https://github.com/yourorg/boysstate-backend): REST API, integrations, business logic, and core data for all Boys State App clients.
+## Architecture
+
+### Development vs Production
+
+**Local Development:**
+- Lightweight Node.js server (`src/index.js`) serves static files from `public/`
+- In-memory user store for testing (resets on restart)
+- Mock API endpoints for development
+
+**Production (Netlify):**
+- Static HTML/CSS/JS files served directly from `public/` directory
+- No build step required
+- All API calls go to separate backend services
+
+### Technology Stack
+
+- **Frontend**: Vanilla JavaScript (ES6+), HTML5, Tailwind CSS
+- **Development Server**: Node.js with Express
+- **Authentication**: JWT tokens (sessionStorage)
+- **Deployment**: Netlify (static hosting)
+- **Testing**: Jest with 80% coverage requirement
 
 ## Quick Start
 
-1. **Install dependencies:**
+### Prerequisites
+- Node.js (v16+ recommended)
+- npm or yarn
+- Access to backend API (see configuration below)
 
+### Installation
+
+1. **Clone the repository:**
+   ```bash
+   git clone <repository-url>
+   cd BoysStateAppWeb
+   ```
+
+2. **Install dependencies:**
    ```bash
    npm install
-   # or yarn
    ```
-2. **Configure environment variables and API endpoint:**
 
-   * Copy `.env.example` to `.env` and adjust values such as `PORT` for the local server.
-   * Edit `public/js/config.js` and set `API_URL` to your backend API's base URL.
-   * The server uses `API_URL` (read from the environment or `public/js/config.js`) and optional `PROGRAM_ID`
-     to send log events to your backend's `/logs` endpoint.
-3. **Run the app:**
+3. **Configure API endpoint:**
 
+   Edit `public/js/config.js` to set your backend API URL:
+   ```javascript
+   window.API_URL = '<your-backend-api-url>';
+   ```
+
+   This configures both the browser and the development server.
+
+4. **Run development server:**
    ```bash
-   npm run start
-   # or your preferred web build tool
+   npm start
    ```
-4. **Connect to backend:**
 
-   * Ensure [Backend Services](https://github.com/yourorg/boysstate-backend) API is running and configured.
+5. **Access the portal:**
 
-## Using the Portal
+   Navigate to `http://localhost:8080` and:
+   - Click **Register** to create an admin account
+   - After registration, you'll be redirected to the dashboard
+   - Create your first program using the "Create New Program" button
 
-* Navigate to `index.html` and choose **Register** to create an admin account.
-* After registering you will be taken to **onboarding.html**. From there create your first program. Subsequent logins redirect to **dashboard.html** which lists all your programs and shows features based on your role.
-* After login the API returns a JWT which is stored in `sessionStorage`. Subsequent requests include this token via an `Authorization: Bearer` header along with `credentials: 'include'`.
+### Available Commands
+
+```bash
+npm start           # Start local dev server on port 8080 (or PORT from .env)
+npm test            # Run Jest test suite with coverage
+npm run lint        # Run ESLint
+npm run dev:css     # Watch and compile Tailwind CSS
+npm run build:css   # Build and minify Tailwind CSS for production
+```
+
+## Usage
+
+### Authentication Flow
+
+1. **Register** (`/register.html`) - Create admin account
+2. **Login** (`/login.html`) - Authenticate with email/password
+3. **Dashboard** (`/dashboard.html`) - Select or create program
+4. **Console** (`/console.html`) - Access program management features
+
+All authenticated requests include JWT token via `Authorization: Bearer <token>` header.
+
+### Core Features
+
+#### Program Management
+- Create programs with unique IDs
+- Configure multiple program years (2024, 2025, 2026, etc.)
+- Manage program branding, colors, and contact information
+- View audit logs for all program activities
+
+#### Application Management
+- **Build custom forms** with drag-and-drop interface
+- **Field types**: text, email, phone, number, dropdown, radio, checkbox, date, file upload, address autocomplete, and more
+- **Copy from previous year** to reuse application templates
+- **Generate public URLs** with UUID tokens for secure, unauthenticated access
+- **Set closing dates** to control application windows
+
+#### Application Review
+- View pending delegate and staff applications
+- Extract key information: name, email, phone, school/role
+- Accept or reject applications with styled confirmation modals
+- Status filtering (accepted/rejected automatically removed from pending list)
+- Full response details in modal view
+
+#### Public Application Form
+- Accessed via non-guessable UUID URLs (no authentication)
+- Dynamic form rendering based on application configuration
+- Address autocomplete with zip code lookup
+- Client-side validation
+- Success message with form hiding after submission
+
+## Project Structure
+
+```
+BoysStateAppWeb/
+├── public/              # Static files (HTML, CSS, JS)
+│   ├── css/            # Compiled Tailwind CSS
+│   ├── js/             # JavaScript modules
+│   │   ├── auth.js               # Authentication logic
+│   │   ├── authHelper.js         # JWT token management
+│   │   ├── application-*.js      # Application builder system
+│   │   ├── apply-*.js            # Public application form
+│   │   ├── user-management.js    # Application review
+│   │   └── config.js             # API configuration
+│   ├── *.html          # Page templates
+│   └── docs/           # Static assets (zipData.json)
+├── src/                # Development server (not deployed)
+│   ├── index.js        # Express server
+│   └── logger.js       # Server-side logging
+├── test/               # Jest tests
+├── tailwind.config.js  # Tailwind CSS configuration
+├── jest.config.js      # Jest configuration
+├── PROJECT_OVERVIEW.md # Comprehensive feature documentation
+└── CLAUDE.md           # Development guidelines for AI assistants
+```
+
+## Documentation
+
+- **[PROJECT_OVERVIEW.md](./PROJECT_OVERVIEW.md)** - Comprehensive feature documentation, data models, workflows, and roadmap
+- **[CLAUDE.md](./CLAUDE.md)** - Development guidelines for Claude Code
+- **[API_ENDPOINTS.md](./API_ENDPOINTS.md)** - Backend API endpoint reference (gitignored - local use only)
+- **[CONTRIBUTING.md](./CONTRIBUTING.md)** - Contribution guidelines
+- **[docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md)** - Netlify deployment instructions
+
+## Testing
+
+All new features require automated tests with 80% minimum coverage.
+
+Run tests:
+```bash
+npm test                # Run all tests with coverage
+npm test -- --watch     # Watch mode for development
+```
+
+Tests are located in `test/` directory and match the pattern `**/?(*.)+(spec|test).[tj]s?(x)`.
+
+**Coverage Requirements:**
+- Branches: 80%
+- Functions: 80%
+- Lines: 80%
+- Statements: 80%
+
+## Security
+
+- **Authentication**: JWT tokens with 24-hour expiration
+- **Authorization**: Role-based access control (RBAC)
+- **CSP Compliance**: No inline scripts or styles, no inline event handlers
+- **Data Protection**: FERPA compliance, GDPR considerations for international programs
+- **Public Form Security**: Non-guessable UUID URLs, rate limiting, CAPTCHA consideration
+- **Audit Logging**: All administrative actions logged with sensitive data redacted
 
 ## Deployment
 
-This site is designed to be hosted on **Netlify**. The `public` directory contains
-the static HTML pages served by Netlify. 
+This site is designed to be hosted on **Netlify**.
 
-## Agent Specification
+1. Push repository to GitHub
+2. In Netlify, create new site from GitHub
+3. Set **publish directory** to `public`
+4. No build command required
+5. Deploy
 
-See [`AGENTS.md`](./AGENTS.md) for details on user roles, portal modules, and admin-only features.
+See [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md) for detailed instructions.
 
 ## Contributing
 
-* All portal logic must include automated tests and follow project standards.
-* Submit PRs with clear commit messages and coverage.
-* See [Mobile App](https://github.com/yourorg/boysstate-mobile) and [Backend Services](https://github.com/yourorg/boysstate-backend) for changes in other system areas.
+We welcome contributions! Please see [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines.
+
+**Key Points:**
+- All new logic must include automated tests
+- Follow project code standards and linting rules
+- Reference [PROJECT_OVERVIEW.md](./PROJECT_OVERVIEW.md) for architectural decisions
+- Never commit secrets or credentials
+
+## License
+
+Copyright 2025 Kenneth Hart
+
+Licensed under the Apache License, Version 2.0. See [LICENSE.md](./LICENSE.md) for details.
+
+## Contact & Support
+
+For questions, bug reports, or feature requests, please open an issue in the repository.
+
+---
+
+**Note**: This application is not affiliated with or endorsed by the American Legion. All branding, configuration, and operational decisions are made independently.

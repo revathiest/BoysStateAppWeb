@@ -22,9 +22,8 @@ Thank you for your interest in contributing to the Boys State App web admin port
 3. **Set up prerequisites:**
 
    * Ensure Node.js version is correct and web tooling is up to date.
-4. **Configure environment variables and API endpoint:**
+4. **Configure API endpoint:**
 
-   * Copy `.env.example` to `.env` and adjust values such as `PORT` for local testing.
    * Edit `public/js/config.js` and set `API_URL` to your backend API.
 5. **Run the admin portal:**
 
@@ -41,7 +40,7 @@ Thank you for your interest in contributing to the Boys State App web admin port
 * Follow code style as enforced by the project linter/config.
 * All new logic or UI must be covered by automated tests.
 * Place tests with components or in `__tests__/` as appropriate.
-* Reference [`AGENTS.md`](./AGENTS.md) for architectural decisions.
+* Reference [`PROJECT_OVERVIEW.md`](./PROJECT_OVERVIEW.md) for architectural decisions and feature status.
 * Never commit secrets or credentials.
 
 ---

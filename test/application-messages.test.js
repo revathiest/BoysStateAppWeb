@@ -4,8 +4,8 @@ describe('application-messages.js', () => {
   let errorBox, successBox;
   beforeEach(() => {
     jest.useFakeTimers();
-    errorBox = { textContent: '', style: { display: 'none' } };
-    successBox = { textContent: '', style: { display: 'none' } };
+    errorBox = { textContent: '', style: { display: 'none' }, classList: { add: jest.fn(), remove: jest.fn() } };
+    successBox = { textContent: '', style: { display: 'none' }, classList: { add: jest.fn(), remove: jest.fn() } };
     global.document = {
       getElementById: id => (id === 'errorBox' ? errorBox : id === 'successBox' ? successBox : null)
     };
@@ -17,23 +17,22 @@ describe('application-messages.js', () => {
   test('showError displays message', () => {
     showError('oops');
     expect(errorBox.textContent).toBe('oops');
-    expect(errorBox.style.display).toBe('block');
+    expect(errorBox.classList.remove).toHaveBeenCalledWith('hidden');
   });
 
   test('clearError hides message', () => {
     errorBox.textContent = 'err';
-    errorBox.style.display = 'block';
     clearError();
     expect(errorBox.textContent).toBe('');
-    expect(errorBox.style.display).toBe('none');
+    expect(errorBox.classList.add).toHaveBeenCalledWith('hidden');
   });
 
   test('showSuccess displays then hides message', () => {
     showSuccess('yay');
     expect(successBox.textContent).toBe('yay');
-    expect(successBox.style.display).toBe('block');
+    expect(successBox.classList.remove).toHaveBeenCalledWith('hidden');
     jest.runAllTimers();
-    expect(successBox.style.display).toBe('none');
+    expect(successBox.classList.add).toHaveBeenCalledWith('hidden');
     expect(successBox.textContent).toBe('');
   });
 });

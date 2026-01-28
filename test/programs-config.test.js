@@ -4,21 +4,35 @@ describe('programs-config.js', () => {
   beforeEach(() => {
     jest.resetModules();
     global.window = { API_URL: 'http://api.test' };
-    const link = { href: 'page?programId=YOUR_PROGRAM_ID' };
+    const brandingLink = { href: '' };
+    const groupingsLink = { href: '' };
+    const partiesLink = { href: '' };
+    const positionsLink = { href: '' };
+    const staffLink = { href: '' };
+    const parentsLink = { href: '' };
     const container = { innerHTML: '', addEventListener: jest.fn() };
     global.document = {
       getElementById: id => {
         if (id === 'program-selector') return container;
         if (id === 'program-select') return { addEventListener: jest.fn() };
+        if (id === 'brandingLink') return brandingLink;
+        if (id === 'groupingsLink') return groupingsLink;
+        if (id === 'partiesLink') return partiesLink;
+        if (id === 'positionsLink') return positionsLink;
+        if (id === 'staffLink') return staffLink;
+        if (id === 'parentsLink') return parentsLink;
+        if (id === 'years-list') return { innerHTML: '' };
+        if (id === 'current-program-id') return { value: 'p1' };
         return null;
       },
-      querySelectorAll: () => [link],
-      addEventListener: jest.fn()
+      querySelectorAll: () => [],
+      addEventListener: jest.fn(),
+      dispatchEvent: jest.fn()
     };
     global.localStorage = { getItem: jest.fn(() => 'u'), setItem: jest.fn() };
     global.sessionStorage = { getItem: jest.fn(() => null) };
     funcs = require('../public/js/programs-config.js');
-    global.link = link;
+    global.brandingLink = brandingLink;
     global.container = container;
   });
 
@@ -29,19 +43,16 @@ describe('programs-config.js', () => {
   test('renderProgramSelector renders single program', () => {
     funcs.renderProgramSelector([{ programId: 'p1', programName: 'Prog' }], 'p1');
     expect(global.container.innerHTML).toContain('Prog');
-    expect(global.link.href).toBe('page?programId=p1');
+    expect(global.brandingLink.href).toBe('branding-contact.html?programId=p1');
   });
 
   test('renderProgramSelector renders dropdown for multiple programs', () => {
-    const linkA = { href: 'a?programId=YOUR_PROGRAM_ID' };
-    const linkB = { href: 'b?programId=YOUR_PROGRAM_ID' };
-    document.querySelectorAll = () => [linkA, linkB];
     funcs.renderProgramSelector([
       { programId: 'p1', programName: 'P1' },
       { programId: 'p2', programName: 'P2' }
     ], 'p2');
     expect(global.container.innerHTML).toContain('<select');
-    expect(linkA.href).toBe('a?programId=p2');
+    expect(global.brandingLink.href).toBe('branding-contact.html?programId=p2');
   });
 
   test('renderProgramSelector handles no programs', () => {
@@ -51,7 +62,7 @@ describe('programs-config.js', () => {
 
   test('updateConfigLinks updates hrefs', () => {
     funcs.updateConfigLinks('xyz');
-    expect(global.link.href).toBe('page?programId=xyz');
+    expect(global.brandingLink.href).toBe('branding-contact.html?programId=xyz');
     expect(global.window.selectedProgramId).toBe('xyz');
   });
 

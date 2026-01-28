@@ -12,7 +12,7 @@ Boys State App Web Admin Portal - A web-based administrative portal for Boys Sta
 
 ### Development
 ```bash
-npm start                # Start local dev server on port 8080 (or PORT from .env)
+npm start                # Start local dev server on port 8080
 npm run dev:css          # Watch and compile Tailwind CSS
 npm run build:css        # Build and minify Tailwind CSS for production
 ```
@@ -50,9 +50,9 @@ Pure vanilla JavaScript (no frameworks). Key patterns:
    - Token expiration checked via JWT `exp` claim
 
 2. **API Configuration** (`public/js/config.js`):
-   - `window.API_URL` defines backend endpoint
+   - `window.API_URL` defines backend endpoint for both browser and server
    - Switch between `http://localhost:3000` (dev) and production URL
-   - Can also be set via `.env` file for server-side code
+   - Server automatically reads this file for server-side logging
 
 3. **Logging System**:
    - **Server**: `src/logger.js` intercepts `console.*` and process errors, sends to backend `/logs`
@@ -111,16 +111,13 @@ Key pages (all in `public/` directory):
 
 ## Configuration
 
-### Environment Variables
-
-Create `.env` from `.env.example`:
-- `PORT`: Local server port (default: 8080)
-- `API_URL`: Backend API base URL
-- `PROGRAM_ID`: (Optional) Program ID for server-side logging
-
 ### API Endpoint
 
-Set `window.API_URL` in `public/js/config.js`. The server also reads this file if `API_URL` is not set in `.env`.
+Set `window.API_URL` in `public/js/config.js`:
+- Used by browser for all API requests
+- Also read by development server for server-side logging
+- Single source of truth for API configuration
+- Default port: 8080 (hardcoded in `src/index.js`)
 
 ### Content Security Policy
 
@@ -139,8 +136,6 @@ Custom colors defined in `tailwind.config.js`:
 
 ## Security and Compliance
 
-From `AGENTS.md`:
-
 - All portal access must be authenticated and authorized by role
 - All actions are logged with sensitive data redacted
 - No cross-program data access
@@ -150,8 +145,6 @@ From `AGENTS.md`:
 - All file uploads scanned for malware (backend)
 
 ## Testing Standards
-
-From `AGENTS.md`:
 
 - **Automated tests required** for all new features and bug fixes
 - **Coverage thresholds**: 80% minimum (do NOT decrease, increase coverage instead)
@@ -225,9 +218,9 @@ In `console.html`:
 - "Manage Content" → `href="#"` (no implementation)
 - "Manage Elections" → `href="#"` (no implementation)
 
-### Planned Features (from AGENTS.md)
+### Planned Features
 
-Features documented but not implemented:
+Features documented in PROJECT_OVERVIEW.md but not yet implemented:
 - **Election Agent**: Admin interface for elections, ballots, results
 - **Progress Tracking Agent**: Delegate milestone/award tracking
 - **Integration Agents**: Google Calendar, Google Docs, Discord integrations

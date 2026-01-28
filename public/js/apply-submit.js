@@ -155,10 +155,20 @@ async function handleFormSubmit(e, form, config, formStatus) {
         throw new Error('Failed to submit application');
       }
 
-      formStatus.textContent = "Application submitted! Thank you for applying.";
+      // Hide the form and show success message
+      form.style.display = 'none';
+      formStatus.innerHTML = `
+        <div class="text-center py-12">
+          <svg class="w-16 h-16 mx-auto text-green-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+          <h2 class="text-2xl font-bold text-green-700 mb-2">Application Submitted Successfully!</h2>
+          <p class="text-gray-700 mb-6">Thank you for applying. We will review your application and contact you soon.</p>
+          <p class="text-sm text-gray-500">You may now close this page.</p>
+        </div>
+      `;
       formStatus.classList.remove('hidden', 'text-red-700');
       formStatus.classList.add('text-green-700');
-      form.reset();
     } catch (err) {
       formStatus.textContent = "Submission failed. Please try again later.";
       formStatus.classList.remove('hidden', 'text-green-700');
