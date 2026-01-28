@@ -275,7 +275,7 @@ test('login success stores token and user', async () => {
   jest.runAllTimers();
   expect(storeAuthToken).toHaveBeenCalledWith('t');
   expect(storeUser).toHaveBeenCalledWith('user@example.com');
-  expect(global.window.location.href).toBe('/public/console.html');
+  expect(global.window.location.href).toBe('/console.html');
   jest.useRealTimers();
 });
 

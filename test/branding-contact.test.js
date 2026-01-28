@@ -17,8 +17,8 @@ describe('branding-contact.js', () => {
       contactPhone: { value: '' },
       contactWebsite: { value: '' },
       contactFacebook: { value: '' },
-      errorMsg: { style: { display: 'none' }, textContent: '' },
-      successMsg: { style: { display: 'none' }, textContent: '' },
+      errorMsg: { style: { display: 'none' }, textContent: '', classList: { add: jest.fn(), remove: jest.fn() } },
+      successMsg: { style: { display: 'none' }, textContent: '', classList: { add: jest.fn(), remove: jest.fn() } },
       logoutBtn: { addEventListener: jest.fn() }
     };
     const listeners = {};
@@ -78,7 +78,7 @@ describe('branding-contact.js', () => {
       expect.stringContaining('/api/branding-contact/42'),
       expect.objectContaining({ method: 'PUT' })
     );
-    expect(elements.successMsg.style.display).toBe('block');
+    expect(elements.successMsg.classList.remove).toHaveBeenCalledWith('hidden');
   });
 
   test('loadBrandingContactFromApi handles failure', async () => {
@@ -91,26 +91,26 @@ describe('branding-contact.js', () => {
   test('loadBrandingContactFromApi handles fetch error', async () => {
     global.fetch = jest.fn(() => Promise.reject(new Error('fail')));
     await funcs.loadBrandingContactFromApi();
-    expect(elements.errorMsg.style.display).toBe('block');
+    expect(elements.errorMsg.classList.remove).toHaveBeenCalledWith('hidden');
   });
 
   test('saveConfig handles failure', async () => {
     global.fetch = jest.fn(() => Promise.resolve({ ok: false }));
     await funcs.saveConfig();
-    expect(elements.errorMsg.style.display).toBe('block');
+    expect(elements.errorMsg.classList.remove).toHaveBeenCalledWith('hidden');
   });
 
   test('saveConfig handles fetch error', async () => {
     global.fetch = jest.fn(() => Promise.reject(new Error('boom')));
     await funcs.saveConfig();
-    expect(elements.errorMsg.style.display).toBe('block');
+    expect(elements.errorMsg.classList.remove).toHaveBeenCalledWith('hidden');
   });
 
   test('DOMContentLoaded handler without programId disables form', async () => {
     jest.resetModules();
     const els = {
       programNameLabel: { textContent: '' },
-      errorMsg: { style: { display: 'none' }, textContent: '' }
+      errorMsg: { style: { display: 'none' }, textContent: '', classList: { add: jest.fn(), remove: jest.fn() } }
     };
     const formEls = [{ disabled: false }];
     const domListeners = {};

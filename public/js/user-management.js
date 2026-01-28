@@ -39,7 +39,6 @@ function switchTab(tab) {
       clearError();
       const programId = window.getProgramId ? window.getProgramId() : null;
       if (!programId) throw new Error('Program ID not found.');
-      // Example API call, adjust as needed:
       const resp = await fetch(`${window.API_URL}/api/programs/${programId}/applications/delegate?status=pending`, {
         credentials: 'include',
         headers: window.getAuthHeaders ? window.getAuthHeaders() : {},
@@ -58,7 +57,6 @@ function switchTab(tab) {
       clearError();
       const programId = window.getProgramId ? window.getProgramId() : null;
       if (!programId) throw new Error('Program ID not found.');
-      // Example API call, adjust as needed:
       const resp = await fetch(`${window.API_URL}/api/programs/${programId}/applications/staff?status=pending`, {
         credentials: 'include',
         headers: window.getAuthHeaders ? window.getAuthHeaders() : {},
@@ -301,6 +299,32 @@ function switchTab(tab) {
   function closeModal() {
     document.getElementById('application-modal').classList.add('hidden');
   }
+
+  function showConfirmation(title, message, confirmText, onConfirm) {
+    const modal = document.getElementById('confirmation-modal');
+    const titleEl = document.getElementById('confirmation-title');
+    const messageEl = document.getElementById('confirmation-message');
+    const confirmBtn = document.getElementById('confirmation-confirm-btn');
+
+    titleEl.textContent = title;
+    messageEl.textContent = message;
+    confirmBtn.textContent = confirmText;
+
+    // Remove any existing click handlers and add new one
+    const newConfirmBtn = confirmBtn.cloneNode(true);
+    confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+
+    newConfirmBtn.addEventListener('click', () => {
+      modal.classList.add('hidden');
+      onConfirm();
+    });
+
+    modal.classList.remove('hidden');
+  }
+
+  function closeConfirmation() {
+    document.getElementById('confirmation-modal').classList.add('hidden');
+  }
   
   // Attach all event listeners
   function attachEventListeners() {
@@ -331,6 +355,12 @@ function switchTab(tab) {
     document.getElementById('application-modal').addEventListener('click', (e) => {
       if (e.target === e.currentTarget) closeModal();
     });
+
+    // Confirmation modal handlers
+    document.getElementById('confirmation-cancel-btn').addEventListener('click', closeConfirmation);
+    document.getElementById('confirmation-modal').addEventListener('click', (e) => {
+      if (e.target === e.currentTarget) closeConfirmation();
+    });
   }
   
   function tableActionHandler(e) {
@@ -341,9 +371,19 @@ function switchTab(tab) {
     if (target.classList.contains('view-btn')) {
       handleViewApplication(id, type);
     } else if (target.classList.contains('accept-btn')) {
-      if (confirm('Accept this application?')) handleDecision(id, type, 'accept');
+      showConfirmation(
+        'Accept Application',
+        'Are you sure you want to accept this application? The applicant will be notified.',
+        'Accept',
+        () => handleDecision(id, type, 'accept')
+      );
     } else if (target.classList.contains('reject-btn')) {
-      if (confirm('Reject this application?')) handleDecision(id, type, 'reject');
+      showConfirmation(
+        'Reject Application',
+        'Are you sure you want to reject this application? The applicant will be notified.',
+        'Reject',
+        () => handleDecision(id, type, 'reject')
+      );
     }
   }
   

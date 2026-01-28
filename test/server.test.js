@@ -71,7 +71,7 @@ test('CSP header is set', async () => {
 
   const res = await fetch(`http://127.0.0.1:${port}/login.html`);
   expect(res.headers.get('content-security-policy')).toBe(
-    "default-src 'self'; script-src 'self'; style-src 'self'"
+    "default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self' http://localhost:3000 https://boysstateappservices.up.railway.app"
   );
 
   await stopServer(app);
@@ -158,7 +158,7 @@ test('CSP header is set on index', async () => {
 
   const res = await fetch(`http://127.0.0.1:${port}/`);
   expect(res.headers.get('content-security-policy')).toBe(
-    "default-src 'self'; script-src 'self'; style-src 'self'"
+    "default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self' http://localhost:3000 https://boysstateappservices.up.railway.app"
   );
 
   await stopServer(app);

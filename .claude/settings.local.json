@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npm run build:css:*)"
+      "Bash(npm run build:css:*)",
+      "Bash(npm test:*)",
+      "Bash(git -C \"e:\\\\BoysStateApp\\\\BoysStateAppWeb\" status --short)"
     ]
   }
 }

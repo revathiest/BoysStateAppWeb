@@ -186,8 +186,10 @@ function renderApplicationBuilder(builderRoot, appData = {}, programId, currentY
       btn.addEventListener('click', e => {
         const idx = +btn.dataset.qidx;
         const oidx = +btn.dataset.removeOpt;
-        questions[idx].options.splice(oidx, 1);
-        renderQuestions();
+        if (questions[idx] && Array.isArray(questions[idx].options)) {
+          questions[idx].options.splice(oidx, 1);
+          renderQuestions();
+        }
       });
     });
     // Add option
@@ -195,7 +197,7 @@ function renderApplicationBuilder(builderRoot, appData = {}, programId, currentY
       btn.addEventListener('click', e => {
         const idx = +btn.dataset.addOpt;
         const input = document.getElementById(`add-opt-${idx}`);
-        if (input.value.trim()) {
+        if (input && input.value && input.value.trim() && questions[idx] && Array.isArray(questions[idx].options)) {
           questions[idx].options.push(input.value.trim());
           input.value = '';
           renderQuestions();
@@ -207,7 +209,9 @@ function renderApplicationBuilder(builderRoot, appData = {}, programId, currentY
       input.addEventListener('input', e => {
         const idx = +input.dataset.qidx;
         const oidx = +input.dataset.optidx;
-        questions[idx].options[oidx] = input.value;
+        if (questions[idx] && Array.isArray(questions[idx].options)) {
+          questions[idx].options[oidx] = input.value;
+        }
       });
     });
     // File fields (accept, maxFiles)
