@@ -1,0 +1,8 @@
+[build]
+  command = "npm run build:css"
+  publish = "public"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self' http://localhost:3000 https://boysstateappservices.up.railway.app; img-src 'self' data:;"
