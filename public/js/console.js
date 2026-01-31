@@ -1,4 +1,25 @@
+// Update navigation links to include programId from localStorage
+function updateNavLinks() {
+  const programId = localStorage.getItem('lastSelectedProgramId');
+  if (!programId) return;
+
+  const links = {
+    'user-management-link': 'user-management.html',
+    'programs-config-link': 'programs-config.html',
+  };
+
+  for (const [id, basePath] of Object.entries(links)) {
+    const link = document.getElementById(id);
+    if (link) {
+      link.href = `${basePath}?programId=${encodeURIComponent(programId)}`;
+    }
+  }
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
+  // Update links with programId
+  updateNavLinks();
+
   if (window.logToServer) {
     window.logToServer('Loaded console page', { level: 'info' });
   }
@@ -15,10 +36,28 @@ document.addEventListener('DOMContentLoaded', async () => {
       headers: typeof getAuthHeaders === 'function' ? getAuthHeaders() : {}
     });
     if (res.ok) {
-      const programs = await res.json().catch(() => null);
+      const data = await res.json().catch(() => null);
+      const programs = data?.programs || [];
       console.log('Loaded programs', programs);
       if (window.logToServer) {
         window.logToServer('Loaded programs', { level: 'info' });
+      }
+
+      // Auto-select program if user has programs
+      if (programs.length > 0) {
+        const currentProgramId = localStorage.getItem('lastSelectedProgramId');
+        const validProgram = programs.find(p => (p.programId || p.id) === currentProgramId);
+
+        if (!validProgram) {
+          // No valid selection - auto-select first (or only) program
+          const firstProgram = programs[0];
+          const programId = firstProgram.programId || firstProgram.id;
+          localStorage.setItem('lastSelectedProgramId', programId);
+          console.log('Auto-selected program:', programId);
+        }
+
+        // Update nav links now that we have a valid programId
+        updateNavLinks();
       }
     } else if (res.status === 401) {
       window.location.href = 'login.html';
@@ -31,7 +70,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-document.getElementById('main-content').classList.remove('hidden');
+  document.getElementById('main-content').classList.remove('hidden');
 
   const logoutBtn = document.getElementById('logoutBtn');
   if (logoutBtn) {

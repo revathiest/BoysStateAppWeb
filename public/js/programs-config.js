@@ -55,12 +55,38 @@ function renderProgramSelector(programs, selectedProgramId) {
 // Update all config links with selected programId
 function updateConfigLinks(programId) {
   if (!programId) return;
-  document.getElementById("brandingLink").href = `branding-contact.html?programId=${encodeURIComponent(programId)}`;
-  document.getElementById("groupingsLink").href = `programs-groupings.html?programId=${encodeURIComponent(programId)}`;
-  document.getElementById("partiesLink").href = `programs-parties.html?programId=${encodeURIComponent(programId)}`;
-  document.getElementById("positionsLink").href = `programs-positions.html?programId=${encodeURIComponent(programId)}`;
-  document.getElementById("staffLink").href = `programs-staff.html?programId=${encodeURIComponent(programId)}`;
-  document.getElementById("parentsLink").href = `programs-parents.html?programId=${encodeURIComponent(programId)}`;
+
+  // Only update active feature links
+  const brandingLink = document.getElementById("brandingLink");
+  if (brandingLink) {
+    brandingLink.href = `branding-contact.html?programId=${encodeURIComponent(programId)}`;
+  }
+
+  const applicationConfigLink = document.getElementById("applicationConfigLink");
+  if (applicationConfigLink) {
+    applicationConfigLink.href = `application-config.html?programId=${encodeURIComponent(programId)}`;
+  }
+
+  const partiesLink = document.getElementById("partiesLink");
+  if (partiesLink) {
+    partiesLink.href = `programs-parties.html?programId=${encodeURIComponent(programId)}`;
+  }
+
+  const yearConfigLink = document.getElementById("year-config-link");
+  if (yearConfigLink) {
+    yearConfigLink.href = `programs-year-config.html?programId=${encodeURIComponent(programId)}`;
+  }
+
+  const groupingsLink = document.getElementById("groupingsLink");
+  if (groupingsLink) {
+    groupingsLink.href = `programs-groupings.html?programId=${encodeURIComponent(programId)}`;
+  }
+
+  const positionsLink = document.getElementById("positionsLink");
+  if (positionsLink) {
+    positionsLink.href = `programs-positions.html?programId=${encodeURIComponent(programId)}`;
+  }
+
   // Store for other navigation
   window.selectedProgramId = programId;
   // Load years for this program
@@ -94,6 +120,11 @@ async function fetchProgramsAndRenderSelector() {
     let selected = lastSelected && programs.some(p => (p.programId || p.id) === lastSelected)
       ? lastSelected
       : programs[0]?.programId || programs[0]?.id;
+
+    // If localStorage had a stale/invalid value, update it to the actual selected program
+    if (selected && selected !== lastSelected) {
+      localStorage.setItem("lastSelectedProgramId", selected);
+    }
 
     renderProgramSelector(programs, selected);
 
@@ -267,31 +298,12 @@ document.addEventListener("DOMContentLoaded", () => {
   const logoutBtn = document.getElementById('logoutBtn');
   if (logoutBtn) {
     logoutBtn.addEventListener('click', () => {
-      window.location.href = 'login.html'; // Redirect to login or home
+      if (typeof clearAuthToken === 'function') clearAuthToken();
+      window.location.href = 'login.html';
     });
   }
   fetchProgramsAndRenderSelector();
   setupYearManagement();
-
-  // Fallback for direct selector <select> (if present):
-  const select = document.querySelector('#program-selector select');
-  if (select) {
-    // On change, update links
-    select.addEventListener('change', function() {
-      updateConfigLinks(this.value);
-      loadProgramYears(this.value);
-    });
-    // Also update immediately on page load to match current selection
-    if (select.value) {
-      updateConfigLinks(select.value);
-      loadProgramYears(select.value);
-    }
-  }
-});
-
-// Listen for custom programSelected event
-document.addEventListener("programSelected", function(e) {
-  updateConfigLinks(e.detail.programId);
 });
 
 // Utility function for other pages to get selected year

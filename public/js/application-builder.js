@@ -18,16 +18,23 @@ function renderApplicationBuilder(builderRoot, appData = {}, programId, currentY
   builderRoot.innerHTML = `       <form id="application-builder-form" class="bg-white rounded-2xl shadow-lg p-8 sm:p-12 max-w-4xl w-full mx-auto border-t-4 border-legend-gold flex flex-col gap-6">         <div>           <label class="block text-lg font-bold text-legend-blue mb-2" for="app-title">Application Title</label>           <input type="text" id="app-title" aria-label="Application title" class="border rounded-xl px-4 py-2 w-full" placeholder="e.g. 2025 Boys State Delegate Application" required />         </div>         <div>           <label class="block text-base font-semibold text-gray-700 mb-2" for="app-description">Application Description</label>           <textarea id="app-description" aria-label="Application description" class="border rounded-xl px-4 py-2 w-full min-h-[60px]" placeholder="Describe this application form"></textarea>         </div>         <div>           <label class="block text-base font-semibold text-gray-700 mb-2" for="app-closing-date">Application Closing Date <span class="text-sm font-normal text-gray-500">(optional)</span></label>           <input type="datetime-local" id="app-closing-date" aria-label="Application closing date" class="border rounded-xl px-4 py-2 w-full max-w-md" />           <p class="text-xs text-gray-500 mt-1">After this date, applicants will not be able to submit applications.</p>         </div>         <div>           <label class="block text-base font-semibold text-gray-700 mb-2" for="questions-list">Questions</label>           <div id="questions-list" class="flex flex-col gap-4"></div>           <button type="button" id="add-question-btn" aria-label="Add question" class="mt-6 bg-legend-blue hover:bg-legend-gold text-white font-bold py-2 px-4 rounded-xl shadow transition">             + Add Question           </button>         </div>         <button type="submit" class="bg-legend-blue hover:bg-legend-gold text-white font-bold py-2 px-8 rounded-xl shadow transition self-center mt-4">              Save Application         </button>       </form>        `;
   let questions = Array.isArray(appData.questions) ? appData.questions : [];
 
-  // ALWAYS ensure the first two questions are "First Name" and "Last Name" (required, cannot be removed)
+  // ALWAYS ensure the first three questions are "First Name", "Last Name", and "Email" (required, cannot be removed)
   const hasFirstName = questions.length > 0 && questions[0].text === 'First Name';
   const hasLastName = questions.length > 1 && questions[1].text === 'Last Name';
+  const hasEmail = questions.length > 2 && questions[2].text === 'Email';
 
-  if (!hasFirstName || !hasLastName) {
-    // Remove any existing name fields that are in wrong positions
-    questions = questions.filter(q => q.text !== 'First Name' && q.text !== 'Last Name' && q.text !== 'Full Name');
+  if (!hasFirstName || !hasLastName || !hasEmail) {
+    // Remove any existing system fields that are in wrong positions
+    questions = questions.filter(q => q.text !== 'First Name' && q.text !== 'Last Name' && q.text !== 'Full Name' && q.text !== 'Email');
 
-    // Insert required name fields at the beginning
+    // Insert required system fields at the beginning
     questions.unshift(
+      {
+        type: 'email',
+        text: 'Email',
+        required: true,
+        isSystemField: true // Mark as system field to prevent removal
+      },
       {
         type: 'short_answer',
         text: 'Last Name',
@@ -42,11 +49,13 @@ function renderApplicationBuilder(builderRoot, appData = {}, programId, currentY
       }
     );
   } else {
-    // Ensure existing name fields are marked as required and system fields
+    // Ensure existing system fields are marked as required and system fields
     questions[0].required = true;
     questions[0].isSystemField = true;
     questions[1].required = true;
     questions[1].isSystemField = true;
+    questions[2].required = true;
+    questions[2].isSystemField = true;
   }
 
   document.getElementById('app-title').value = appData.title || '';
@@ -112,8 +121,8 @@ function renderApplicationBuilder(builderRoot, appData = {}, programId, currentY
       optionsHTML = `<div class="ml-4 mt-2"><span class="text-xs text-gray-500">Standard US address fields.</span></div>`;
     }
 
-    // System fields (First Name and Last Name) cannot be removed and are always required
-    const isSystemField = q.isSystemField || idx === 0 || idx === 1;
+    // System fields (First Name, Last Name, Email) cannot be removed and are always required
+    const isSystemField = q.isSystemField || idx === 0 || idx === 1 || idx === 2;
     const removeButtonHTML = isSystemField
       ? `<span class="text-xs text-gray-500 ml-2 px-2 py-1 bg-blue-100 rounded">Required Field</span>`
       : `<button type="button" class="text-red-600 hover:underline ml-2" data-remove="${idx}">Remove</button>`;
@@ -167,13 +176,13 @@ function renderApplicationBuilder(builderRoot, appData = {}, programId, currentY
         questions[idx].required = chk.checked;
       });
     });
-    // Remove question (but not the first two fields which are always First Name and Last Name)
+    // Remove question (but not the first three fields which are always First Name, Last Name, and Email)
     builderRoot.querySelectorAll('button[data-remove]').forEach(btn => {
       btn.addEventListener('click', e => {
         const idx = +btn.dataset.remove;
-        // Prevent removing the first two fields (First Name and Last Name - system fields)
-        if (idx === 0 || idx === 1) {
-          if (showError) showError('The First Name and Last Name fields cannot be removed. They are required for all applications.');
+        // Prevent removing the first three fields (First Name, Last Name, Email - system fields)
+        if (idx === 0 || idx === 1 || idx === 2) {
+          if (showError) showError('The First Name, Last Name, and Email fields cannot be removed. They are required for all applications.');
           return;
         }
         questions.splice(idx, 1);

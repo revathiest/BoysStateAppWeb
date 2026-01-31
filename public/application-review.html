@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Application Review – Boys State App</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="tailwind.css">
+  <link rel="stylesheet" href="logo.css">
+</head>
+<body class="bg-gray-50 font-sans min-h-screen">
+
+  <!-- NAVBAR (reuse your portal navbar) -->
+  <nav class="bg-legend-blue text-white px-6 py-4 flex items-center justify-between shadow">
+    <div class="flex items-center gap-3">
+      <img src="images/Boys-State-Shield-White-on-Blue.png" alt="Logo" class="w-8 h-8 p-1 rounded-full" />
+      <span class="text-xl font-semibold">Boys State App <span class="text-sm font-normal text-legend-gold ml-2">Admin Portal</span></span>
+    </div>
+    <button id="logoutBtn" type="button" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-2xl shadow transition" aria-label="Logout">Logout</button>
+  </nav>
+
+  <main class="flex flex-col items-center p-6 lg:p-10 bg-gray-50 min-h-screen">
+    <a href="user-management.html" class="inline-flex items-center text-legend-blue font-semibold mb-4 hover:underline group self-start w-full max-w-4xl">
+      <span class="mr-2 text-lg">&larr;</span>
+      Back to User Management
+    </a>
+
+    <h1 class="text-3xl font-extrabold text-legend-blue mb-2 self-start w-full max-w-4xl">Application Review</h1>
+    <p class="text-gray-700 mb-2 self-start w-full max-w-4xl">Review and manage pending delegate and staff applications for your program.</p>
+    <p id="program-context" class="text-xs text-gray-400 mb-4 self-start w-full max-w-4xl font-mono"></p>
+  
+    <!-- Tabs -->
+    <div class="w-full max-w-4xl mb-6 flex">
+      <button id="tab-delegate" class="flex-1 py-3 text-lg font-semibold rounded-t-2xl border-b-4 transition-all
+        border-legend-blue text-legend-blue bg-white shadow-sm focus:outline-none" type="button">
+        Delegate Applications
+      </button>
+      <button id="tab-staff" class="flex-1 py-3 text-lg font-semibold rounded-t-2xl border-b-4 transition-all
+        border-transparent text-gray-500 bg-gray-100 shadow-sm focus:outline-none hover:text-legend-blue" type="button">
+        Staff Applications
+      </button>
+    </div>
+  
+    <!-- Error/Success Boxes -->
+    <div id="errorBox" class="hidden bg-red-100 text-red-700 px-4 py-2 rounded-xl mb-4 w-full max-w-4xl shadow"></div>
+    <div id="successBox" class="hidden bg-green-100 text-green-700 px-4 py-2 rounded-xl mb-4 w-full max-w-4xl shadow"></div>
+  
+    <!-- Delegate Applications Card -->
+    <section id="delegate-applications-section" class="w-full max-w-4xl mb-10">
+      <div class="bg-white rounded-2xl shadow-lg p-6 border-t-4 border-legend-gold">
+        <h2 class="text-xl font-bold text-legend-blue mb-4">Pending Delegate Applications</h2>
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="py-3 px-4 text-left font-semibold">Name</th>
+                <th class="py-3 px-4 text-left font-semibold">Year</th>
+                <th class="py-3 px-4 text-left font-semibold">Status</th>
+                <th class="py-3 px-4 text-left font-semibold">Submitted</th>
+                <th class="py-3 px-4 text-left font-semibold">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="delegate-applications-table" class="bg-white divide-y divide-gray-100">
+              <!-- Populated by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  
+    <!-- Staff Applications Card -->
+    <section id="staff-applications-section" class="hidden w-full max-w-4xl mb-10">
+      <div class="bg-white rounded-2xl shadow-lg p-6 border-t-4 border-legend-gold">
+        <h2 class="text-xl font-bold text-legend-blue mb-4">Pending Staff Applications</h2>
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="py-3 px-4 text-left font-semibold">Name</th>
+                <th class="py-3 px-4 text-left font-semibold">Role</th>
+                <th class="py-3 px-4 text-left font-semibold">Year</th>
+                <th class="py-3 px-4 text-left font-semibold">Status</th>
+                <th class="py-3 px-4 text-left font-semibold">Submitted</th>
+                <th class="py-3 px-4 text-left font-semibold">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="staff-applications-table" class="bg-white divide-y divide-gray-100">
+              <!-- Populated by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  
+    <!-- Application Modal -->
+    <div id="application-modal" class="hidden fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+      <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-8 relative">
+        <button id="close-modal-btn" class="absolute top-3 right-3 text-gray-400 hover:text-gray-800 text-2xl" aria-label="Close">&times;</button>
+        <div id="application-modal-content"></div>
+      </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div id="confirmation-modal" class="hidden fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+      <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 relative">
+        <h3 id="confirmation-title" class="text-xl font-bold text-legend-blue mb-4"></h3>
+        <p id="confirmation-message" class="text-gray-700 mb-6"></p>
+        <div class="flex gap-3 justify-end">
+          <button id="confirmation-cancel-btn" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold rounded-lg transition">Cancel</button>
+          <button id="confirmation-confirm-btn" class="px-4 py-2 bg-legend-blue hover:bg-blue-800 text-white font-semibold rounded-lg transition"></button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Staff Role Selection Modal -->
+    <div id="role-modal" class="hidden fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+      <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 relative">
+        <button id="role-modal-close" class="absolute top-3 right-3 text-gray-400 hover:text-gray-800 text-2xl" aria-label="Close">&times;</button>
+        <h3 class="text-xl font-bold text-legend-blue mb-2">Accept Staff Application</h3>
+        <p class="text-gray-600 mb-4">Assign a role to this staff member. This determines their permissions and responsibilities.</p>
+
+        <div class="mb-4">
+          <label for="staff-role-select" class="block text-sm font-medium text-gray-700 mb-1">Staff Role <span class="text-red-500">*</span></label>
+          <select id="staff-role-select" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-legend-blue">
+            <option value="">Select a role...</option>
+            <option value="counselor">Counselor</option>
+            <option value="city_counselor">City Counselor</option>
+            <option value="county_counselor">County Counselor</option>
+            <option value="program_director">Program Director</option>
+            <option value="assistant_director">Assistant Director</option>
+            <option value="registrar">Registrar</option>
+            <option value="volunteer">Volunteer</option>
+            <option value="medical">Medical Staff</option>
+            <option value="kitchen">Kitchen Staff</option>
+            <option value="security">Security</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+
+        <div id="custom-role-container" class="hidden mb-4">
+          <label for="custom-role-input" class="block text-sm font-medium text-gray-700 mb-1">Custom Role</label>
+          <input type="text" id="custom-role-input" placeholder="Enter custom role" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-legend-blue" maxlength="50">
+        </div>
+
+        <div class="flex gap-3 justify-end">
+          <button id="role-cancel-btn" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold rounded-lg transition">Cancel</button>
+          <button id="role-confirm-btn" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition">Accept &amp; Assign Role</button>
+        </div>
+      </div>
+    </div>
+  </main>  
+
+  <footer class="bg-legend-blue text-white border-t mt-8 py-4 text-center text-xs">
+    &copy; 2025 Boys State App Admin Portal. Not affiliated with or endorsed by the American Legion.
+  </footer>
+
+  <!-- Load your portal scripts -->
+  <script src="js/config.js"></script>
+  <script src="js/authHelper.js"></script>
+  <script src="js/application-field-types.js"></script>
+  <script src="js/application-messages.js"></script>
+  <script src="js/application-service.js"></script>
+  <script src="js/application-review.js"></script>
+</body>
+</html>
+

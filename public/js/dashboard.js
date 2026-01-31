@@ -60,6 +60,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   function selectProgram(p) {
+    // Store the selected program ID for use across the app
+    const programId = p.programId || p.id;
+    if (programId) {
+      localStorage.setItem('lastSelectedProgramId', programId);
+      window.selectedProgramId = programId;
+    }
+
     document.getElementById('userRole').textContent = `${data.username} - ${p.role}`;
     document.getElementById('features').classList.remove('hidden');
     if (p.role === 'counselor') {

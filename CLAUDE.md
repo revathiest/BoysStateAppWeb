@@ -130,9 +130,37 @@ Update `src/index.js:138` if backend URL changes.
 
 ### Tailwind Configuration
 
-Custom colors defined in `tailwind.config.js`:
+**Custom Colors** defined in `tailwind.config.js`:
 - `legend-blue`: #1B3D6D
 - `legend-gold`: #FFD700
+
+**Custom Semantic Classes** using `@apply` in `src/styles/tailwind.css`:
+- Component classes replace long utility strings for better readability
+- Defined in `@layer components` for proper precedence
+- Source file: `src/styles/tailwind.css`
+- Compiled output: `public/tailwind.css`
+- Build command: `npm run build:css`
+- Watch command: `npm run dev:css`
+
+**Key semantic classes**:
+- **Cards**: `.card`, `.card-blue-accent`, `.card-hover`, `.card-planned`
+- **Buttons**: `.btn-primary`, `.btn-secondary`, `.btn-danger`, `.btn-cancel`
+- **Forms**: `.form-input`, `.form-label`, `.form-select`, `.form-checkbox`
+- **Messages**: `.message-error`, `.message-success`, `.message-info`
+- **Layout**: `.nav-bar`, `.page-main`, `.footer`
+- **Typography**: `.heading-page`, `.heading-section`, `.text-muted`
+- **Badges**: `.badge-active`, `.badge-planned`
+
+**Example**:
+```html
+<!-- Before: Long utility strings -->
+<div class="bg-white rounded-2xl shadow-lg p-6 border-t-4 border-legend-gold">
+
+<!-- After: Semantic class -->
+<div class="card">
+```
+
+This approach maintains Tailwind's utility-first benefits while improving code readability and making global style changes easier.
 
 ## Security and Compliance
 
@@ -207,10 +235,15 @@ The dev server (`src/index.js`) only implements basic auth and program creation.
 
 Referenced in `programs-config.html` but not created:
 - `programs-groupings.html`
-- `programs-parties.html`
 - `programs-positions.html`
 - `programs-staff.html`
 - `programs-parents.html`
+
+### Recently Implemented Pages
+
+- `programs-parties.html` - Political parties management (Federalists/Nationalists defaults)
+- `user-management.html` - User management landing page with feature cards
+- `application-review.html` - Application review interface
 
 ### Dead Navigation Links
 
@@ -227,11 +260,11 @@ Features documented in PROJECT_OVERVIEW.md but not yet implemented:
 
 ### Incomplete Features
 
-1. **Application Review Workflow**: Frontend exists (`user-management.html`, `user-management.js`) but backend missing
-   - No endpoints to fetch pending applications
-   - No accept/reject implementation
-   - No audit logging
-   - No onboarding trigger for accepted applicants
+1. **Application Review Workflow**: ✅ Now implemented
+   - Backend endpoints exist in `applicationReviews.ts` for listing, viewing, accepting, and rejecting applications
+   - Accept creates Delegate (with `status: 'pending_assignment'`, no grouping) or Staff (with role) records
+   - Audit logging included
+   - **Remaining**: Delegate random assignment to groupings not yet implemented
 
 2. **Branding Configuration**: Frontend exists (`branding-contact.html`, `branding-contact.js`) but backend missing
 
@@ -243,6 +276,12 @@ Features documented in PROJECT_OVERVIEW.md but not yet implemented:
    - Implementation in `BoysStateAppServices/src/routes/programYears.ts` lines 46-107
    - Copies from `ProgramYearGrouping`, `ProgramYearParty`, and `ProgramYearPosition` tables
    - **⚠️ VERIFY THIS LOGIC** when implementing groupings/parties/positions management pages - the copy behavior may need adjustment based on actual usage patterns
+
+6. **ProgramYear Creation Inconsistency**: Years can be created from two different places with potentially different behavior:
+   - **Program Configuration** (`programs-year-config.html`): Direct year creation via `POST /programs/{programId}/years` with optional `copyFromPreviousYear` flag
+   - **Application Configuration** (`application-service.js`): Year created implicitly when creating an application for a new year
+   - **Application Acceptance** (`applicationReviews.ts`): Year auto-created if it doesn't exist when accepting an application
+   - **⚠️ TODO**: Audit these paths to ensure consistent behavior, or consolidate to a single creation point
 
 ## Important Notes
 
@@ -267,3 +306,44 @@ Features documented in PROJECT_OVERVIEW.md but not yet implemented:
 8. **CORS**: Server sets CORS headers to allow cross-origin requests with credentials.
 
 9. **Git Workflow**: Main branch is `main`, development happens on `development` branch.
+
+## Common Bug Patterns to Avoid
+
+### 1. Missing programId in Navigation Links
+
+**Problem**: When adding new pages accessible from `programs-config.html`, the link must be added to the `updateConfigLinks()` function in `programs-config.js`. Otherwise, the link will not include the `programId` parameter, causing the new page to fall back to `localStorage.lastSelectedProgramId`, which may be stale or belong to a different program.
+
+**Symptoms**:
+- 403 Forbidden errors from backend API
+- "Access denied" or permission errors
+- Wrong program data loaded on the page
+
+**Fix Pattern**:
+1. Add an `id` attribute to the link in `programs-config.html`
+2. Update the `updateConfigLinks()` function in `programs-config.js` to include:
+```javascript
+const yourNewLink = document.getElementById("yourNewLinkId");
+if (yourNewLink) {
+  yourNewLink.href = `your-new-page.html?programId=${encodeURIComponent(programId)}`;
+}
+```
+
+**Example**: The `groupingsLink` was initially missing from `updateConfigLinks()`, causing 403 errors when accessing the groupings page.
+
+### 2. Auth Functions Not Exposed Globally
+
+**Problem**: Functions in `authHelper.js` that are used by multiple pages must be exposed on the `window` object for browser use, not just exported for Node modules.
+
+**Symptoms**:
+- `ReferenceError: functionName is not defined` in browser console
+- Missing Authorization headers in API requests
+
+**Fix Pattern**: Ensure all auth helper functions are added to the browser context in the `else` block of `authHelper.js`:
+```javascript
+} else {
+  window.functionName = functionName;
+  // ... other exports
+}
+```
+
+**Example**: `getAuthHeaders` was initially only exported for Node modules, causing it to be undefined in browser context.
