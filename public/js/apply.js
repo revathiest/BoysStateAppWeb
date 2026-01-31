@@ -2,6 +2,11 @@
 
 const { programId, year, type } = getApplicationParams();
 
+console.log('[DEBUG] apply.js - URL:', window.location.href);
+console.log('[DEBUG] apply.js - programId:', programId);
+console.log('[DEBUG] apply.js - year:', year);
+console.log('[DEBUG] apply.js - type:', type);
+
 document.addEventListener('DOMContentLoaded', async function() {
     if (!programId) {
       document.getElementById('applicationForm').innerHTML = '<div class="text-red-700">No program selected. Please use a valid application link.</div>';

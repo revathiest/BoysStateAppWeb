@@ -130,6 +130,32 @@ function createServer() {
   const users = {};
   createServer.userStore = users;
 
+  // In-memory data stores for mock API
+  const programs = {};
+  const programYears = {};
+  const parties = {};
+  const programYearParties = {};
+  let nextProgramId = 1;
+  let nextYearId = 1;
+  let nextPartyId = 1;
+  let nextProgramYearPartyId = 1;
+
+  function parseJsonBody(req) {
+    return new Promise((resolve, reject) => {
+      let data = '';
+      req.on('data', chunk => {
+        data += chunk;
+      });
+      req.on('end', () => {
+        try {
+          resolve(JSON.parse(data));
+        } catch (err) {
+          reject(err);
+        }
+      });
+    });
+  }
+
   return http.createServer(async (req, res) => {
     const startTime = Date.now();
     res.on('finish', () => logRequest(req, res, startTime));
@@ -295,6 +321,226 @@ function createServer() {
       const items = logs.slice(startIdx, startIdx + pageSize);
       res.writeHead(200, { 'Content-Type': 'application/json' });
       return res.end(JSON.stringify({ total: logs.length, items }));
+    }
+
+    // Mock API endpoints for program years and parties
+    // POST /api/programs (create program with initial year)
+    if (req.method === 'POST' && req.url === '/api/programs') {
+      const username = cookies.username;
+      req.user = username;
+      if (!username || !users[username]) {
+        res.writeHead(401, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ error: 'Unauthorized' }));
+      }
+
+      try {
+        const body = await parseJsonBody(req);
+        const { name, year } = body;
+
+        if (!name || !year) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ error: 'Program name and year are required' }));
+        }
+
+        const programId = `prog-${nextProgramId++}`;
+        const program = {
+          id: programId,
+          name,
+          createdBy: username,
+          createdAt: new Date().toISOString()
+        };
+        programs[programId] = program;
+
+        // Create initial program year
+        const yearId = `year-${nextYearId++}`;
+        const programYear = {
+          id: yearId,
+          programId,
+          year: Number(year),
+          status: 'active',
+          createdAt: new Date().toISOString()
+        };
+        if (!programYears[programId]) programYears[programId] = [];
+        programYears[programId].push(programYear);
+
+        // Add to user's programs
+        users[username].programs.push({
+          programId,
+          id: programId,
+          programName: name,
+          name,
+          role: 'admin'
+        });
+
+        logger.log(`Program created: ${name} (${year}) by ${username}`, { source: 'program' });
+        res.writeHead(201, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify(program));
+      } catch (err) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ error: 'Invalid request body' }));
+      }
+    }
+
+    // GET /user-programs/:username
+    if (req.method === 'GET' && req.url.startsWith('/user-programs/')) {
+      const username = decodeURIComponent(req.url.split('/')[2]);
+      if (!users[username]) {
+        res.writeHead(404, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ error: 'User not found' }));
+      }
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ programs: users[username].programs || [] }));
+    }
+
+    // GET /programs/:programId/years
+    if (req.method === 'GET' && req.url.match(/^\/programs\/[^/]+\/years$/)) {
+      const programId = req.url.split('/')[2];
+      const years = programYears[programId] || [];
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify(years));
+    }
+
+    // POST /programs/:programId/years
+    if (req.method === 'POST' && req.url.match(/^\/programs\/[^/]+\/years$/)) {
+      const programId = req.url.split('/')[2];
+      try {
+        const body = await parseJsonBody(req);
+        const { year } = body;
+
+        if (!year) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ error: 'Year is required' }));
+        }
+
+        const yearId = `year-${nextYearId++}`;
+        const programYear = {
+          id: yearId,
+          programId,
+          year: Number(year),
+          status: 'active',
+          createdAt: new Date().toISOString()
+        };
+
+        if (!programYears[programId]) programYears[programId] = [];
+        programYears[programId].push(programYear);
+
+        res.writeHead(201, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify(programYear));
+      } catch (err) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ error: 'Invalid request body' }));
+      }
+    }
+
+    // GET /programs/:programId/parties
+    if (req.method === 'GET' && req.url.match(/^\/programs\/[^/]+\/parties$/)) {
+      const programId = req.url.split('/')[2];
+      const programParties = parties[programId] || [];
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify(programParties));
+    }
+
+    // POST /programs/:programId/parties
+    if (req.method === 'POST' && req.url.match(/^\/programs\/[^/]+\/parties$/)) {
+      const programId = req.url.split('/')[2];
+      try {
+        const body = await parseJsonBody(req);
+        const { name, color } = body;
+
+        if (!name) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ error: 'Party name is required' }));
+        }
+
+        const partyId = `party-${nextPartyId++}`;
+        const party = {
+          id: partyId,
+          programId,
+          name,
+          color: color || '#1B3D6D',
+          status: 'active',
+          createdAt: new Date().toISOString()
+        };
+
+        if (!parties[programId]) parties[programId] = [];
+        parties[programId].push(party);
+
+        logger.log(`Party created: ${name} for program ${programId}`, { source: 'party' });
+        res.writeHead(201, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify(party));
+      } catch (err) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ error: 'Invalid request body' }));
+      }
+    }
+
+    // DELETE /parties/:partyId
+    if (req.method === 'DELETE' && req.url.match(/^\/parties\/[^/]+$/)) {
+      const partyId = req.url.split('/')[2];
+      let found = false;
+
+      // Find and soft-delete the party
+      for (const programId in parties) {
+        const party = parties[programId].find(p => p.id === partyId);
+        if (party) {
+          party.status = 'retired';
+          found = true;
+          logger.log(`Party soft-deleted: ${party.name}`, { source: 'party' });
+          break;
+        }
+      }
+
+      if (!found) {
+        res.writeHead(404, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ error: 'Party not found' }));
+      }
+
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ success: true }));
+    }
+
+    // GET /program-years/:programYearId/parties
+    if (req.method === 'GET' && req.url.match(/^\/program-years\/[^/]+\/parties$/)) {
+      const programYearId = req.url.split('/')[2];
+      const activatedParties = programYearParties[programYearId] || [];
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify(activatedParties));
+    }
+
+    // POST /program-years/:programYearId/parties/activate
+    if (req.method === 'POST' && req.url.match(/^\/program-years\/[^/]+\/parties\/activate$/)) {
+      const programYearId = req.url.split('/')[2];
+      try {
+        const body = await parseJsonBody(req);
+        const { partyIds } = body;
+
+        if (!Array.isArray(partyIds)) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ error: 'partyIds must be an array' }));
+        }
+
+        // Clear existing activations for this program year
+        programYearParties[programYearId] = [];
+
+        // Create new activations
+        for (const partyId of partyIds) {
+          const activationId = `pya-${nextProgramYearPartyId++}`;
+          programYearParties[programYearId].push({
+            id: activationId,
+            programYearId,
+            partyId,
+            status: 'active',
+            createdAt: new Date().toISOString()
+          });
+        }
+
+        logger.log(`Activated ${partyIds.length} parties for program year ${programYearId}`, { source: 'party' });
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ success: true, count: partyIds.length }));
+      } catch (err) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ error: 'Invalid request body' }));
+      }
     }
 
     const requestUrl = new URL(req.url, `http://${req.headers.host}`);

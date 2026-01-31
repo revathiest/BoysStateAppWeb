@@ -3,7 +3,11 @@
     "allow": [
       "Bash(npm run build:css:*)",
       "Bash(npm test:*)",
-      "Bash(git -C \"e:\\\\BoysStateApp\\\\BoysStateAppWeb\" status --short)"
+      "Bash(git -C \"e:\\\\BoysStateApp\\\\BoysStateAppWeb\" status --short)",
+      "Bash(cd:*)"
+    ],
+    "additionalDirectories": [
+      "e:\\BoysStateApp\\BoysStateAppServices\\prisma"
     ]
   }
 }

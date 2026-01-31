@@ -328,119 +328,159 @@ State (top level - parentGroupingId = null)
   - "Sangamon County" (parent county)
   - "Central District" (parent district)
 - No need to store multiple grouping assignments per delegate
-- Single `groupingId` field contains most specific grouping
+- Single `programYearGroupingId` field references the activated grouping for that year
 
 **Features Needed**:
 - Create groupings with parent-child relationships (hierarchy inferred from parentGroupingId)
 - Visual tree/hierarchy display in admin interface
 - Drag-and-drop or nested UI for organizing groupings
 - Assign display order within same parent
-- Status management (active/inactive toggle)
+- Status management (active/retired toggle)
+- Activate groupings for specific years
 - Show usage statistics (how many delegates/staff assigned to each grouping)
 - Validation: prevent circular references in parent chain
 - Filtering: show only active vs show all
 
-**Data Model**:
+**Data Model (Two-Tier System)**:
 ```
-Grouping (simple, year-agnostic)
+Grouping (program-level - define once)
 ├── id
 ├── programId (which program this belongs to)
 ├── name (e.g., "Springfield", "Sangamon County", "Central District")
 ├── parentGroupingId (self-referential - creates hierarchy, null = top level)
 ├── displayOrder (ordering within same parent)
-├── status (active/inactive - controls if available for NEW assignments)
+├── status (active/retired - retired groupings cannot be activated for new years)
 ├── createdDate
 └── notes (optional - for admin reference)
 
-Example: Simple groupings with active/inactive status
-  Grouping { id: 1, name: "Central District", parentGroupingId: null, status: "active" }
-  └── Grouping { id: 2, name: "Sangamon County", parentGroupingId: 1, status: "active" }
-      └── Grouping { id: 3, name: "Springfield", parentGroupingId: 2, status: "active" }
-      └── Grouping { id: 4, name: "Old Town", parentGroupingId: 2, status: "inactive" }
+ProgramYearGrouping (year-level activation - junction table)
+├── id
+├── programYearId (which year this activation applies to)
+├── groupingId (which grouping is being activated)
+├── status (active/inactive - controls if available for assignments in THIS year)
+└── delegates/staff (linked to this activated grouping)
 
-Delegate (2024) { groupingId: 4 } → "Old Town" (still valid, shows in reports)
-Delegate (2026) { groupingId: ??? } → cannot select "Old Town" (inactive)
+Example: Two-tier system with year-specific activation
+  Program-level:
+    Grouping { id: 1, name: "Central District", parentGroupingId: null, status: "active" }
+    └── Grouping { id: 2, name: "Sangamon County", parentGroupingId: 1, status: "active" }
+        └── Grouping { id: 3, name: "Springfield", parentGroupingId: 2, status: "active" }
+        └── Grouping { id: 4, name: "Old Town", parentGroupingId: 2, status: "active" }
+
+  Year 2024 Activation:
+    ProgramYearGrouping { programYearId: 1, groupingId: 1, status: "active" }
+    ProgramYearGrouping { programYearId: 1, groupingId: 2, status: "active" }
+    ProgramYearGrouping { programYearId: 1, groupingId: 3, status: "active" }
+    ProgramYearGrouping { programYearId: 1, groupingId: 4, status: "active" }
+
+  Year 2026 Activation (Old Town not used this year):
+    ProgramYearGrouping { programYearId: 2, groupingId: 1, status: "active" }
+    ProgramYearGrouping { programYearId: 2, groupingId: 2, status: "active" }
+    ProgramYearGrouping { programYearId: 2, groupingId: 3, status: "active" }
+    (Old Town not activated for 2026)
+
+Delegate (2024) { programYearGroupingId: 4 } → "Old Town" (valid for 2024)
+Delegate (2026) { programYearGroupingId: ??? } → can only select activated groupings for 2026
 ```
 
 **Managing Groupings Over Time**:
 
-**Status field meaning**:
-- **active**: Available for NEW delegate/staff assignments in current year
-- **inactive**: NOT available for new assignments, but historical records preserved
+**Two-Tier Workflow**:
+1. **Create at program level**: Define all groupings once (available across all years)
+2. **Activate for specific years**: Choose which groupings to use for each year
+
+**Status field meanings**:
+- **Program-level status** (active/retired):
+  - **active**: Can be activated for new years
+  - **retired**: Cannot be activated for new years (historical activations preserved)
+- **Year-level status** (active/inactive):
+  - **active**: Available for delegate/staff assignments in this specific year
+  - **inactive**: Not available for assignments in this year
 
 **Adding a new grouping** (e.g., new city "Chatham"):
-1. Create Grouping { name: "Chatham", parentGroupingId: 2, status: "active" }
-2. Immediately available for new assignments
-3. No year-specific activation needed
+1. Create Grouping { name: "Chatham", parentGroupingId: 2, status: "active" } at program level
+2. Activate for current year: Create ProgramYearGrouping { programYearId: current, groupingId: newId, status: "active" }
+3. Now available for assignments in current year
+4. Can be activated for future years as needed
 
-**Retiring a grouping** (e.g., "Old Town" merged into "Springfield"):
-1. Update Grouping { id: 4, status: "inactive" }
-2. Historical delegates from 2024/2025 still point to "Old Town" (id: 4)
-3. New delegates cannot be assigned to "Old Town" (inactive)
-4. Reports for all years still show "Old Town" correctly for historical delegates
+**Not using a grouping for a year** (e.g., "Old Town" not used in 2026):
+1. Simply don't activate "Old Town" for 2026 (no ProgramYearGrouping record created)
+2. Historical delegates from 2024/2025 still reference their ProgramYearGrouping records
+3. New delegates in 2026 cannot select "Old Town" (not activated)
+4. Can re-activate "Old Town" for 2027 if needed
 
-**Re-activating a grouping**:
-1. Update Grouping { id: 4, status: "active" }
-2. Now available for new assignments again
+**Retiring a grouping permanently** (e.g., "Old Town" eliminated):
+1. Update Grouping { id: 4, status: "retired" } at program level
+2. Historical ProgramYearGrouping records preserved (2024/2025 delegates unaffected)
+3. Cannot be activated for any new years
+4. Can be un-retired if circumstances change
 
 **Benefits**:
-✅ Maximum simplicity - just active/inactive flag
-✅ No year-based junction tables
-✅ Historical integrity - old delegates always valid
-✅ One "Springfield" serves all years
-✅ Easy to retire/reactivate groupings
-✅ Parent relationships maintained
+✅ Flexibility - different groupings per year without affecting history
+✅ No need to deactivate - just don't activate for certain years
+✅ Historical integrity - old delegates always reference valid year-specific activations
+✅ Clean year-over-year configuration
+✅ Easy to add/remove groupings per year
+✅ Parent relationships maintained at program level
 
 **Admin Workflow for Groupings**:
 
-Admin manages groupings at any time:
-1. Admin goes to groupings configuration page
-2. System shows all groupings (active and inactive)
+**Program-Level Management** (programs-groupings.html):
+1. Admin creates/edits groupings at program level
+2. System shows all groupings (active and retired)
 3. Admin can:
    - **Create new** groupings (default to active)
-   - **Edit** grouping names/hierarchy/status
-   - **Mark as inactive** (retire from use)
-   - **Mark as active** (make available for assignments)
-4. Changes take effect immediately
-5. Historical delegates/staff unaffected
+   - **Edit** grouping names/hierarchy
+   - **Mark as retired** (cannot be activated for new years)
+   - **Mark as active** (can be activated for new years)
+4. Changes affect which groupings are available for year activation
+
+**Year-Level Activation** (programs-year-config.html):
+1. Admin selects a program year (e.g., 2026)
+2. System shows all active program-level groupings
+3. Admin checks which groupings to activate for this year
+4. System creates ProgramYearGrouping records for selected groupings
+5. Only activated groupings available for delegate/staff assignments in that year
 
 **UI Recommendations**:
-- Show status badges: "Active" (green), "Inactive" (gray)
+- **Program-level page**: Show status badges: "Active" (green), "Retired" (gray)
+- **Year-level page**: Show checkboxes for activating groupings per year
 - Allow filtering: "Show only active" vs "Show all groupings"
 - Warn when editing grouping names: "This will change the name for all historical records"
-- Prevent deletion if grouping is used by any delegate/staff (use inactive instead)
-- Show usage count: "Used by 45 delegates, 3 staff"
+- Show usage count per year: "Used by 45 delegates in 2024, 52 in 2025"
+- Prevent retiring if activated for any year (must deactivate from years first)
 
 **Pages Needed**:
-- `programs-groupings.html` - CRITICAL: Required before accepting applications
+- `programs-groupings.html` - CRITICAL: Manage program-level groupings
+- `programs-year-config.html` - CRITICAL: Activate groupings for specific years
 
 **Why It's Critical**:
-- Delegates MUST be assigned to a grouping (their most specific city/location)
+- Delegates MUST be assigned to an activated grouping (their most specific city/location)
   - Assigned to LOWEST level → inherit UP to all parent groupings
-- Staff MUST be assigned to a grouping (can be any level: city, county, district, or state)
+- Staff MUST be assigned to an activated grouping (can be any level: city, county, district, or state)
   - Assigned to ANY level → oversee DOWN to all child groupings
   - Example: District staff oversees all counties and cities in that district
-  - May use dummy/placeholder grouping initially to indicate needs assignment
 - Elections happen at grouping level (city elections, county elections, etc.)
-- Positions can be grouping-specific (e.g., "Mayor of Springfield" vs "County Commissioner")
+- Positions are linked to activated groupings
 - Reporting and analytics grouped by organizational hierarchy
 
-### 7. Party Management ❌
+### 7. Party Management ✅
 
-**Current Status**: Not Implemented (Backend Ready)
+**Current Status**: Implemented (Frontend and Backend)
 
 **Purpose**: Configure political parties for elections
 
-**Features Needed**:
+**Features Implemented**:
 - Create parties (typically 2, e.g., "Federalist", "Nationalist")
-- Party attributes: name, abbreviation, color, icon
-- Status management (active/inactive toggle)
-- Assign delegates to parties
-- Show usage statistics (how many delegates per party)
+- Party attributes: name, color
+- Status management (active/retired toggle)
+- Default party setup (Federalists blue, Nationalists red)
+- Activate parties for specific years
+- Show usage statistics (how many delegates per party per year)
 
-**Data Model**:
+**Data Model (Two-Tier System)**:
 ```
-Party (simple, year-agnostic, program-scoped)
+Party (program-level - define once)
 ├── id
 ├── programId (which program owns this party)
 ├── name (e.g., "Federalist Party")
@@ -448,32 +488,95 @@ Party (simple, year-agnostic, program-scoped)
 ├── color (hex code for UI)
 ├── icon (optional URL)
 ├── displayOrder
-├── status (active/inactive - controls availability for NEW assignments)
+├── status (active/retired - retired parties cannot be activated for new years)
 └── createdDate
 
-Example:
-  Party { id: 1, name: "Federalist Party", abbreviation: "FED", status: "active" }
-  Party { id: 2, name: "Nationalist Party", abbreviation: "NAT", status: "active" }
-  Party { id: 3, name: "Old Whig Party", abbreviation: "WHIG", status: "inactive" }
+ProgramYearParty (year-level activation - junction table)
+├── id
+├── programYearId (which year this activation applies to)
+├── partyId (which party is being activated)
+├── status (active/inactive - controls if available for assignments in THIS year)
+└── delegates (linked to this activated party)
 
-Delegate (2024) { partyId: 3 } → "Old Whig Party" (still valid, shows in reports)
-Delegate (2026) { partyId: ??? } → cannot select "Old Whig Party" (inactive)
+Example: Two-tier system with year-specific activation
+  Program-level:
+    Party { id: 1, name: "Federalist Party", abbreviation: "FED", status: "active" }
+    Party { id: 2, name: "Nationalist Party", abbreviation: "NAT", status: "active" }
+    Party { id: 3, name: "Old Whig Party", abbreviation: "WHIG", status: "active" }
+
+  Year 2024 Activation:
+    ProgramYearParty { programYearId: 1, partyId: 1, status: "active" }
+    ProgramYearParty { programYearId: 1, partyId: 2, status: "active" }
+    ProgramYearParty { programYearId: 1, partyId: 3, status: "active" }
+
+  Year 2026 Activation (Old Whig Party not used this year):
+    ProgramYearParty { programYearId: 2, partyId: 1, status: "active" }
+    ProgramYearParty { programYearId: 2, partyId: 2, status: "active" }
+    (Old Whig Party not activated for 2026)
+
+Delegate (2024) { programYearPartyId: 3 } → "Old Whig Party" (valid for 2024)
+Delegate (2026) { programYearPartyId: ??? } → can only select activated parties for 2026
 ```
 
 **Managing Parties Over Time**:
-- **active**: Available for NEW delegate assignments
-- **inactive**: NOT available for new assignments, but historical records preserved
-- Adding new parties: Create with status="active"
-- Retiring parties: Set status="inactive" (historical delegates preserved)
-- Re-activating parties: Set status="active" again
+
+**Two-Tier Workflow**:
+1. **Create at program level**: Define all parties once (available across all years)
+2. **Activate for specific years**: Choose which parties to use for each year
+
+**Status field meanings**:
+- **Program-level status** (active/retired):
+  - **active**: Can be activated for new years
+  - **retired**: Cannot be activated for new years (historical activations preserved)
+- **Year-level status** (active/inactive):
+  - **active**: Available for delegate assignments in this specific year
+  - **inactive**: Not available for assignments in this year
+
+**Adding a new party**:
+1. Create Party { name: "New Party", color: "#...", status: "active" } at program level
+2. Activate for current year: Create ProgramYearParty { programYearId: current, partyId: newId, status: "active" }
+3. Now available for assignments in current year
+
+**Not using a party for a year**:
+1. Simply don't activate that party for the year (no ProgramYearParty record created)
+2. Historical delegates still reference their ProgramYearParty records
+3. New delegates cannot select that party (not activated)
+4. Can re-activate for future years if needed
+
+**Retiring a party permanently**:
+1. Update Party { status: "retired" } at program level
+2. Historical ProgramYearParty records preserved
+3. Cannot be activated for any new years
+4. Can be un-retired if circumstances change
 
 **Benefits**:
-- Same simplicity as groupings
-- No year-based logic
-- Historical integrity maintained
+✅ Flexibility - different parties per year without affecting history
+✅ No need to deactivate - just don't activate for certain years
+✅ Historical integrity - old delegates always reference valid year-specific activations
+✅ Clean year-over-year configuration
+✅ Easy to add/remove parties per year
+✅ Same pattern as groupings and positions
 
-**Pages Needed**:
-- `programs-parties.html` - Party configuration
+**Admin Workflow**:
+
+**Program-Level Management** (programs-parties.html):
+1. Admin creates/edits parties at program level
+2. Can add custom parties or use "Quick Setup" for Federalists/Nationalists
+3. Admin can:
+   - **Create new** parties with name and color
+   - **Delete** parties (soft delete - sets status to retired)
+   - View all parties with color indicators
+
+**Year-Level Activation** (programs-year-config.html - TO BE CREATED):
+1. Admin selects a program year (e.g., 2026)
+2. System shows all active program-level parties
+3. Admin checks which parties to activate for this year
+4. System creates ProgramYearParty records for selected parties
+5. Only activated parties available for delegate assignments in that year
+
+**Pages**:
+- ✅ `programs-parties.html` - Program-level party management (COMPLETE)
+- ❌ `programs-year-config.html` - Year-level activation (NEEDED)
 
 ### 8. Position Management ❌
 
@@ -484,18 +587,19 @@ Delegate (2026) { partyId: ??? } → cannot select "Old Whig Party" (inactive)
 **Features Needed**:
 - Create positions (e.g., "Mayor", "Governor", "Judge")
 - Position attributes: name, description, grouping level, elected vs appointed
-- Status management (active/inactive toggle)
-- Link positions to specific groupings (or program-wide)
-- Show usage statistics (how many delegates have held each position)
+- Status management (active/retired toggle)
+- Link positions to specific groupings
+- Activate positions for specific years
+- Show usage statistics (how many delegates have held each position per year)
 
 **Examples**:
 - City-level: Mayor, City Council Member
 - County-level: County Commissioner, Sheriff
 - State-level: Governor, Lt. Governor, Secretary of State, Supreme Court Justice, Attorney General
 
-**Data Model**:
+**Data Model (Two-Tier System)**:
 ```
-Position (simple, year-agnostic, program-scoped)
+Position (program-level - define once)
 ├── id
 ├── programId (which program owns this position)
 ├── name (e.g., "Mayor", "Governor")
@@ -509,36 +613,100 @@ Position (simple, year-agnostic, program-scoped)
 │   Note: Even state-level positions like "Governor" are assigned to the
 │         top-level "State" grouping (parentGroupingId = null)
 ├── displayOrder
-├── status (active/inactive - controls availability for NEW assignments)
+├── status (active/retired - retired positions cannot be activated for new years)
 └── createdDate
 
-Example:
-  State grouping: Grouping { id: 1, name: "California", parentGroupingId: null }
-  County grouping: Grouping { id: 2, name: "Los Angeles County", parentGroupingId: 1 }
-  City grouping: Grouping { id: 3, name: "Los Angeles", parentGroupingId: 2 }
+ProgramYearPosition (year-level activation - junction table)
+├── id
+├── programYearId (which year this activation applies to)
+├── positionId (which position is being activated)
+├── status (active/inactive - controls if available for assignments in THIS year)
+└── delegatePositions (delegates who hold this position this year)
 
-  Position { id: 1, name: "Mayor", isElected: true, groupingId: 3, status: "active" }
-  Position { id: 2, name: "Governor", isElected: true, groupingId: 1, status: "active" }
-  Position { id: 3, name: "Old Magistrate", isElected: false, groupingId: 2, status: "inactive" }
+Example: Two-tier system with year-specific activation
+  Program-level:
+    State grouping: Grouping { id: 1, name: "California", parentGroupingId: null }
+    County grouping: Grouping { id: 2, name: "Los Angeles County", parentGroupingId: 1 }
+    City grouping: Grouping { id: 3, name: "Los Angeles", parentGroupingId: 2 }
 
-DelegatePosition (2024) { positionId: 3 } → "Old Magistrate" (still valid, shows in history)
-New assignment (2026) → cannot select "Old Magistrate" (inactive)
+    Position { id: 1, name: "Mayor", isElected: true, groupingId: 3, status: "active" }
+    Position { id: 2, name: "Governor", isElected: true, groupingId: 1, status: "active" }
+    Position { id: 3, name: "Old Magistrate", isElected: false, groupingId: 2, status: "active" }
+
+  Year 2024 Activation:
+    ProgramYearPosition { programYearId: 1, positionId: 1, status: "active" }
+    ProgramYearPosition { programYearId: 1, positionId: 2, status: "active" }
+    ProgramYearPosition { programYearId: 1, positionId: 3, status: "active" }
+
+  Year 2026 Activation (Old Magistrate not used this year):
+    ProgramYearPosition { programYearId: 2, positionId: 1, status: "active" }
+    ProgramYearPosition { programYearId: 2, positionId: 2, status: "active" }
+    (Old Magistrate not activated for 2026)
+
+DelegatePosition (2024) { programYearPositionId: 3 } → "Old Magistrate" (valid for 2024)
+New assignment (2026) → can only select activated positions for 2026
 ```
 
 **Managing Positions Over Time**:
-- **active**: Available for NEW delegate assignments/elections
-- **inactive**: NOT available for new assignments, but historical records preserved
-- Adding new positions: Create with status="active"
-- Retiring positions: Set status="inactive" (historical position holders preserved)
-- Re-activating positions: Set status="active" again
+
+**Two-Tier Workflow**:
+1. **Create at program level**: Define all positions once (available across all years)
+2. **Activate for specific years**: Choose which positions to use for each year
+
+**Status field meanings**:
+- **Program-level status** (active/retired):
+  - **active**: Can be activated for new years
+  - **retired**: Cannot be activated for new years (historical activations preserved)
+- **Year-level status** (active/inactive):
+  - **active**: Available for delegate assignments/elections in this specific year
+  - **inactive**: Not available for assignments in this year
+
+**Adding a new position**:
+1. Create Position { name: "New Position", groupingId: X, status: "active" } at program level
+2. Activate for current year: Create ProgramYearPosition { programYearId: current, positionId: newId, status: "active" }
+3. Now available for assignments/elections in current year
+
+**Not using a position for a year**:
+1. Simply don't activate that position for the year (no ProgramYearPosition record created)
+2. Historical DelegatePosition records still reference their ProgramYearPosition records
+3. New delegates cannot run for that position (not activated)
+4. Can re-activate for future years if needed
+
+**Retiring a position permanently**:
+1. Update Position { status: "retired" } at program level
+2. Historical ProgramYearPosition records preserved
+3. Cannot be activated for any new years
+4. Can be un-retired if circumstances change
 
 **Benefits**:
-- Same simplicity as groupings and parties
-- No year-based logic
-- Historical integrity maintained
+✅ Flexibility - different positions per year without affecting history
+✅ No need to deactivate - just don't activate for certain years
+✅ Historical integrity - old position holders always reference valid year-specific activations
+✅ Clean year-over-year configuration
+✅ Easy to add/remove positions per year
+✅ Same pattern as groupings and parties
+
+**Admin Workflow**:
+
+**Program-Level Management** (programs-positions.html - TO BE CREATED):
+1. Admin creates/edits positions at program level
+2. Assigns each position to a grouping (city, county, or state level)
+3. Admin can:
+   - **Create new** positions with name, description, grouping, elected/appointed
+   - **Edit** position details
+   - **Mark as retired** (cannot be activated for new years)
+   - **Mark as active** (can be activated for new years)
+
+**Year-Level Activation** (programs-year-config.html - TO BE CREATED):
+1. Admin selects a program year (e.g., 2026)
+2. System shows all active program-level positions grouped by grouping level
+3. Admin checks which positions to activate for this year
+4. System creates ProgramYearPosition records for selected positions
+5. Only activated positions available for elections/appointments in that year
 
 **Pages Needed**:
-- `programs-positions.html` - Position configuration
+- `programs-positions.html` - Program-level position management (NEEDED)
+- `programs-year-config.html` - Year-level activation (NEEDED)
 
 ### 9. Elections Management ❌
 
@@ -605,14 +773,17 @@ Election
 **Program Hierarchy**:
 ```
 Program (e.g., "California Boys State")
-├── Groupings (program-level, year-agnostic, active/inactive status)
-├── Parties (program-level, year-agnostic, active/inactive status)
-├── Positions (program-level, year-agnostic, active/inactive status)
+├── Groupings (program-level, active/retired status)
+├── Parties (program-level, active/retired status)
+├── Positions (program-level, active/retired status)
 └── ProgramYear (e.g., 2024, 2025)
-    ├── Delegates (assigned to active groupings, parties, and positions)
+    ├── ProgramYearGrouping (activated groupings for this year)
+    ├── ProgramYearParty (activated parties for this year)
+    ├── ProgramYearPosition (activated positions for this year)
+    ├── Delegates (assigned to activated groupings/parties/positions via junction tables)
     │   └── Parents (linked to delegates)
-    ├── Staff (assigned to active groupings)
-    └── Elections (year-specific)
+    ├── Staff (assigned to activated groupings via junction table)
+    └── Elections (year-specific, link to activated positions)
 ```
 
 **Participant Management**:
@@ -620,35 +791,38 @@ Program (e.g., "California Boys State")
 Delegate
 ├── Personal Info (firstName, lastName, email, phone)
 ├── programYearId (which year they're participating)
-├── groupingId (required - LOWEST LEVEL grouping only)
-│   └── Example: assigned to "Springfield" (city)
+├── programYearGroupingId (REQUIRED - references activated LOWEST LEVEL grouping)
+│   └── Points to ProgramYearGrouping (junction table)
+│       Example: assigned to activated "Springfield" for 2024
 │       Inherits: "Sangamon County" → "Central District" through hierarchy
-│   Note: Initially may be set to dummy/placeholder grouping for even distribution
-├── partyId (REQUIRED - political party affiliation)
-│   └── Points to year-agnostic Party (active/inactive status)
-│       Example: assigned to "Federalist Party" (id: 1)
-│       Historical delegates point to same party even if inactive
-│   Note: Initially may be set to dummy/placeholder party for even distribution
+│   Note: Initially may be set to dummy/placeholder activated grouping for even distribution
+├── programYearPartyId (REQUIRED - references activated political party)
+│   └── Points to ProgramYearParty (junction table)
+│       Example: assigned to activated "Federalist Party" for 2024
+│       Historical delegates point to their year-specific party activation
+│   Note: Initially may be set to dummy/placeholder activated party for even distribution
 ├── status (active, inactive, withdrawn)
-└── positions (elected/appointed positions held)
+└── positions (elected/appointed positions held via DelegatePosition → ProgramYearPosition)
 
 **Assignment Strategy**:
-- Grouping and party may initially use dummy/placeholder values for delegates
-- Grouping may initially use dummy/placeholder value for staff
+- Grouping and party must reference year-specific activations (junction tables)
+- May initially use dummy/placeholder activated values for delegates
+- May initially use dummy/placeholder activated value for staff
 - Allows all delegates and staff to be entered before final assignments
-- Enables even distribution across groupings and parties after all participants exist
-- Admin can then assign actual groupings/parties for balanced allocation
+- Enables even distribution across activated groupings and parties after all participants exist
+- Admin can then reassign to actual activated groupings/parties for balanced allocation
 
 Staff
 ├── Personal Info (firstName, lastName, email, phone)
 ├── programYearId
 ├── role (assigned by admin after acceptance, e.g., "Counselor", "Director", "District Coordinator")
 │   Note: NOT specified on application form - admin assigns role during onboarding
-├── groupingId (REQUIRED - can be ANY level)
-│   └── Assigned to ANY level → oversees DOWN to all child groupings
-│       Example: assigned to "Central District"
+├── programYearGroupingId (REQUIRED - can reference ANY level activated grouping)
+│   └── Points to ProgramYearGrouping (junction table)
+│       Assigned to ANY level → oversees DOWN to all child groupings
+│       Example: assigned to activated "Central District" for 2024
 │       Oversees: All counties in district → all cities in counties → all delegates
-│   Note: Initially may be set to dummy/placeholder grouping to indicate needs assignment
+│   Note: Initially may be set to dummy/placeholder activated grouping to indicate needs assignment
 └── status
 
 Parent
@@ -676,23 +850,31 @@ ApplicationResponse (submitted form)
 
 **Organizational Structure**:
 ```
-Grouping (simple, year-agnostic, program-scoped)
+Grouping (program-level - define once, use across years)
 ├── id
 ├── programId (which program owns this grouping)
 ├── name (e.g., "Springfield", "Sangamon County", "Central District")
 ├── parentGroupingId (self-referential hierarchy, null = top level)
 ├── displayOrder (ordering within same parent)
-├── status (active/inactive - controls availability for NEW assignments)
+├── status (active/retired - controls if can be activated for NEW years)
 ├── createdDate
 └── notes (optional)
 
+ProgramYearGrouping (year-level activation - junction table)
+├── id
+├── programYearId (which year this activation applies to)
+├── groupingId (which grouping is being activated)
+├── status (active/inactive - controls if available for assignments in THIS year)
+└── delegates/staff (linked to this activated grouping)
+
 Benefits of this model:
-- Maximum simplicity - just active/inactive flag
-- No year-based tables or activation logic
-- One "Springfield" serves all years automatically
-- Historical integrity - old delegates always point to same groupings
-- Hierarchy inferred from parentGroupingId (no explicit type levels)
-- Easy to retire/reactivate as needed
+- Flexibility - different groupings per year without affecting history
+- No need to deactivate - just don't activate for certain years
+- Historical integrity - old delegates always point to valid year-specific activations
+- Hierarchy inferred from parentGroupingId at program level
+- Clean year-over-year configuration
+- Easy to add/remove groupings per year
+- Same pattern for parties and positions
 ```
 
 ### Relationships
@@ -958,11 +1140,22 @@ Similar to delegate flow with these differences:
    - Role assignment ❌
    - Bulk operations ❌
 
+### 🚧 Partially Complete
+
+1. **Party Management**
+   - Program-level party creation ✅
+   - Default party setup (Federalists/Nationalists) ✅
+   - Year-level party activation ❌ (needs programs-year-config.html)
+
 ### ❌ Not Started (Backend Ready)
 
 1. **Groupings Management** - CRITICAL BLOCKER
-2. **Party Configuration**
-3. **Position Configuration**
+   - Program-level grouping creation ❌
+   - Year-level grouping activation ❌
+2. **Position Configuration**
+   - Program-level position creation ❌
+   - Year-level position activation ❌
+3. **Year Configuration Page** - CRITICAL (needed for activating parties, groupings, positions)
 4. **Staff Management Page**
 5. **Parent Management Page**
 6. **Elections System**
@@ -981,9 +1174,10 @@ Similar to delegate flow with these differences:
 **Goal**: Complete core admin functionality
 
 - ✅ Application submission and review
-- ❌ Groupings configuration (IN PROGRESS - NEXT PRIORITY)
-- ❌ Parties configuration
-- ❌ Positions configuration
+- 🚧 Parties configuration (program-level complete, year-activation pending)
+- ❌ Groupings configuration (NEXT PRIORITY - program and year-level)
+- ❌ Positions configuration (program and year-level)
+- ❌ Year configuration page (CRITICAL - activate parties, groupings, positions for each year)
 - ❌ Complete delegate/staff onboarding
 
 **Timeline**: 2-4 weeks
@@ -1145,24 +1339,38 @@ Similar to delegate flow with these differences:
   - Example: Staff assigned to "Springfield" oversees only that city (no children)
 
 ✅ **Grouping Reuse Across Years**:
-- Groupings are year-agnostic (one "Springfield" for all years, no year concept)
+- Groupings are created at program level (one "Springfield" definition for all years)
 - NOT created fresh for each year
-- Simple active/inactive status controls availability for NEW assignments only
-- Status has NO effect on historical records (always valid)
-- Adding new groupings: Create once with status="active"
-- Retiring groupings: Set status="inactive" (historical data preserved)
-- Re-activating groupings: Set status="active" again
-- Historical delegates/staff always point to valid groupings (even if inactive)
-- Benefits: Maximum simplicity, historical integrity, no year-based logic
+- **Two-tier activation system**:
+  - **Program level**: Create groupings with active/retired status
+  - **Year level**: Activate specific groupings for each year (ProgramYearGrouping junction table)
+- Program-level status (active/retired) controls if can be activated for NEW years
+- Year-level status (active/inactive) controls if available for assignments in THAT year
+- Adding new groupings: Create at program level, then activate for desired years
+- Not using a grouping for a year: Simply don't activate it (no ProgramYearGrouping record)
+- Retiring groupings permanently: Set program-level status="retired" (historical activations preserved)
+- Historical delegates/staff always point to valid year-specific activations (ProgramYearGrouping records)
+- Benefits: Flexibility per year, historical integrity, clean year-over-year configuration
 
 ✅ **Party Reuse Across Years**:
-- Parties work exactly like groupings (year-agnostic, program-scoped)
-- Simple active/inactive status controls availability for NEW assignments only
-- Status has NO effect on historical records (always valid)
-- Example: "Federalist Party" exists once, used across all years
-- Retiring parties: Set status="inactive" (historical delegates preserved)
-- No year-based junction tables or activation logic
-- Benefits: Same simplicity as groupings
+- Parties work exactly like groupings (program-level creation, year-specific activation)
+- **Two-tier activation system**:
+  - **Program level**: Create parties with active/retired status
+  - **Year level**: Activate specific parties for each year (ProgramYearParty junction table)
+- Program-level status (active/retired) controls if can be activated for NEW years
+- Year-level status (active/inactive) controls if available for assignments in THAT year
+- Example: "Federalist Party" exists once at program level, activated for specific years
+- Not using a party for a year: Simply don't activate it (no ProgramYearParty record)
+- Retiring parties permanently: Set program-level status="retired" (historical activations preserved)
+- Historical delegates point to their year-specific party activations (ProgramYearParty records)
+- Benefits: Same pattern as groupings and positions, flexibility per year
+
+✅ **Position Reuse Across Years**:
+- Positions work exactly like groupings and parties (program-level creation, year-specific activation)
+- **Two-tier activation system**:
+  - **Program level**: Create positions with active/retired status
+  - **Year level**: Activate specific positions for each year (ProgramYearPosition junction table)
+- Same benefits and workflow as groupings and parties
 
 ✅ **Party Assignment for Delegates**:
 - `partyId` is REQUIRED for all delegates (not optional)
