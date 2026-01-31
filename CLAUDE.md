@@ -88,6 +88,7 @@ Multi-file system for creating and managing delegate/staff application forms:
 - Can copy from previous year's application
 - Questions have IDs auto-generated on backend
 - Public application URLs are non-guessable (UUID-based)
+- **Required system fields**: First Name, Last Name, and Email are automatically added to all applications and cannot be removed (marked with `isSystemField: true`)
 
 ### Program Management
 
@@ -101,13 +102,19 @@ Multi-file system for creating and managing delegate/staff application forms:
 Key pages (all in `public/` directory):
 - `index.html` / `login.html` / `register.html`: Authentication
 - `dashboard.html`: Program selection and main navigation
+- `console.html`: Main navigation hub after login
 - `application-config.html`: Build/edit application forms
+- `application-review.html`: Review and accept/reject applications
 - `apply.html`: Public-facing application form (no auth)
-- `programs-config.html`: Program settings and branding
+- `programs-config.html`: Program settings hub
+- `programs-create.html`: Create new programs
+- `programs-parties.html`: Political party management
+- `programs-groupings.html`: Organizational groupings (cities, counties)
+- `programs-positions.html`: Elected/appointed positions
+- `programs-year-config.html`: Year-specific configuration
 - `branding-contact.html`: Contact info management
-- `user-management.html`: Manage users and roles
+- `user-management.html`: Manage users and application review
 - `logs.html`: View audit logs
-- `console.html`: Developer console/logs viewer
 
 ## Configuration
 
@@ -233,17 +240,18 @@ The dev server (`src/index.js`) only implements basic auth and program creation.
 
 ### Missing HTML Pages
 
-Referenced in `programs-config.html` but not created:
-- `programs-groupings.html`
-- `programs-positions.html`
-- `programs-staff.html`
-- `programs-parents.html`
+Referenced but not yet created:
+- `programs-staff.html` - Staff management interface
+- `programs-parents.html` - Parent management interface
 
 ### Recently Implemented Pages
 
 - `programs-parties.html` - Political parties management (Federalists/Nationalists defaults)
+- `programs-groupings.html` - Organizational groupings management (cities, counties, districts)
+- `programs-positions.html` - Elected/appointed positions management
+- `programs-year-config.html` - Year-specific configuration and activation
 - `user-management.html` - User management landing page with feature cards
-- `application-review.html` - Application review interface
+- `application-review.html` - Application review interface for accepting/rejecting applications
 
 ### Dead Navigation Links
 
@@ -347,3 +355,43 @@ if (yourNewLink) {
 ```
 
 **Example**: `getAuthHeaders` was initially only exported for Node modules, causing it to be undefined in browser context.
+
+### 3. Required System Fields in Application Builder
+
+**Requirement**: All applications (delegate and staff) MUST have three required system fields that cannot be removed:
+- **First Name** (short_answer, required)
+- **Last Name** (short_answer, required)
+- **Email** (email, required)
+
+**Implementation**: `application-builder.js` ensures these fields are always present at the top of the question list with `isSystemField: true`. The backend (`applicationReviews.ts`) uses these fields when accepting applications to create Delegate/Staff records and user accounts.
+
+**Symptoms if missing**:
+- "Application is missing required fields (First Name, Last Name, Email)" error on acceptance
+- Unable to create user accounts for accepted applicants
+
+### 4. Stale localStorage programId
+
+**Problem**: After login, if the user previously selected a program that no longer exists or they no longer have access to, `localStorage.lastSelectedProgramId` will contain a stale value causing API errors.
+
+**Symptoms**:
+- 204 No Content or 403 Forbidden from API
+- "Program not found" errors
+- Wrong program data or no data loaded
+
+**Fix Pattern**: Pages that load programs should validate and correct stale localStorage:
+```javascript
+// After fetching user's programs
+const currentProgramId = localStorage.getItem('lastSelectedProgramId');
+const validProgram = programs.find(p => (p.programId || p.id) === currentProgramId);
+
+if (!validProgram && programs.length > 0) {
+  // Auto-select first available program
+  const programId = programs[0].programId || programs[0].id;
+  localStorage.setItem('lastSelectedProgramId', programId);
+}
+```
+
+**Implementation locations**:
+- `console.js`: Auto-selects program after login
+- `dashboard.js`: Sets programId when user clicks a program
+- `programs-config.js`: Corrects stale values when loading program list
