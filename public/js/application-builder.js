@@ -15,7 +15,10 @@ if (typeof module !== 'undefined' && module.exports) {
 }
 
 function renderApplicationBuilder(builderRoot, appData = {}, programId, currentYear, currentType) {
-  builderRoot.innerHTML = `       <form id="application-builder-form" class="bg-white rounded-2xl shadow-lg p-8 sm:p-12 max-w-4xl w-full mx-auto border-t-4 border-legend-gold flex flex-col gap-6">         <div>           <label class="block text-lg font-bold text-legend-blue mb-2" for="app-title">Application Title</label>           <input type="text" id="app-title" aria-label="Application title" class="border rounded-xl px-4 py-2 w-full" placeholder="e.g. 2025 Boys State Delegate Application" required />         </div>         <div>           <label class="block text-base font-semibold text-gray-700 mb-2" for="app-description">Application Description</label>           <textarea id="app-description" aria-label="Application description" class="border rounded-xl px-4 py-2 w-full min-h-[60px]" placeholder="Describe this application form"></textarea>         </div>         <div>           <label class="block text-base font-semibold text-gray-700 mb-2" for="app-closing-date">Application Closing Date <span class="text-sm font-normal text-gray-500">(optional)</span></label>           <input type="datetime-local" id="app-closing-date" aria-label="Application closing date" class="border rounded-xl px-4 py-2 w-full max-w-md" />           <p class="text-xs text-gray-500 mt-1">After this date, applicants will not be able to submit applications.</p>         </div>         <div>           <label class="block text-base font-semibold text-gray-700 mb-2" for="questions-list">Questions</label>           <div id="questions-list" class="flex flex-col gap-4"></div>           <button type="button" id="add-question-btn" aria-label="Add question" class="mt-6 bg-legend-blue hover:bg-legend-gold text-white font-bold py-2 px-4 rounded-xl shadow transition">             + Add Question           </button>         </div>         <button type="submit" class="bg-legend-blue hover:bg-legend-gold text-white font-bold py-2 px-8 rounded-xl shadow transition self-center mt-4">              Save Application         </button>       </form>        `;
+  // Check if questions are locked (responses have been submitted)
+  const questionsLocked = appData.locked && appData.locked.includes('questions');
+
+  builderRoot.innerHTML = `       <form id="application-builder-form" class="bg-white rounded-2xl shadow-lg p-8 sm:p-12 max-w-4xl w-full mx-auto border-t-4 border-legend-gold flex flex-col gap-6">         <div>           <label class="block text-lg font-bold text-legend-blue mb-2" for="app-title">Application Title</label>           <input type="text" id="app-title" aria-label="Application title" class="border rounded-xl px-4 py-2 w-full" placeholder="e.g. 2025 Boys State Delegate Application" required />         </div>         <div>           <label class="block text-base font-semibold text-gray-700 mb-2" for="app-description">Application Description</label>           <textarea id="app-description" aria-label="Application description" class="border rounded-xl px-4 py-2 w-full min-h-[60px]" placeholder="Describe this application form"></textarea>         </div>         <div>           <label class="block text-base font-semibold text-gray-700 mb-2" for="app-closing-date">Application Closing Date <span class="text-sm font-normal text-gray-500">(optional)</span></label>           <input type="datetime-local" id="app-closing-date" aria-label="Application closing date" class="border rounded-xl px-4 py-2 w-full max-w-md" />           <p class="text-xs text-gray-500 mt-1">After this date, applicants will not be able to submit applications.</p>         </div>         <div>           <label class="block text-base font-semibold text-gray-700 mb-2" for="questions-list">Questions</label>           <div id="questions-list" class="flex flex-col gap-4"></div>           <button type="button" id="add-question-btn" aria-label="Add question" class="mt-6 bg-legend-blue hover:bg-legend-gold text-white font-bold py-2 px-4 rounded-xl shadow transition ${questionsLocked ? 'opacity-50 cursor-not-allowed' : ''}" ${questionsLocked ? 'disabled' : ''}>             + Add Question           </button>         </div>         <button type="submit" id="save-application-btn" class="bg-legend-blue hover:bg-legend-gold text-white font-bold py-2 px-8 rounded-xl shadow transition self-center mt-4 ${questionsLocked ? 'opacity-50 cursor-not-allowed' : ''}" ${questionsLocked ? 'disabled' : ''}>              Save Application         </button>       </form>        `;
   let questions = Array.isArray(appData.questions) ? appData.questions : [];
 
   // ALWAYS ensure the first three questions are "First Name", "Last Name", and "Email" (required, cannot be removed)
@@ -72,12 +75,12 @@ function renderApplicationBuilder(builderRoot, appData = {}, programId, currentY
     const questionsList = document.getElementById('questions-list');
     questionsList.innerHTML = '';
     questions.forEach((q, idx) => {
-      questionsList.innerHTML += renderQuestionRow(q, idx);
+      questionsList.innerHTML += renderQuestionRow(q, idx, questionsLocked);
     });
     attachEditListeners();
   }
 
-  function renderQuestionRow(q, idx) {
+  function renderQuestionRow(q, idx, isLocked = false) {
     // Different fields for different types
     // Show options/fields depending on q.type
     let optionsHTML = '';
@@ -89,15 +92,15 @@ function renderApplicationBuilder(builderRoot, appData = {}, programId, currentY
               ${q.options.map((opt, oidx) => `
                 <div class="flex gap-2 items-center mb-1">
                   <label for="q${idx}-opt-${oidx}" class="sr-only">Option ${oidx + 1}</label>
-                  <input id="q${idx}-opt-${oidx}" type="text" aria-label="Option ${oidx + 1}" class="border rounded px-2 py-1 flex-1 text-sm" value="${opt}" data-optidx="${oidx}" data-qidx="${idx}" />
-                  <button type="button" class="text-red-600 hover:underline text-xs" data-remove-opt="${oidx}" data-qidx="${idx}">Remove</button>
+                  <input id="q${idx}-opt-${oidx}" type="text" aria-label="Option ${oidx + 1}" class="border rounded px-2 py-1 flex-1 text-sm ${isLocked ? 'bg-gray-100' : ''}" value="${opt}" data-optidx="${oidx}" data-qidx="${idx}" ${isLocked ? 'readonly' : ''} />
+                  ${isLocked ? '' : `<button type="button" class="text-red-600 hover:underline text-xs" data-remove-opt="${oidx}" data-qidx="${idx}">Remove</button>`}
                 </div>`).join('')}
             </div>
-            <div class="flex mt-2 gap-2">
+            ${isLocked ? '' : `<div class="flex mt-2 gap-2">
               <label for="add-opt-${idx}" class="sr-only">New option</label>
               <input type="text" id="add-opt-${idx}" aria-label="New option" class="border rounded px-2 py-1 text-sm" placeholder="Add option..." />
               <button type="button" class="bg-gray-200 text-xs px-2 py-1 rounded" data-add-opt="${idx}">Add</button>
-            </div>
+            </div>`}
           </div>
         `;
     } else if(q.type === "file") {
@@ -105,11 +108,11 @@ function renderApplicationBuilder(builderRoot, appData = {}, programId, currentY
           <div class="ml-4 mt-2 flex gap-4 items-center">
             <div>
               <label class="block text-xs text-gray-500 mb-1" for="file-accept-${idx}">Allowed Types (comma, e.g. .pdf,.jpg)</label>
-              <input id="file-accept-${idx}" type="text" aria-label="Allowed file types" class="border rounded px-2 py-1 text-sm" placeholder=".pdf,.jpg" value="${q.accept || ''}" data-file-accept="${idx}" />
+              <input id="file-accept-${idx}" type="text" aria-label="Allowed file types" class="border rounded px-2 py-1 text-sm ${isLocked ? 'bg-gray-100' : ''}" placeholder=".pdf,.jpg" value="${q.accept || ''}" data-file-accept="${idx}" ${isLocked ? 'readonly' : ''} />
             </div>
             <div>
               <label class="block text-xs text-gray-500 mb-1" for="file-max-${idx}">Max Files</label>
-              <input id="file-max-${idx}" type="number" min="1" aria-label="Max files" class="border rounded px-2 py-1 text-sm w-20" placeholder="1" value="${q.maxFiles || 1}" data-file-maxfiles="${idx}" />
+              <input id="file-max-${idx}" type="number" min="1" aria-label="Max files" class="border rounded px-2 py-1 text-sm w-20 ${isLocked ? 'bg-gray-100' : ''}" placeholder="1" value="${q.maxFiles || 1}" data-file-maxfiles="${idx}" ${isLocked ? 'readonly' : ''} />
             </div>
           </div>
         `;
@@ -123,19 +126,21 @@ function renderApplicationBuilder(builderRoot, appData = {}, programId, currentY
 
     // System fields (First Name, Last Name, Email) cannot be removed and are always required
     const isSystemField = q.isSystemField || idx === 0 || idx === 1 || idx === 2;
+    // Disable editing if system field OR if questions are locked
+    const fieldDisabled = isSystemField || isLocked;
     const removeButtonHTML = isSystemField
       ? `<span class="text-xs text-gray-500 ml-2 px-2 py-1 bg-blue-100 rounded">Required Field</span>`
-      : `<button type="button" class="text-red-600 hover:underline ml-2" data-remove="${idx}">Remove</button>`;
-    const requiredCheckboxDisabled = isSystemField ? 'disabled' : '';
-    const requiredCheckboxTitle = isSystemField ? 'This field is always required' : '';
+      : (isLocked ? '' : `<button type="button" class="text-red-600 hover:underline ml-2" data-remove="${idx}">Remove</button>`);
+    const requiredCheckboxDisabled = fieldDisabled ? 'disabled' : '';
+    const requiredCheckboxTitle = isSystemField ? 'This field is always required' : (isLocked ? 'Questions are locked' : '');
 
     return `
-        <div class="border rounded-xl p-4 ${isSystemField ? 'bg-blue-50 border-blue-200' : 'bg-gray-50'} flex flex-col gap-2">
+        <div class="border rounded-xl p-4 ${isSystemField ? 'bg-blue-50 border-blue-200' : (isLocked ? 'bg-gray-100 border-gray-300' : 'bg-gray-50')} flex flex-col gap-2">
           <div class="flex gap-2 items-center mb-2">
             <label for="q-text-${idx}" class="sr-only">Question text</label>
-            <input id="q-text-${idx}" type="text" aria-label="Question text" class="border rounded px-3 py-2 flex-1 ${isSystemField ? 'bg-gray-100' : ''}" placeholder="Question text/label" value="${q.text || ''}" data-idx="${idx}" ${isSystemField ? 'readonly' : ''} />
+            <input id="q-text-${idx}" type="text" aria-label="Question text" class="border rounded px-3 py-2 flex-1 ${fieldDisabled ? 'bg-gray-100' : ''}" placeholder="Question text/label" value="${q.text || ''}" data-idx="${idx}" ${fieldDisabled ? 'readonly' : ''} />
             <label for="q-type-${idx}" class="sr-only">Field type</label>
-            <select id="q-type-${idx}" aria-label="Field type" class="border rounded px-2 py-2 text-sm" data-type-idx="${idx}" ${isSystemField ? 'disabled' : ''}>
+            <select id="q-type-${idx}" aria-label="Field type" class="border rounded px-2 py-2 text-sm" data-type-idx="${idx}" ${fieldDisabled ? 'disabled' : ''}>
               ${renderFieldTypeOptions(q.type)}
             </select>
             <div class="flex items-center ml-2">
@@ -257,6 +262,11 @@ function renderApplicationBuilder(builderRoot, appData = {}, programId, currentY
 
   document.getElementById('application-builder-form').onsubmit = async function(e) {
     e.preventDefault();
+    // Prevent saving if questions are locked
+    if (questionsLocked) {
+      showError('Cannot save: Questions are locked because responses have been submitted. Delete all responses to unlock editing.');
+      return;
+    }
     const title = document.getElementById('app-title').value.trim();
     const description = document.getElementById('app-description').value.trim();
     const closingDateValue = document.getElementById('app-closing-date').value;

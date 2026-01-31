@@ -160,3 +160,97 @@ test('fetchLogs redirects on unauthorized', async () => {
   await ctx.fetchLogs({ programId:'p1' });
   expect(ctx.window.location.href).toBe('login.html');
 });
+
+test('getFilters returns undefined for level and source when set to all', () => {
+  const doc = {
+    getElementById: jest.fn(id => {
+      switch(id){
+        case 'level': return { value: 'all' };
+        case 'source': return { value: 'all' };
+        case 'start': return { value: '' };
+        case 'end': return { value: '' };
+        case 'search': return { value: '' };
+        case 'programId': return { value: 'p1' };
+        case 'apply':
+        case 'filters':
+          return { addEventListener: jest.fn() };
+        default: return { addEventListener: jest.fn(), value:'' };
+      }
+    }),
+    querySelector: jest.fn(() => ({ innerHTML:'', appendChild: jest.fn() })),
+    querySelectorAll: jest.fn(() => []),
+    addEventListener: jest.fn()
+  };
+  const ctx = {
+    window: { API_URL:'http://api' },
+    document: doc,
+    fetch: jest.fn(),
+    console: { log: jest.fn(), error: jest.fn() },
+    sessionStorage: {},
+    URLSearchParams,
+    alert: jest.fn()
+  };
+  loadModule(ctx);
+  const filters = ctx.getFilters();
+  // When level and source are 'all', they should be undefined
+  expect(filters.level).toBeUndefined();
+  expect(filters.source).toBeUndefined();
+});
+
+test('loadPrograms uses program.name and program.id fallbacks', async () => {
+  const select = { innerHTML:'', appendChild: jest.fn() };
+  const doc = {
+    getElementById: jest.fn(id => {
+      if (id === 'apply' || id === 'filters') return { addEventListener: jest.fn() };
+      if (id === 'programId') return select;
+      return { addEventListener: jest.fn(), value: '' };
+    }),
+    querySelector: jest.fn(() => ({ innerHTML:'', appendChild: jest.fn() })),
+    querySelectorAll: jest.fn(() => []),
+    addEventListener: jest.fn(),
+    createElement: jest.fn(() => ({ value:'', textContent:'' }))
+  };
+  // Programs with only name and id (not programName and programId)
+  const programs = [{ id:'id1', name:'Name1' }, { id:'id2', name:'Name2' }];
+  const fetchMock = jest.fn().mockResolvedValue({ ok:true, json: async () => ({ programs }) });
+  const ctx = {
+    window:{ API_URL:'http://api.test' },
+    document: doc,
+    fetch: fetchMock,
+    console:{ log: jest.fn(), error: jest.fn() },
+    sessionStorage:{ getItem: ()=>'user1' },
+    alert: jest.fn()
+  };
+  loadModule(ctx);
+  const res = await ctx.loadPrograms();
+  expect(res.length).toBe(2);
+  expect(select.appendChild).toHaveBeenCalledTimes(2);
+});
+
+test('fetchLogs error handling without logToServer', async () => {
+  const tbody = { innerHTML:'', appendChild: jest.fn() };
+  const pager = { innerHTML:'', appendChild: jest.fn() };
+  const doc = {
+    querySelector: jest.fn(() => tbody),
+    getElementById: jest.fn(id => {
+      if(id==='pager') return pager;
+      return { value:'p1', addEventListener: jest.fn() };
+    }),
+    createElement: jest.fn(() => ({ setAttribute: jest.fn() })),
+    addEventListener: jest.fn()
+  };
+  const fetchMock = jest.fn().mockRejectedValue(new Error('Network error'));
+  const ctx = {
+    window:{ API_URL:'http://api.test', location:{ href:'' } }, // no logToServer
+    document: doc,
+    fetch: fetchMock,
+    console:{ log: jest.fn(), error: jest.fn() },
+    URLSearchParams,
+    sessionStorage:{ getItem: ()=>'abc' },
+    alert: jest.fn()
+  };
+  loadModule(ctx);
+  await ctx.fetchLogs({ programId:'p1' });
+  // Should render empty logs on error
+  expect(tbody.innerHTML).toContain('No logs');
+});
