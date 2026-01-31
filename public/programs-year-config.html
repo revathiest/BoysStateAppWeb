@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Year Configuration – Boys State App</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="tailwind.css">
+  <link rel="stylesheet" href="logo.css">
+</head>
+<body class="bg-gray-50 font-sans min-h-screen">
+
+  <!-- NAVBAR -->
+  <nav class="bg-legend-blue text-white px-6 py-4 flex items-center justify-between shadow">
+    <div class="flex items-center gap-3">
+      <img src="images/Boys-State-Shield-White-on-Blue.png" alt="Logo" class="w-8 h-8 p-1 rounded-full" />
+      <span class="text-xl font-semibold">Boys State App <span class="text-sm font-normal text-legend-gold ml-2">Admin Portal</span></span>
+    </div>
+    <button id="logoutBtn" type="button" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-2xl shadow transition" aria-label="Logout">Logout</button>
+  </nav>
+
+  <main class="flex-1 p-6 lg:p-10 bg-gray-50 min-h-screen">
+    <a href="programs-config.html" class="inline-flex items-center text-legend-blue font-semibold mb-4 hover:underline group">
+      <span class="mr-2 text-lg">&larr;</span>
+      Back to Program Configuration
+    </a>
+
+    <div id="program-selector" class="mb-6"></div>
+
+    <h1 class="text-3xl font-extrabold text-legend-blue mb-2">Year Configuration</h1>
+    <p class="text-gray-700 mb-4">Activate parties, groupings, and positions for the selected year. Only activated items will be available for delegate/staff assignments and elections.</p>
+
+    <!-- Year Selector -->
+    <div id="year-selector-container" class="mb-8 p-4 bg-white rounded-2xl shadow-lg border-l-4 border-legend-blue">
+      <label for="year-select" class="block text-sm font-medium text-gray-700 mb-1 font-semibold">Select Year to Configure:</label>
+      <select id="year-select" class="border border-gray-300 rounded-lg px-3 py-2 font-semibold text-legend-blue focus:outline-none focus:ring-2 focus:ring-legend-blue">
+        <option value="">Loading years...</option>
+      </select>
+    </div>
+
+    <!-- Error/Success Messages -->
+    <div id="errorBox" class="hidden bg-red-100 text-red-700 px-4 py-3 rounded-xl mb-4 shadow"></div>
+    <div id="successBox" class="hidden bg-green-100 text-green-700 px-4 py-3 rounded-xl mb-4 shadow"></div>
+
+    <!-- Configuration Sections -->
+    <div class="space-y-8">
+
+      <!-- Political Parties Section -->
+      <div class="bg-white rounded-2xl shadow-lg p-6 border-t-4 border-legend-gold">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h2 class="text-xl font-bold text-legend-blue">Political Parties</h2>
+            <p class="text-sm text-gray-600 mt-1">Select which parties to activate for this year. Only activated parties can be assigned to delegates.</p>
+          </div>
+          <a href="programs-parties.html" class="text-sm text-legend-blue hover:underline">Manage Parties &rarr;</a>
+        </div>
+
+        <div id="parties-loading" class="text-gray-500 italic mb-4">Loading parties...</div>
+        <div id="parties-list" class="hidden space-y-2 mb-4"></div>
+        <div id="parties-none" class="hidden text-gray-500 italic">
+          No parties defined yet. <a href="programs-parties.html" class="text-legend-blue hover:underline">Create parties first</a>.
+        </div>
+
+        <button id="save-parties-btn" class="hidden bg-legend-blue hover:bg-blue-800 text-white font-semibold py-2 px-4 rounded-lg shadow transition">
+          Save Party Activations
+        </button>
+      </div>
+
+      <!-- Groupings Section -->
+      <div class="bg-white rounded-2xl shadow-lg p-6 border-t-4 border-gray-300 opacity-60">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h2 class="text-xl font-bold text-gray-600">Groupings</h2>
+            <p class="text-sm text-gray-600 mt-1">Select which groupings (cities, counties) to activate for this year.</p>
+          </div>
+          <span class="text-sm text-gray-400">Coming Soon</span>
+        </div>
+        <div class="text-gray-400 italic">Groupings management is not yet implemented.</div>
+      </div>
+
+      <!-- Positions Section -->
+      <div class="bg-white rounded-2xl shadow-lg p-6 border-t-4 border-gray-300 opacity-60">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h2 class="text-xl font-bold text-gray-600">Positions</h2>
+            <p class="text-sm text-gray-600 mt-1">Select which elected/appointed positions to activate for this year.</p>
+          </div>
+          <span class="text-sm text-gray-400">Coming Soon</span>
+        </div>
+        <div class="text-gray-400 italic">Positions management is not yet implemented.</div>
+      </div>
+
+    </div>
+  </main>
+
+  <footer class="bg-legend-blue text-white border-t mt-8 py-4 text-center text-xs">
+    &copy; 2025 Boys State App Admin Portal. Not affiliated with or endorsed by the American Legion.
+  </footer>
+
+  <script src="js/config.js"></script>
+  <script src="js/authHelper.js"></script>
+  <script src="js/programs-year-config.js"></script>
+</body>
+</html>

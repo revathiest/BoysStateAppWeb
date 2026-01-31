@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Manage Groupings – Boys State App</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="tailwind.css">
+  <link rel="stylesheet" href="logo.css">
+</head>
+<body class="bg-gray-50 font-sans min-h-screen">
+  <!-- Tailwind safelist for dynamically generated classes -->
+  <div class="hidden ml-0 ml-4 ml-8 ml-12 ml-16"></div>
+
+  <!-- NAVBAR -->
+  <nav class="bg-legend-blue text-white px-6 py-4 flex items-center justify-between shadow">
+    <div class="flex items-center gap-3">
+      <img src="images/Boys-State-Shield-White-on-Blue.png" alt="Logo" class="w-8 h-8 p-1 rounded-full" />
+      <span class="text-xl font-semibold">Boys State App <span class="text-sm font-normal text-legend-gold ml-2">Admin Portal</span></span>
+    </div>
+    <button id="logoutBtn" type="button" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-2xl shadow transition" aria-label="Logout">Logout</button>
+  </nav>
+
+  <main class="flex-1 p-6 lg:p-10 bg-gray-50 min-h-screen">
+    <a href="programs-config.html" class="inline-flex items-center text-legend-blue font-semibold mb-4 hover:underline group">
+      <span class="mr-2 text-lg">&larr;</span>
+      Back to Program Configuration
+    </a>
+
+    <div id="program-selector" class="mb-6"></div>
+
+    <h1 class="text-3xl font-extrabold text-legend-blue mb-2">Groupings</h1>
+    <p class="text-gray-700 mb-4">Organize your program by defining organizational levels (like State, County, City) and creating specific groupings within each level. Use groupings to assign delegates and staff to locations throughout your program.</p>
+
+    <div class="bg-blue-50 border-l-4 border-legend-blue p-4 mb-8 rounded">
+      <p class="text-sm text-gray-700 mb-3">
+        <strong>How it works:</strong> First, define your organizational hierarchy in Step 1 (e.g., State → County → City).
+        Then create actual locations within each level in Step 2 (e.g., "Springfield" under City, "Sangamon County" under County).
+      </p>
+      <p class="text-sm text-gray-700 mb-3">
+        <strong>Required level:</strong> Mark the lowest/most specific level where delegates must be assigned.
+        For example, if you track delegates by City, mark City as required. If you only track by County, mark County as required.
+        Typically, only ONE level should be marked as required (the most specific level you care about).
+      </p>
+      <p class="text-sm text-gray-700">
+        <strong>Year activation:</strong> After creating groupings here, you'll need to activate them for each program year.
+        Go to <strong>Program Configuration → Year Configuration</strong> to select which groupings to use for each year.
+      </p>
+    </div>
+
+    <!-- Error/Success Messages -->
+    <div id="errorBox" class="hidden bg-red-100 text-red-700 px-4 py-3 rounded-xl mb-4 shadow"></div>
+    <div id="successBox" class="hidden bg-green-100 text-green-700 px-4 py-3 rounded-xl mb-4 shadow"></div>
+
+    <!-- SECTION 1: Grouping Types -->
+    <div class="bg-white rounded-2xl shadow-lg p-6 mb-8 border-t-4 border-legend-gold">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h2 class="text-xl font-bold text-legend-blue">Step 1: Define Organizational Levels</h2>
+          <p class="text-sm text-gray-600 mt-1">Set up the hierarchy for your program (e.g., State → District → County → City)</p>
+        </div>
+        <button id="add-type-btn" class="bg-legend-blue hover:bg-blue-800 text-white font-semibold py-2 px-4 rounded-lg shadow transition">
+          + Add Level
+        </button>
+      </div>
+
+      <!-- Grouping Types List -->
+      <div id="grouping-types-list" class="space-y-2 mb-6">
+        <p class="text-gray-500 italic">Loading organizational levels...</p>
+      </div>
+
+
+      <!-- Quick Setup with Defaults -->
+      <div id="default-levels-section" class="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+        <h3 class="font-semibold text-legend-blue mb-2">Quick Setup</h3>
+        <p class="text-sm text-gray-600 mb-3">Don't have organizational levels yet? Add common levels with one click.</p>
+        <div class="flex flex-wrap gap-3">
+          <button id="add-state-btn" class="bg-legend-blue hover:bg-blue-800 text-white font-semibold py-2 px-4 rounded-lg shadow transition">
+            Add State
+          </button>
+          <button id="add-county-btn" class="bg-legend-blue hover:bg-blue-800 text-white font-semibold py-2 px-4 rounded-lg shadow transition">
+            Add County
+          </button>
+          <button id="add-city-btn" class="bg-legend-blue hover:bg-blue-800 text-white font-semibold py-2 px-4 rounded-lg shadow transition">
+            Add City
+          </button>
+          <button id="add-all-defaults-btn" class="bg-legend-gold hover:bg-yellow-500 text-legend-blue font-semibold py-2 px-4 rounded-lg shadow transition">
+            Add All Three
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION 2: Groupings -->
+    <div class="bg-white rounded-2xl shadow-lg p-6 mb-8 border-t-4 border-legend-gold">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h2 class="text-xl font-bold text-legend-blue">Step 2: Create Groupings</h2>
+          <p class="text-sm text-gray-600 mt-1">Add specific locations within each organizational level (e.g., "Springfield" under "City")</p>
+        </div>
+        <div class="flex gap-2">
+          <button id="collapse-all-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-2 px-3 rounded-lg transition text-sm">
+            Collapse All
+          </button>
+          <button id="expand-all-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-2 px-3 rounded-lg transition text-sm">
+            Expand All
+          </button>
+          <button id="add-grouping-btn" class="bg-legend-blue hover:bg-blue-800 text-white font-semibold py-2 px-4 rounded-lg shadow transition">
+            + Add Grouping
+          </button>
+        </div>
+      </div>
+
+      <!-- Groupings List -->
+      <div id="groupings-list" class="space-y-3 mb-6">
+        <p class="text-gray-500 italic">Loading groupings...</p>
+      </div>
+
+    </div>
+  </main>
+
+  <footer class="bg-legend-blue text-white border-t mt-8 py-4 text-center text-xs">
+    &copy; 2025 Boys State App Admin Portal. Not affiliated with or endorsed by the American Legion.
+  </footer>
+
+  <!-- Organizational Level Modal -->
+  <div id="type-modal" class="hidden fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full mx-4 p-6 relative max-h-[90vh] overflow-y-auto">
+      <button id="type-modal-close" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-2xl font-bold">&times;</button>
+      <h3 id="type-form-title" class="text-xl font-bold text-legend-blue mb-4">Add New Organizational Level</h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <div>
+          <label for="type-name-input" class="block text-sm font-medium text-gray-700 mb-1">Level Name <span class="text-red-500">*</span></label>
+          <input
+            type="text"
+            id="type-name-input"
+            placeholder="e.g., City, County, District, State"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-legend-blue"
+            maxlength="50"
+          />
+          <p class="text-xs text-gray-500 mt-1">This is the default name for this level</p>
+        </div>
+        <div>
+          <label for="type-custom-name-input" class="block text-sm font-medium text-gray-700 mb-1">Custom Name (optional)</label>
+          <input
+            type="text"
+            id="type-custom-name-input"
+            placeholder="Optional: Rename this level"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-legend-blue"
+            maxlength="50"
+          />
+          <p class="text-xs text-gray-500 mt-1">Use a custom name if your program uses different terminology</p>
+        </div>
+        <div>
+          <label for="type-plural-name-input" class="block text-sm font-medium text-gray-700 mb-1">Plural Name (optional)</label>
+          <input
+            type="text"
+            id="type-plural-name-input"
+            placeholder="e.g., Cities, Counties"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-legend-blue"
+            maxlength="50"
+          />
+        </div>
+        <div>
+          <label for="type-level-order-input" class="block text-sm font-medium text-gray-700 mb-1">Level Order <span class="text-red-500">*</span></label>
+          <input
+            type="number"
+            id="type-level-order-input"
+            placeholder="1 = top level, 2 = next level, etc."
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-legend-blue"
+            min="1"
+            max="10"
+          />
+          <p class="text-xs text-gray-500 mt-1">1 = State, 2 = District, 3 = County, 4 = City</p>
+        </div>
+      </div>
+      <div class="mb-4">
+        <label class="flex items-start gap-2 cursor-pointer">
+          <input type="checkbox" id="type-required-checkbox" class="w-4 h-4 mt-0.5 text-legend-blue focus:ring-2 focus:ring-legend-blue rounded">
+          <div>
+            <span class="text-sm text-gray-700 font-medium">Delegates must be assigned at this level</span>
+            <p class="text-xs text-gray-500 mt-1">Check this for the most specific level where you'll assign delegates.</p>
+          </div>
+        </label>
+      </div>
+      <div class="flex gap-3 justify-end">
+        <button id="cancel-type-btn" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold rounded-lg transition">
+          Cancel
+        </button>
+        <button id="save-type-btn" class="px-4 py-2 bg-legend-blue hover:bg-blue-800 text-white font-semibold rounded-lg shadow transition">
+          Save Level
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Grouping Modal -->
+  <div id="grouping-modal" class="hidden fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full mx-4 p-6 relative max-h-[90vh] overflow-y-auto">
+      <button id="grouping-modal-close" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-2xl font-bold">&times;</button>
+      <h3 id="grouping-form-title" class="text-xl font-bold text-legend-blue mb-4">Add New Grouping</h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <div>
+          <label for="grouping-type-select" class="block text-sm font-medium text-gray-700 mb-1">Organizational Level <span class="text-red-500">*</span></label>
+          <select id="grouping-type-select" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-legend-blue">
+            <option value="">Select a level...</option>
+          </select>
+        </div>
+        <div>
+          <label for="grouping-parent-select" class="block text-sm font-medium text-gray-700 mb-1">Parent Grouping (optional)</label>
+          <select id="grouping-parent-select" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-legend-blue">
+            <option value="">No parent (top level)</option>
+          </select>
+          <p class="text-xs text-gray-500 mt-1">Select the parent grouping to create hierarchy</p>
+        </div>
+        <div>
+          <label for="grouping-name-input" class="block text-sm font-medium text-gray-700 mb-1">Grouping Name <span class="text-red-500">*</span></label>
+          <input
+            type="text"
+            id="grouping-name-input"
+            placeholder="e.g., Springfield, Sangamon County"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-legend-blue"
+            maxlength="100"
+          />
+        </div>
+        <div>
+          <label for="grouping-display-order-input" class="block text-sm font-medium text-gray-700 mb-1">Display Order (optional)</label>
+          <input
+            type="number"
+            id="grouping-display-order-input"
+            placeholder="Order within same parent"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-legend-blue"
+            min="0"
+          />
+        </div>
+      </div>
+      <div class="mb-4">
+        <label for="grouping-notes-input" class="block text-sm font-medium text-gray-700 mb-1">Notes (optional)</label>
+        <textarea
+          id="grouping-notes-input"
+          placeholder="Optional notes for admin reference"
+          class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-legend-blue"
+          rows="2"
+          maxlength="500"
+        ></textarea>
+      </div>
+      <div class="flex gap-3 justify-end">
+        <button id="cancel-grouping-btn" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold rounded-lg transition">
+          Cancel
+        </button>
+        <button id="save-grouping-btn" class="px-4 py-2 bg-legend-blue hover:bg-blue-800 text-white font-semibold rounded-lg shadow transition">
+          Save Grouping
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Confirmation Modal -->
+  <div id="confirmation-modal" class="hidden fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 relative">
+      <h3 id="confirmation-title" class="text-xl font-bold text-legend-blue mb-4"></h3>
+      <p id="confirmation-message" class="text-gray-700 mb-6"></p>
+      <div class="flex gap-3 justify-end">
+        <button id="confirmation-cancel-btn" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold rounded-lg transition">Cancel</button>
+        <button id="confirmation-confirm-btn" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg transition"></button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/authHelper.js"></script>
+  <script src="js/programs-groupings.js"></script>
+</body>
+</html>

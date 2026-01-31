@@ -271,10 +271,14 @@ let currentType = 'delegate';
     }
 
     function setPublicLink() {
+      console.log('[DEBUG] setPublicLink - programId:', programId);
+      console.log('[DEBUG] setPublicLink - currentYear:', currentYear);
+      console.log('[DEBUG] setPublicLink - currentType:', currentType);
       if (typeof programId !== 'undefined' && programId && currentYear && currentType) {
         const token = encodeToken(currentYear, currentType);
-        document.getElementById('publicApplicationUrl').value =
-          location.origin + '/apply.html?programId=' + encodeURIComponent(programId) + '&token=' + encodeURIComponent(token);
+        const publicUrl = location.origin + '/apply.html?programId=' + encodeURIComponent(programId) + '&token=' + encodeURIComponent(token);
+        console.log('[DEBUG] setPublicLink - Generated URL:', publicUrl);
+        document.getElementById('publicApplicationUrl').value = publicUrl;
       } else {
         document.getElementById('publicApplicationUrl').value =
           'Program ID not available.';

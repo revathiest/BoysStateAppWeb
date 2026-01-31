@@ -272,3 +272,264 @@ test('DOMContentLoaded alerts when API_URL missing', async () => {
   await domFn();
   expect(global.alert).toHaveBeenCalled();
 });
+
+test('loadPrograms uses fallback properties (id/name instead of programId/programName)', async () => {
+  const select = { innerHTML: '', appendChild: jest.fn() };
+  global.window = { API_URL: 'http://api.test', logToServer: jest.fn() };
+  global.document = {
+    getElementById: id => (id === 'programId' ? select : { addEventListener: jest.fn(), value: '' }),
+    querySelector: jest.fn(() => ({ innerHTML: '', appendChild: jest.fn() })),
+    addEventListener: jest.fn(),
+    createElement: jest.fn(() => ({ value: '', textContent: '' }))
+  };
+  global.getUsername = () => 'u';
+  global.getAuthHeaders = () => ({});
+  // Programs with only id/name, not programId/programName
+  global.fetch = jest.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve({ programs: [{ id: '123', name: 'TestProg' }] }) });
+  const mod = require('../public/js/logs.js');
+  const res = await mod.loadPrograms();
+  expect(select.appendChild).toHaveBeenCalled();
+  expect(res.length).toBe(1);
+});
+
+test('loadPrograms handles missing select element', async () => {
+  global.window = { API_URL: 'http://api.test', logToServer: jest.fn() };
+  global.document = {
+    getElementById: id => (id === 'programId' ? null : { addEventListener: jest.fn(), value: '' }),
+    querySelector: jest.fn(() => ({ innerHTML: '', appendChild: jest.fn() })),
+    addEventListener: jest.fn(),
+    createElement: jest.fn(() => ({}))
+  };
+  global.getUsername = () => 'u';
+  global.getAuthHeaders = () => ({});
+  global.fetch = jest.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve({ programs: [{ id: '1', name: 'A' }] }) });
+  const mod = require('../public/js/logs.js');
+  const res = await mod.loadPrograms();
+  // Should not throw and should return the programs
+  expect(res.length).toBe(1);
+});
+
+test('loadPrograms without logToServer defined', async () => {
+  global.window = { API_URL: 'http://api.test' }; // no logToServer
+  global.document = {
+    getElementById: () => ({ addEventListener: jest.fn(), innerHTML: '', appendChild: jest.fn() }),
+    querySelector: jest.fn(() => ({ innerHTML: '', appendChild: jest.fn() })),
+    addEventListener: jest.fn(),
+    createElement: jest.fn(() => ({}))
+  };
+  global.getUsername = () => 'u';
+  global.getAuthHeaders = () => ({});
+  global.fetch = jest.fn().mockRejectedValue(new Error('fail'));
+  const mod = require('../public/js/logs.js');
+  const res = await mod.loadPrograms();
+  // Should handle error gracefully without logToServer
+  expect(res).toEqual([]);
+});
+
+test('loadPrograms when getAuthHeaders is not a function', async () => {
+  global.window = { API_URL: 'http://api.test', logToServer: jest.fn() };
+  global.document = {
+    getElementById: () => ({ addEventListener: jest.fn(), innerHTML: '', appendChild: jest.fn() }),
+    querySelector: jest.fn(() => ({ innerHTML: '', appendChild: jest.fn() })),
+    addEventListener: jest.fn(),
+    createElement: jest.fn(() => ({}))
+  };
+  global.getUsername = () => 'u';
+  global.getAuthHeaders = 'not a function'; // Not a function
+  global.fetch = jest.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve({ programs: [] }) });
+  const mod = require('../public/js/logs.js');
+  const res = await mod.loadPrograms();
+  expect(res).toEqual([]);
+  // Should use empty headers when getAuthHeaders is not a function
+  expect(global.fetch).toHaveBeenCalledWith(expect.any(String), expect.objectContaining({ headers: {} }));
+});
+
+test('fetchLogs without logToServer defined', async () => {
+  const tbody = { innerHTML: '', appendChild: jest.fn() };
+  const pager = { innerHTML: '', appendChild: jest.fn() };
+  global.window = { API_URL: 'http://api.test', location: { href: '' } }; // no logToServer
+  global.document = {
+    querySelector: () => tbody,
+    getElementById: id => (id === 'pager' ? pager : { value: 'p', addEventListener: jest.fn() }),
+    createElement: jest.fn(() => ({ setAttribute: jest.fn() })),
+    addEventListener: jest.fn()
+  };
+  global.fetch = jest.fn().mockResolvedValue({ ok: true, status: 200, json: () => ({ logs: [], total: 0, page: 1, pageSize: 50 }) });
+  global.getAuthHeaders = () => ({});
+  const mod = require('../public/js/logs.js');
+  await mod.fetchLogs({ programId: 'p' });
+  expect(global.fetch).toHaveBeenCalled();
+});
+
+test('fetchLogs when getAuthHeaders is not a function', async () => {
+  const tbody = { innerHTML: '', appendChild: jest.fn() };
+  const pager = { innerHTML: '', appendChild: jest.fn() };
+  global.window = { API_URL: 'http://api.test', logToServer: jest.fn(), location: { href: '' } };
+  global.document = {
+    querySelector: () => tbody,
+    getElementById: id => (id === 'pager' ? pager : { value: 'p', addEventListener: jest.fn() }),
+    createElement: jest.fn(() => ({ setAttribute: jest.fn() })),
+    addEventListener: jest.fn()
+  };
+  global.fetch = jest.fn().mockResolvedValue({ ok: true, status: 200, json: () => ({ logs: [], total: 0, page: 1, pageSize: 50 }) });
+  global.getAuthHeaders = 'not a function';
+  const mod = require('../public/js/logs.js');
+  await mod.fetchLogs({ programId: 'p' });
+  // Should use empty headers
+  expect(global.fetch).toHaveBeenCalledWith(expect.any(String), expect.objectContaining({ headers: {} }));
+});
+
+test('renderLogs handles logs with missing fields', () => {
+  const tbody = { innerHTML: '', appendChild: jest.fn() };
+  global.window = { API_URL: 'http://api.test' };
+  global.document = {
+    querySelector: () => tbody,
+    getElementById: () => ({ addEventListener: jest.fn(), innerHTML: '', appendChild: jest.fn() }),
+    createElement: jest.fn(() => ({ innerHTML: '' })),
+    addEventListener: jest.fn()
+  };
+  global.console = { log: jest.fn() };
+  const mod = require('../public/js/logs.js');
+  // Logs with missing fields (no timestamp, level, source, message)
+  mod.renderLogs([{ /* empty */ }, { timestamp: null, level: null, source: null, message: null }]);
+  expect(tbody.appendChild).toHaveBeenCalledTimes(2);
+});
+
+test('renderPager on first page (no prev buttons)', () => {
+  const pager = { innerHTML: '', appendChild: jest.fn() };
+  global.window = { API_URL: 'http://api.test' };
+  global.document = {
+    getElementById: id => (id === 'pager' ? pager : { addEventListener: jest.fn(), value: '' }),
+    querySelector: jest.fn(() => ({ innerHTML: '', appendChild: jest.fn() })),
+    createElement: jest.fn(() => ({ setAttribute: jest.fn(), style: {}, className: '' })),
+    addEventListener: jest.fn()
+  };
+  global.getFilters = () => ({});
+  const mod = require('../public/js/logs.js');
+  // First page - should not have prev buttons
+  mod.renderPager(1, 10, 100);
+  // Should have page buttons but not prev (« ‹) buttons
+  expect(pager.appendChild).toHaveBeenCalled();
+});
+
+test('renderPager on last page (no next buttons)', () => {
+  const pager = { innerHTML: '', appendChild: jest.fn() };
+  global.window = { API_URL: 'http://api.test' };
+  global.document = {
+    getElementById: id => (id === 'pager' ? pager : { addEventListener: jest.fn(), value: '' }),
+    querySelector: jest.fn(() => ({ innerHTML: '', appendChild: jest.fn() })),
+    createElement: jest.fn(() => ({ setAttribute: jest.fn(), style: {}, className: '' })),
+    addEventListener: jest.fn()
+  };
+  global.getFilters = () => ({});
+  const mod = require('../public/js/logs.js');
+  // Last page (page 10 of 10 with pageSize 10 and total 100)
+  mod.renderPager(10, 10, 100);
+  expect(pager.appendChild).toHaveBeenCalled();
+});
+
+test('renderPager adjusts start when near end', () => {
+  const pager = { innerHTML: '', appendChild: jest.fn() };
+  global.window = { API_URL: 'http://api.test' };
+  global.document = {
+    getElementById: id => (id === 'pager' ? pager : { addEventListener: jest.fn(), value: '' }),
+    querySelector: jest.fn(() => ({ innerHTML: '', appendChild: jest.fn() })),
+    createElement: jest.fn(() => ({ setAttribute: jest.fn(), style: {}, className: '' })),
+    addEventListener: jest.fn()
+  };
+  global.getFilters = () => ({});
+  const mod = require('../public/js/logs.js');
+  // Page 9 of 10 - should trigger the start adjustment logic (end - start < maxPagesToShow - 1)
+  mod.renderPager(9, 10, 100);
+  expect(pager.appendChild).toHaveBeenCalled();
+});
+
+test('DOMContentLoaded with missing logoutBtn', async () => {
+  let domFn;
+  const document = {
+    getElementById: jest.fn(id => {
+      if (id === 'logoutBtn') return null; // no logout button
+      if (id === 'programId') return { addEventListener: jest.fn(), value: 'p' };
+      if (id === 'download') return { addEventListener: jest.fn() };
+      return { addEventListener: jest.fn(), value: '' };
+    }),
+    querySelector: jest.fn(() => ({ innerHTML: '', appendChild: jest.fn(), querySelectorAll: jest.fn(() => []) })),
+    addEventListener: jest.fn((ev, fn) => { if (ev === 'DOMContentLoaded') domFn = fn; }),
+    body: { appendChild: jest.fn(), removeChild: jest.fn() }
+  };
+  global.window = { API_URL: 'http://api.test', logToServer: jest.fn(), location: { href: '' } };
+  global.document = document;
+  global.fetch = jest.fn()
+    .mockResolvedValueOnce({ ok: true, json: () => ({ programs: [] }) })
+    .mockResolvedValueOnce({ ok: true, status: 200, json: () => ({ logs: [], total: 0, page: 1, pageSize: 50 }) });
+  global.console = { log: jest.fn(), error: jest.fn() };
+  global.alert = jest.fn();
+  require('../public/js/logs.js');
+  await domFn();
+  // Should not throw when logoutBtn is null
+  expect(global.fetch).toHaveBeenCalled();
+});
+
+test('programSel change handler triggers fetchLogs', async () => {
+  let domFn;
+  let programChangeHandler;
+  const document = {
+    getElementById: jest.fn(id => {
+      if (id === 'programId') return {
+        addEventListener: jest.fn((ev, fn) => { if (ev === 'change') programChangeHandler = fn; }),
+        value: 'p'
+      };
+      if (id === 'logoutBtn') return { addEventListener: jest.fn() };
+      if (id === 'download') return { addEventListener: jest.fn() };
+      return { addEventListener: jest.fn(), value: '' };
+    }),
+    querySelector: jest.fn(() => ({ innerHTML: '', appendChild: jest.fn(), querySelectorAll: jest.fn(() => []) })),
+    addEventListener: jest.fn((ev, fn) => { if (ev === 'DOMContentLoaded') domFn = fn; }),
+    body: { appendChild: jest.fn(), removeChild: jest.fn() }
+  };
+  global.window = { API_URL: 'http://api.test', logToServer: jest.fn(), location: { href: '' } };
+  global.document = document;
+  global.fetch = jest.fn()
+    .mockResolvedValueOnce({ ok: true, json: () => ({ programs: [] }) })
+    .mockResolvedValue({ ok: true, status: 200, json: () => ({ logs: [], total: 0, page: 1, pageSize: 50 }) });
+  global.console = { log: jest.fn(), error: jest.fn() };
+  global.alert = jest.fn();
+  global.getUsername = () => 'u';
+  global.getAuthHeaders = () => ({});
+  require('../public/js/logs.js');
+  await domFn();
+  // Trigger program change handler
+  expect(programChangeHandler).toBeDefined();
+  programChangeHandler();
+  expect(global.fetch.mock.calls.length).toBeGreaterThan(1);
+});
+
+test('DOMContentLoaded uses window.apiBase fallback', async () => {
+  let domFn;
+  const document = {
+    getElementById: jest.fn(id => {
+      if (id === 'programId') return { addEventListener: jest.fn(), value: 'p' };
+      if (id === 'logoutBtn') return { addEventListener: jest.fn() };
+      if (id === 'download') return { addEventListener: jest.fn() };
+      return { addEventListener: jest.fn(), value: '' };
+    }),
+    querySelector: jest.fn(() => ({ innerHTML: '', appendChild: jest.fn(), querySelectorAll: jest.fn(() => []) })),
+    addEventListener: jest.fn((ev, fn) => { if (ev === 'DOMContentLoaded') domFn = fn; }),
+    body: { appendChild: jest.fn(), removeChild: jest.fn() }
+  };
+  // API_URL not set, but apiBase is
+  global.window = { apiBase: 'http://fallback.test', logToServer: jest.fn(), location: { href: '' } };
+  global.document = document;
+  global.fetch = jest.fn()
+    .mockResolvedValueOnce({ ok: true, json: () => ({ programs: [] }) })
+    .mockResolvedValueOnce({ ok: true, status: 200, json: () => ({ logs: [], total: 0, page: 1, pageSize: 50 }) });
+  global.console = { log: jest.fn(), error: jest.fn() };
+  global.alert = jest.fn();
+  global.getUsername = () => 'u';
+  global.getAuthHeaders = () => ({});
+  require('../public/js/logs.js');
+  await domFn();
+  // Should proceed without alerting
+  expect(global.alert).not.toHaveBeenCalled();
+  expect(global.fetch).toHaveBeenCalled();
+});

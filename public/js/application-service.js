@@ -2,11 +2,13 @@
 
 function getProgramId() {
   const params = new URLSearchParams(window.location.search);
-  return (
-    params.get('programId') ||
-    localStorage.getItem('lastSelectedProgramId') ||
-    ''
-  );
+  const urlProgramId = params.get('programId');
+  const localStorageProgramId = localStorage.getItem('lastSelectedProgramId');
+  const result = urlProgramId || localStorageProgramId || '';
+  console.log('[DEBUG] getProgramId - URL param:', urlProgramId);
+  console.log('[DEBUG] getProgramId - localStorage:', localStorageProgramId);
+  console.log('[DEBUG] getProgramId - Result:', result);
+  return result;
 }
 
 async function createOrCopyApplication({ programId, year, type, copyFromYear = null, fetchFn = fetch }) {

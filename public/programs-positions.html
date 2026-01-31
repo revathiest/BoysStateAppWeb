@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Manage Positions – Boys State App</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="tailwind.css">
+  <link rel="stylesheet" href="logo.css">
+</head>
+<body class="bg-gray-50 font-sans min-h-screen">
+
+  <!-- NAVBAR -->
+  <nav class="bg-legend-blue text-white px-6 py-4 flex items-center justify-between shadow">
+    <div class="flex items-center gap-3">
+      <img src="images/Boys-State-Shield-White-on-Blue.png" alt="Logo" class="w-8 h-8 p-1 rounded-full" />
+      <span class="text-xl font-semibold">Boys State App <span class="text-sm font-normal text-legend-gold ml-2">Admin Portal</span></span>
+    </div>
+    <button id="logoutBtn" type="button" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-2xl shadow transition" aria-label="Logout">Logout</button>
+  </nav>
+
+  <main class="flex-1 p-6 lg:p-10 bg-gray-50 min-h-screen">
+    <a href="programs-config.html" class="inline-flex items-center text-legend-blue font-semibold mb-4 hover:underline group">
+      <span class="mr-2 text-lg">&larr;</span>
+      Back to Program Configuration
+    </a>
+
+    <div id="program-selector" class="mb-6"></div>
+
+    <h1 class="text-3xl font-extrabold text-legend-blue mb-2">Positions</h1>
+    <p class="text-gray-700 mb-4">Define elected and appointed positions for your program. Positions are linked to organizational levels (State, County, City) and can be activated for each program year.</p>
+
+    <div class="bg-blue-50 border-l-4 border-legend-blue p-4 mb-8 rounded">
+      <p class="text-sm text-gray-700 mb-3">
+        <strong>How it works:</strong> Create positions like Governor, Mayor, or City Council Member. Each position is linked to an organizational level where it exists (e.g., Mayor belongs to City level).
+      </p>
+      <p class="text-sm text-gray-700 mb-3">
+        <strong>Elected vs Appointed:</strong> Mark positions as elected if they'll be filled through voting, or leave unchecked for appointed positions assigned by staff.
+      </p>
+      <p class="text-sm text-gray-700">
+        <strong>Seat count:</strong> For positions with multiple seats (like City Council), set the count to indicate how many positions exist per grouping.
+      </p>
+    </div>
+
+    <!-- Error/Success Messages -->
+    <div id="errorBox" class="hidden bg-red-100 text-red-700 px-4 py-3 rounded-xl mb-4 shadow"></div>
+    <div id="successBox" class="hidden bg-green-100 text-green-700 px-4 py-3 rounded-xl mb-4 shadow"></div>
+
+    <!-- SECTION: Positions List -->
+    <div class="bg-white rounded-2xl shadow-lg p-6 mb-8 border-t-4 border-legend-gold">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h2 class="text-xl font-bold text-legend-blue">Program Positions</h2>
+          <p class="text-sm text-gray-600 mt-1">Positions grouped by organizational level</p>
+        </div>
+        <div class="flex gap-2">
+          <button id="collapse-all-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-2 px-3 rounded-lg transition text-sm">
+            Collapse All
+          </button>
+          <button id="expand-all-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-2 px-3 rounded-lg transition text-sm">
+            Expand All
+          </button>
+          <button id="add-position-btn" class="bg-legend-blue hover:bg-blue-800 text-white font-semibold py-2 px-4 rounded-lg shadow transition">
+            + Add Position
+          </button>
+        </div>
+      </div>
+
+      <!-- Positions List -->
+      <div id="positions-list" class="space-y-4">
+        <p class="text-gray-500 italic">Loading positions...</p>
+      </div>
+    </div>
+
+    <!-- Quick Setup Section -->
+    <div id="quick-setup-section" class="bg-white rounded-2xl shadow-lg p-6 mb-8 border-t-4 border-legend-gold">
+      <h2 class="text-xl font-bold text-legend-blue mb-2">Quick Setup</h2>
+      <p class="text-sm text-gray-600 mb-4">Select from common positions to quickly populate your program. Choose exactly which positions you want.</p>
+
+      <div id="quick-setup-buttons">
+        <button id="open-quick-setup-btn" class="bg-legend-blue hover:bg-blue-800 text-white font-semibold py-2 px-4 rounded-lg shadow transition">
+          Choose Default Positions...
+        </button>
+      </div>
+
+      <div id="no-levels-warning" class="hidden p-4 bg-yellow-50 rounded-lg border border-yellow-300 mt-4">
+        <p class="text-sm text-yellow-800">
+          <strong>Note:</strong> You need to define organizational levels (State, County, City) in
+          <a href="programs-groupings.html" class="text-legend-blue underline">Groupings</a> before adding positions.
+        </p>
+      </div>
+    </div>
+  </main>
+
+  <footer class="bg-legend-blue text-white border-t mt-8 py-4 text-center text-xs">
+    &copy; 2025 Boys State App Admin Portal. Not affiliated with or endorsed by the American Legion.
+  </footer>
+
+  <!-- Quick Setup Modal -->
+  <div id="quick-setup-modal" class="hidden fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full mx-4 p-6 relative max-h-[90vh] overflow-y-auto">
+      <button id="quick-setup-modal-close" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-2xl font-bold">&times;</button>
+      <h3 class="text-xl font-bold text-legend-blue mb-2">Choose Default Positions</h3>
+      <p class="text-sm text-gray-600 mb-4">Select the positions you want to add. Positions already in your program are disabled.</p>
+
+      <div id="quick-setup-content" class="space-y-6">
+        <!-- Content will be dynamically generated -->
+        <p class="text-gray-500 italic">Loading available positions...</p>
+      </div>
+
+      <div class="flex gap-3 justify-between mt-6 pt-4 border-t">
+        <div class="text-sm text-gray-600">
+          <span id="selected-count">0</span> positions selected
+        </div>
+        <div class="flex gap-3">
+          <button id="cancel-quick-setup-btn" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold rounded-lg transition">
+            Cancel
+          </button>
+          <button id="add-selected-btn" class="px-4 py-2 bg-legend-blue hover:bg-blue-800 text-white font-semibold rounded-lg shadow transition">
+            Add Selected Positions
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Position Modal -->
+  <div id="position-modal" class="hidden fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full mx-4 p-6 relative max-h-[90vh] overflow-y-auto">
+      <button id="position-modal-close" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-2xl font-bold">&times;</button>
+      <h3 id="position-form-title" class="text-xl font-bold text-legend-blue mb-4">Add New Position</h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <div>
+          <label for="position-name-input" class="block text-sm font-medium text-gray-700 mb-1">Position Name <span class="text-red-500">*</span></label>
+          <input
+            type="text"
+            id="position-name-input"
+            placeholder="e.g., Governor, Mayor, City Council"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-legend-blue"
+            maxlength="100"
+          />
+        </div>
+        <div>
+          <label for="position-level-select" class="block text-sm font-medium text-gray-700 mb-1">Organizational Level <span class="text-red-500">*</span></label>
+          <select id="position-level-select" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-legend-blue">
+            <option value="">Select a level...</option>
+          </select>
+          <p class="text-xs text-gray-500 mt-1">Which level does this position belong to?</p>
+        </div>
+        <div>
+          <label for="position-count-input" class="block text-sm font-medium text-gray-700 mb-1">Seat Count</label>
+          <input
+            type="number"
+            id="position-count-input"
+            placeholder="1"
+            value="1"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-legend-blue"
+            min="1"
+            max="100"
+          />
+          <p class="text-xs text-gray-500 mt-1">How many seats per grouping (e.g., 5 for City Council)</p>
+        </div>
+        <div>
+          <label for="position-order-input" class="block text-sm font-medium text-gray-700 mb-1">Display Order</label>
+          <input
+            type="number"
+            id="position-order-input"
+            placeholder="Order within level"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-legend-blue"
+            min="0"
+          />
+        </div>
+      </div>
+      <div class="mb-4">
+        <label for="position-description-input" class="block text-sm font-medium text-gray-700 mb-1">Description (optional)</label>
+        <textarea
+          id="position-description-input"
+          placeholder="Brief description of this position's responsibilities"
+          class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-legend-blue"
+          rows="2"
+          maxlength="500"
+        ></textarea>
+      </div>
+      <div class="mb-4">
+        <label class="flex items-start gap-2 cursor-pointer">
+          <input type="checkbox" id="position-elected-checkbox" class="w-4 h-4 mt-0.5 text-legend-blue focus:ring-2 focus:ring-legend-blue rounded">
+          <div>
+            <span class="text-sm text-gray-700 font-medium">Elected Position</span>
+            <p class="text-xs text-gray-500 mt-1">Check if this position is filled through an election rather than appointment.</p>
+          </div>
+        </label>
+      </div>
+      <div class="flex gap-3 justify-end">
+        <button id="cancel-position-btn" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold rounded-lg transition">
+          Cancel
+        </button>
+        <button id="save-position-btn" class="px-4 py-2 bg-legend-blue hover:bg-blue-800 text-white font-semibold rounded-lg shadow transition">
+          Save Position
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Confirmation Modal -->
+  <div id="confirmation-modal" class="hidden fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 relative">
+      <h3 id="confirmation-title" class="text-xl font-bold text-legend-blue mb-4"></h3>
+      <p id="confirmation-message" class="text-gray-700 mb-6"></p>
+      <div class="flex gap-3 justify-end">
+        <button id="confirmation-cancel-btn" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold rounded-lg transition">Cancel</button>
+        <button id="confirmation-confirm-btn" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg transition"></button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/authHelper.js"></script>
+  <script src="js/programs-positions.js"></script>
+</body>
+</html>

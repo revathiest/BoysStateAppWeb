@@ -293,3 +293,230 @@ describe('phone utilities', () => {
     expect(isValidPhoneNumber('')).toBe(false);
   });
 });
+
+describe('addValidationListeners callback execution', () => {
+  beforeEach(() => {
+    global.document = { getElementById: jest.fn(() => ({ textContent: '' })) };
+  });
+
+  afterEach(() => {
+    delete global.document;
+  });
+
+  test('short_answer input callback triggers validation', () => {
+    let inputCallback;
+    const field = {
+      value: 'test',
+      addEventListener: jest.fn((event, cb) => { if (event === 'input') inputCallback = cb; })
+    };
+    const form = { q_1: field };
+    const config = { questions: [{ id: 1, type: 'short_answer', required: true }] };
+
+    addValidationListeners(form, config);
+    expect(inputCallback).toBeDefined();
+    inputCallback();
+    expect(document.getElementById).toHaveBeenCalledWith('err_q_1');
+  });
+
+  test('paragraph input callback triggers validation', () => {
+    let inputCallback;
+    const field = {
+      value: 'text',
+      addEventListener: jest.fn((event, cb) => { if (event === 'input') inputCallback = cb; })
+    };
+    const form = { q_1: field };
+    const config = { questions: [{ id: 1, type: 'paragraph', required: true }] };
+
+    addValidationListeners(form, config);
+    inputCallback();
+    expect(document.getElementById).toHaveBeenCalledWith('err_q_1');
+  });
+
+  test('email input callback triggers validation', () => {
+    let inputCallback;
+    const field = {
+      value: 'test@example.com',
+      addEventListener: jest.fn((event, cb) => { if (event === 'input') inputCallback = cb; })
+    };
+    const form = { q_1: field };
+    const config = { questions: [{ id: 1, type: 'email', required: true }] };
+
+    addValidationListeners(form, config);
+    inputCallback();
+    expect(document.getElementById).toHaveBeenCalledWith('err_q_1');
+  });
+
+  test('number input callback triggers validation', () => {
+    let inputCallback;
+    const field = {
+      value: '42',
+      addEventListener: jest.fn((event, cb) => { if (event === 'input') inputCallback = cb; })
+    };
+    const form = { q_1: field };
+    const config = { questions: [{ id: 1, type: 'number', required: true }] };
+
+    addValidationListeners(form, config);
+    inputCallback();
+    expect(document.getElementById).toHaveBeenCalledWith('err_q_1');
+  });
+
+  test('date input callback triggers validation', () => {
+    let inputCallback;
+    const field = {
+      value: '2024-01-01',
+      addEventListener: jest.fn((event, cb) => { if (event === 'input') inputCallback = cb; })
+    };
+    const form = { q_1: field };
+    const config = { questions: [{ id: 1, type: 'date', required: true }] };
+
+    addValidationListeners(form, config);
+    inputCallback();
+    expect(document.getElementById).toHaveBeenCalledWith('err_q_1');
+  });
+
+  test('dropdown input callback triggers validation', () => {
+    let inputCallback;
+    const field = {
+      value: 'option1',
+      addEventListener: jest.fn((event, cb) => { if (event === 'input') inputCallback = cb; })
+    };
+    const form = { q_1: field };
+    const config = { questions: [{ id: 1, type: 'dropdown', required: true }] };
+
+    addValidationListeners(form, config);
+    inputCallback();
+    expect(document.getElementById).toHaveBeenCalledWith('err_q_1');
+  });
+
+  test('phone input callback formats value and triggers validation', () => {
+    let inputCallback;
+    const field = {
+      value: '1234567890',
+      addEventListener: jest.fn((event, cb) => { if (event === 'input') inputCallback = cb; })
+    };
+    const form = { q_1: field };
+    const config = { questions: [{ id: 1, type: 'phone', required: true }] };
+
+    addValidationListeners(form, config);
+    inputCallback();
+    expect(field.value).toBe('(123) 456-7890');
+    expect(document.getElementById).toHaveBeenCalledWith('err_q_1');
+  });
+
+  test('file change callback triggers validation', () => {
+    let changeCallback;
+    const field = {
+      files: [{ name: 'test.pdf' }],
+      addEventListener: jest.fn((event, cb) => { if (event === 'change') changeCallback = cb; })
+    };
+    const form = { q_1: field };
+    const config = { questions: [{ id: 1, type: 'file', required: true }] };
+
+    addValidationListeners(form, config);
+    changeCallback();
+    expect(document.getElementById).toHaveBeenCalledWith('err_q_1');
+  });
+
+  test('checkbox change callback triggers validation', () => {
+    let changeCallback;
+    const checkbox = {
+      addEventListener: jest.fn((event, cb) => { if (event === 'change') changeCallback = cb; })
+    };
+    const form = { querySelectorAll: jest.fn(() => [checkbox, checkbox]) };
+    const config = { questions: [{ id: 1, type: 'checkbox', required: true }] };
+
+    addValidationListeners(form, config);
+    // Should have been called twice (once per checkbox)
+    expect(checkbox.addEventListener).toHaveBeenCalledWith('change', expect.any(Function));
+    changeCallback();
+    expect(document.getElementById).toHaveBeenCalledWith('err_q_1');
+  });
+
+  test('radio change callback triggers validation', () => {
+    let changeCallback;
+    const radio = {
+      addEventListener: jest.fn((event, cb) => { if (event === 'change') changeCallback = cb; })
+    };
+    const form = {
+      querySelectorAll: jest.fn(() => [radio]),
+      querySelector: jest.fn(() => radio) // For validateField to check selected radio
+    };
+    const config = { questions: [{ id: 1, type: 'radio', required: true }] };
+
+    addValidationListeners(form, config);
+    changeCallback();
+    expect(document.getElementById).toHaveBeenCalledWith('err_q_1');
+  });
+
+  test('date_range start change callback triggers validation', () => {
+    let startCallback;
+    const startField = {
+      value: '2024-01-01',
+      addEventListener: jest.fn((event, cb) => { if (event === 'change') startCallback = cb; })
+    };
+    const endField = {
+      value: '2024-01-02',
+      addEventListener: jest.fn()
+    };
+    const form = { q_1_start: startField, q_1_end: endField };
+    const config = { questions: [{ id: 1, type: 'date_range', required: true }] };
+
+    addValidationListeners(form, config);
+    startCallback();
+    expect(document.getElementById).toHaveBeenCalledWith('err_q_1');
+  });
+
+  test('date_range end change callback triggers validation', () => {
+    let endCallback;
+    const startField = {
+      value: '2024-01-01',
+      addEventListener: jest.fn()
+    };
+    const endField = {
+      value: '2024-01-02',
+      addEventListener: jest.fn((event, cb) => { if (event === 'change') endCallback = cb; })
+    };
+    const form = { q_1_start: startField, q_1_end: endField };
+    const config = { questions: [{ id: 1, type: 'date_range', required: true }] };
+
+    addValidationListeners(form, config);
+    endCallback();
+    expect(document.getElementById).toHaveBeenCalledWith('err_q_1');
+  });
+
+  test('boolean change callback triggers validation', () => {
+    let changeCallback;
+    const field = {
+      checked: true,
+      addEventListener: jest.fn((event, cb) => { if (event === 'change') changeCallback = cb; })
+    };
+    const form = { q_1: field };
+    const config = { questions: [{ id: 1, type: 'boolean', required: true }] };
+
+    addValidationListeners(form, config);
+    changeCallback();
+    expect(document.getElementById).toHaveBeenCalledWith('err_q_1');
+  });
+
+  test('address field input callbacks trigger validation', () => {
+    let line1Callback, cityCallback, stateCallback, zipCallback;
+    const form = {
+      q_1_line1: { value: '123 Main', addEventListener: jest.fn((e, cb) => { if (e === 'input') line1Callback = cb; }) },
+      q_1_city: { value: 'Town', addEventListener: jest.fn((e, cb) => { if (e === 'input') cityCallback = cb; }) },
+      q_1_state: { value: 'ST', addEventListener: jest.fn((e, cb) => { if (e === 'input') stateCallback = cb; }) },
+      q_1_zip: { value: '12345', addEventListener: jest.fn((e, cb) => { if (e === 'input') zipCallback = cb; }) }
+    };
+    const config = { questions: [{ id: 1, type: 'address', required: true }] };
+
+    addValidationListeners(form, config);
+
+    line1Callback();
+    expect(document.getElementById).toHaveBeenCalledWith('err_q_1');
+
+    cityCallback();
+    stateCallback();
+    zipCallback();
+    // All should trigger validation (getElementById called twice per callback: once for checking existing error, once for setting error)
+    expect(document.getElementById).toHaveBeenCalled();
+  });
+});

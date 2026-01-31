@@ -35,9 +35,14 @@
           <h2 class="text-xl font-bold text-legend-blue">Program Years</h2>
           <p class="text-sm text-gray-600 mt-1">Select active year for this program. All pages will use the selected year.</p>
         </div>
-        <button id="add-year-btn" class="bg-legend-blue hover:bg-blue-800 text-white font-semibold py-2 px-4 rounded-lg shadow transition">
-          + Add Year
-        </button>
+        <div class="flex gap-2">
+          <a id="year-config-link" href="programs-year-config.html" class="bg-legend-gold hover:bg-yellow-600 text-legend-blue font-semibold py-2 px-4 rounded-lg shadow transition">
+            Configure Year
+          </a>
+          <button id="add-year-btn" class="bg-legend-blue hover:bg-blue-800 text-white font-semibold py-2 px-4 rounded-lg shadow transition">
+            + Add Year
+          </button>
+        </div>
       </div>
 
       <div id="years-list" class="flex flex-wrap gap-2 min-h-[3rem] items-center">
@@ -79,52 +84,73 @@
     <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
 
       <!-- Branding & Contact -->
-      <div class="bg-white rounded-2xl shadow-lg p-6 border-t-4 border-legend-gold flex flex-col">
-        <h2 class="text-lg font-semibold mb-2 text-legend-blue">Branding & Contact</h2>
-        <p class="text-gray-700 mb-3 flex-1">Colors, logo, contact info, and branding.</p>
-        <a id="brandingLink" href="#" class="text-legend-blue font-semibold hover:text-legend-gold transition mt-auto">Configure Branding & Contact &rarr;</a>
+      <div class="bg-white rounded-2xl shadow-lg p-6 border-t-4 border-legend-gold hover:shadow-xl transition flex flex-col">
+        <div class="flex items-start justify-between mb-2">
+          <h2 class="text-lg font-semibold text-legend-blue">Branding & Contact</h2>
+          <span class="bg-green-100 text-green-800 text-xs font-semibold px-2 py-1 rounded">Active</span>
+        </div>
+        <p class="text-gray-700 mb-4 flex-1">Colors, logo, contact info, and branding.</p>
+        <a id="brandingLink" href="branding-contact.html" class="text-legend-blue font-semibold hover:text-legend-gold transition mt-auto">Configure Branding & Contact &rarr;</a>
+      </div>
+
+      <!-- Application Configuration -->
+      <div class="bg-white rounded-2xl shadow-lg p-6 border-t-4 border-legend-gold hover:shadow-xl transition flex flex-col">
+        <div class="flex items-start justify-between mb-2">
+          <h2 class="text-lg font-semibold text-legend-blue">Application Configuration</h2>
+          <span class="bg-green-100 text-green-800 text-xs font-semibold px-2 py-1 rounded">Active</span>
+        </div>
+        <p class="text-gray-700 mb-4 flex-1">Set up the application form for delegates to apply to your program.</p>
+        <a id="applicationConfigLink" href="application-config.html" class="text-legend-blue font-semibold hover:text-legend-gold transition mt-auto">Open Application Configuration &rarr;</a>
       </div>
 
       <!-- Groupings -->
-      <div class="bg-white rounded-2xl shadow-lg p-6 border-t-4 border-legend-gold flex flex-col">
-        <h2 class="text-lg font-semibold mb-2 text-legend-blue">Groupings</h2>
-        <p class="text-gray-700 mb-3 flex-1">Set up cities, counties, or other organizational groupings.</p>
-        <a id="groupingsLink" href="#" class="text-legend-blue font-semibold hover:text-legend-gold transition mt-auto">Manage Groupings &rarr;</a>
+      <div class="bg-white rounded-2xl shadow-lg p-6 border-t-4 border-legend-gold hover:shadow-xl transition flex flex-col">
+        <div class="flex items-start justify-between mb-2">
+          <h2 class="text-lg font-semibold text-legend-blue">Groupings</h2>
+          <span class="bg-green-100 text-green-800 text-xs font-semibold px-2 py-1 rounded">Active</span>
+        </div>
+        <p class="text-gray-700 mb-4 flex-1">Set up cities, counties, or other organizational groupings.</p>
+        <a id="groupingsLink" href="programs-groupings.html" class="text-legend-blue font-semibold hover:text-legend-gold transition mt-auto">Manage Groupings &rarr;</a>
       </div>
 
       <!-- Parties -->
-      <div class="bg-white rounded-2xl shadow-lg p-6 border-t-4 border-legend-gold flex flex-col">
-        <h2 class="text-lg font-semibold mb-2 text-legend-blue">Parties</h2>
-        <p class="text-gray-700 mb-3 flex-1">Create and manage political parties for elections.</p>
-        <a id="partiesLink" href="#" class="text-legend-blue font-semibold hover:text-legend-gold transition mt-auto">Edit Parties &rarr;</a>
+      <div class="bg-white rounded-2xl shadow-lg p-6 border-t-4 border-legend-gold hover:shadow-xl transition flex flex-col">
+        <div class="flex items-start justify-between mb-2">
+          <h2 class="text-lg font-semibold text-legend-blue">Parties</h2>
+          <span class="bg-green-100 text-green-800 text-xs font-semibold px-2 py-1 rounded">Active</span>
+        </div>
+        <p class="text-gray-700 mb-4 flex-1">Create and manage political parties for elections.</p>
+        <a id="partiesLink" href="programs-parties.html" class="text-legend-blue font-semibold hover:text-legend-gold transition mt-auto">Manage Parties &rarr;</a>
       </div>
 
       <!-- Positions -->
       <div class="bg-white rounded-2xl shadow-lg p-6 border-t-4 border-legend-gold flex flex-col">
-        <h2 class="text-lg font-semibold mb-2 text-legend-blue">Positions</h2>
-        <p class="text-gray-700 mb-3 flex-1">Add and organize elected or appointed positions.</p>
-        <a id="positionsLink" href="#" class="text-legend-blue font-semibold hover:text-legend-gold transition mt-auto">Manage Positions &rarr;</a>
+        <div class="flex items-start justify-between mb-2">
+          <h2 class="text-lg font-semibold text-legend-blue">Positions</h2>
+          <span class="bg-green-100 text-green-800 text-xs font-semibold px-2 py-1 rounded">Active</span>
+        </div>
+        <p class="text-gray-700 mb-4 flex-1">Add and organize elected or appointed positions.</p>
+        <a id="positionsLink" href="programs-positions.html" class="text-legend-blue font-semibold hover:text-legend-gold transition mt-auto">Manage Positions &rarr;</a>
       </div>
 
       <!-- Staff -->
-      <div class="bg-white rounded-2xl shadow-lg p-6 border-t-4 border-legend-gold flex flex-col">
-        <h2 class="text-lg font-semibold mb-2 text-legend-blue">Staff</h2>
-        <p class="text-gray-700 mb-3 flex-1">Manage staff members, counselors, and their roles.</p>
-        <a id="staffLink" href="#" class="text-legend-blue font-semibold hover:text-legend-gold transition mt-auto">Manage Staff &rarr;</a>
+      <div class="bg-white rounded-2xl shadow-lg p-6 border-t-4 border-gray-300 opacity-60 flex flex-col">
+        <div class="flex items-start justify-between mb-2">
+          <h2 class="text-lg font-semibold text-gray-600">Staff</h2>
+          <span class="bg-gray-200 text-gray-600 text-xs font-semibold px-2 py-1 rounded">Planned</span>
+        </div>
+        <p class="text-gray-600 mb-4 flex-1">Manage staff members, counselors, and their roles.</p>
+        <div class="text-gray-400 font-semibold cursor-not-allowed mt-auto">Coming Soon</div>
       </div>
 
       <!-- Parent/Delegate Links -->
-      <div class="bg-white rounded-2xl shadow-lg p-6 border-t-4 border-legend-gold flex flex-col">
-        <h2 class="text-lg font-semibold mb-2 text-legend-blue">Parent/Delegate Links</h2>
-        <p class="text-gray-700 mb-3 flex-1">Configure parent accounts and delegate links.</p>
-        <a id="parentsLink" href="#" class="text-legend-blue font-semibold hover:text-legend-gold transition mt-auto">Edit Parent/Delegate Links &rarr;</a>
-      </div>
-
-      <!-- Application Configuration card - add this next -->
-      <div class="bg-white rounded-2xl shadow-lg p-6 border-t-4 border-legend-gold flex flex-col">
-        <h2 class="text-lg font-semibold mb-2 text-legend-blue">Application Configuration</h2>
-        <p class="text-gray-700 mb-3 flex-1">Set up the application form for delegates to apply to your program. </p>
-        <a id="applicationConfigLink" href="application-config.html" class="text-legend-blue font-semibold hover:text-legend-gold transition mt-auto">Open Application Configuration &rarr;</a>
+      <div class="bg-white rounded-2xl shadow-lg p-6 border-t-4 border-gray-300 opacity-60 flex flex-col">
+        <div class="flex items-start justify-between mb-2">
+          <h2 class="text-lg font-semibold text-gray-600">Parent/Delegate Links</h2>
+          <span class="bg-gray-200 text-gray-600 text-xs font-semibold px-2 py-1 rounded">Planned</span>
+        </div>
+        <p class="text-gray-600 mb-4 flex-1">Configure parent accounts and delegate links.</p>
+        <div class="text-gray-400 font-semibold cursor-not-allowed mt-auto">Coming Soon</div>
       </div>
     </div>
   </main>
