@@ -20,6 +20,21 @@ function updateNavLinks() {
   if (staffLink) {
     staffLink.href = `programs-staff.html?programId=${encodeURIComponent(programId)}`;
   }
+
+  const delegatesLink = document.getElementById('delegates-link');
+  if (delegatesLink) {
+    delegatesLink.href = `programs-delegates.html?programId=${encodeURIComponent(programId)}`;
+  }
+
+  const bulkOperationsLink = document.getElementById('bulk-operations-link');
+  if (bulkOperationsLink) {
+    bulkOperationsLink.href = `bulk-operations.html?programId=${encodeURIComponent(programId)}`;
+  }
+
+  const parentsLink = document.getElementById('parents-link');
+  if (parentsLink) {
+    parentsLink.href = `programs-parents.html?programId=${encodeURIComponent(programId)}`;
+  }
 }
 
 document.addEventListener('DOMContentLoaded', () => {

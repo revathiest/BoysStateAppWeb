@@ -5,8 +5,11 @@
 // Activity-based timeout: 30 minutes of inactivity
 const INACTIVITY_TIMEOUT_MS = 30 * 60 * 1000;
 
-// Token refresh interval: 20 minutes (refresh before 30-minute token expiry)
-const TOKEN_REFRESH_INTERVAL_MS = 20 * 60 * 1000;
+// Refresh token when less than 5 minutes remain
+const TOKEN_REFRESH_THRESHOLD_MS = 5 * 60 * 1000;
+
+// Flag to prevent concurrent refresh attempts
+let isRefreshing = false;
 
 function getAuthHeaders() {
   const token = sessionStorage.getItem('authToken');
@@ -26,6 +29,13 @@ function isTokenExpired(token) {
   const data = parseJwt(token);
   if (!data || !data.exp) return true;
   return Date.now() >= data.exp * 1000;
+}
+
+function isTokenExpiringSoon(token) {
+  const data = parseJwt(token);
+  if (!data || !data.exp) return true;
+  const timeUntilExpiry = (data.exp * 1000) - Date.now();
+  return timeUntilExpiry < TOKEN_REFRESH_THRESHOLD_MS;
 }
 
 function updateLastActivity() {
@@ -76,10 +86,11 @@ function storeAuthToken(token) {
 // Refresh the token by calling the /refresh endpoint
 async function refreshToken() {
   const token = sessionStorage.getItem('authToken');
-  if (!token || isTokenExpired(token) || isInactive()) {
+  if (!token || isTokenExpired(token) || isInactive() || isRefreshing) {
     return false;
   }
 
+  isRefreshing = true;
   try {
     const apiBase = window.API_URL || '';
     const response = await fetch(`${apiBase}/refresh`, {
@@ -102,6 +113,28 @@ async function refreshToken() {
   } catch (error) {
     console.error('Token refresh failed:', error);
     return false;
+  } finally {
+    isRefreshing = false;
+  }
+}
+
+// Check if token needs refresh and refresh if necessary
+async function checkAndRefreshToken() {
+  const token = sessionStorage.getItem('authToken');
+  if (!token) return;
+
+  const data = parseJwt(token);
+  if (data && data.exp) {
+    const timeLeftMs = (data.exp * 1000) - Date.now();
+    const timeLeftMin = Math.floor(timeLeftMs / 60000);
+    const timeLeftSec = Math.floor((timeLeftMs % 60000) / 1000);
+    console.log(`[Auth] Token check: ${timeLeftMin}m ${timeLeftSec}s remaining`);
+
+    if (!isInactive() && isTokenExpiringSoon(token)) {
+      console.log('[Auth] Token expiring soon, refreshing...');
+      const success = await refreshToken();
+      console.log(`[Auth] Token refresh ${success ? 'succeeded' : 'failed'}`);
+    }
   }
 }
 
@@ -125,6 +158,8 @@ function setupActivityTracking() {
     if (now - lastUpdateTime >= THROTTLE_MS) {
       lastUpdateTime = now;
       updateLastActivity();
+      // Check if token needs refresh on each activity
+      checkAndRefreshToken();
     }
   };
 
@@ -141,13 +176,8 @@ function setupActivityTracking() {
     }
   }, 60000); // Check every minute
 
-  // Refresh token periodically while user is active
-  setInterval(async () => {
-    const token = sessionStorage.getItem('authToken');
-    if (token && !isInactive()) {
-      await refreshToken();
-    }
-  }, TOKEN_REFRESH_INTERVAL_MS);
+  // Initial check on setup - refresh if token is close to expiring
+  checkAndRefreshToken();
 }
 
 if (typeof module !== 'undefined' && module.exports) {
@@ -159,10 +189,12 @@ if (typeof module !== 'undefined' && module.exports) {
     getUsername,
     parseJwt,
     isTokenExpired,
+    isTokenExpiringSoon,
     requireAuth,
     updateLastActivity,
     isInactive,
-    refreshToken
+    refreshToken,
+    checkAndRefreshToken
   };
 } else {
   // Expose functions globally for browser use
@@ -173,10 +205,12 @@ if (typeof module !== 'undefined' && module.exports) {
   window.getUsername = getUsername;
   window.parseJwt = parseJwt;
   window.isTokenExpired = isTokenExpired;
+  window.isTokenExpiringSoon = isTokenExpiringSoon;
   window.requireAuth = requireAuth;
   window.updateLastActivity = updateLastActivity;
   window.isInactive = isInactive;
   window.refreshToken = refreshToken;
+  window.checkAndRefreshToken = checkAndRefreshToken;
 
   if (typeof document !== 'undefined' && typeof document.addEventListener === 'function') {
     document.addEventListener('DOMContentLoaded', () => {

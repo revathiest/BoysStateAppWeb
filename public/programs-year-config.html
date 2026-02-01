@@ -19,7 +19,7 @@
   </nav>
 
   <main class="flex-1 p-6 lg:p-10 bg-gray-50 min-h-screen">
-    <a href="programs-config.html" class="inline-flex items-center text-legend-blue font-semibold mb-4 hover:underline group">
+    <a id="back-link" href="programs-config.html" class="inline-flex items-center text-legend-blue font-semibold mb-4 hover:underline group">
       <span class="mr-2 text-lg">&larr;</span>
       Back to Program Configuration
     </a>
@@ -51,13 +51,13 @@
             <h2 class="text-xl font-bold text-legend-blue">Political Parties</h2>
             <p class="text-sm text-gray-600 mt-1">Select which parties to activate for this year. Only activated parties can be assigned to delegates.</p>
           </div>
-          <a href="programs-parties.html" class="text-sm text-legend-blue hover:underline">Manage Parties &rarr;</a>
+          <a id="manage-parties-link" href="programs-parties.html" class="text-sm text-legend-blue hover:underline">Manage Parties &rarr;</a>
         </div>
 
         <div id="parties-loading" class="text-gray-500 italic mb-4">Loading parties...</div>
         <div id="parties-list" class="hidden space-y-2 mb-4"></div>
         <div id="parties-none" class="hidden text-gray-500 italic">
-          No parties defined yet. <a href="programs-parties.html" class="text-legend-blue hover:underline">Create parties first</a>.
+          No parties defined yet. <a id="create-parties-link" href="programs-parties.html" class="text-legend-blue hover:underline">Create parties first</a>.
         </div>
 
         <button id="save-parties-btn" class="hidden bg-legend-blue hover:bg-blue-800 text-white font-semibold py-2 px-4 rounded-lg shadow transition">
@@ -66,27 +66,45 @@
       </div>
 
       <!-- Groupings Section -->
-      <div class="bg-white rounded-2xl shadow-lg p-6 border-t-4 border-gray-300 opacity-60">
+      <div class="bg-white rounded-2xl shadow-lg p-6 border-t-4 border-legend-gold">
         <div class="flex items-center justify-between mb-4">
           <div>
-            <h2 class="text-xl font-bold text-gray-600">Groupings</h2>
-            <p class="text-sm text-gray-600 mt-1">Select which groupings (cities, counties) to activate for this year.</p>
+            <h2 class="text-xl font-bold text-legend-blue">Groupings</h2>
+            <p class="text-sm text-gray-600 mt-1">Select which groupings (cities, counties) to activate for this year. Only activated groupings can be assigned to delegates.</p>
           </div>
-          <span class="text-sm text-gray-400">Coming Soon</span>
+          <a id="manage-groupings-link" href="programs-groupings.html" class="text-sm text-legend-blue hover:underline">Manage Groupings &rarr;</a>
         </div>
-        <div class="text-gray-400 italic">Groupings management is not yet implemented.</div>
+
+        <div id="groupings-loading" class="text-gray-500 italic mb-4">Loading groupings...</div>
+        <div id="groupings-list" class="hidden space-y-2 mb-4"></div>
+        <div id="groupings-none" class="hidden text-gray-500 italic">
+          No groupings defined yet. <a id="create-groupings-link" href="programs-groupings.html" class="text-legend-blue hover:underline">Create groupings first</a>.
+        </div>
+
+        <button id="save-groupings-btn" class="hidden bg-legend-blue hover:bg-blue-800 text-white font-semibold py-2 px-4 rounded-lg shadow transition">
+          Save Grouping Activations
+        </button>
       </div>
 
       <!-- Positions Section -->
-      <div class="bg-white rounded-2xl shadow-lg p-6 border-t-4 border-gray-300 opacity-60">
+      <div class="bg-white rounded-2xl shadow-lg p-6 border-t-4 border-legend-gold">
         <div class="flex items-center justify-between mb-4">
           <div>
-            <h2 class="text-xl font-bold text-gray-600">Positions</h2>
-            <p class="text-sm text-gray-600 mt-1">Select which elected/appointed positions to activate for this year.</p>
+            <h2 class="text-xl font-bold text-legend-blue">Positions</h2>
+            <p class="text-sm text-gray-600 mt-1">Select which elected/appointed positions to activate for this year. Only activated positions can be assigned to delegates.</p>
           </div>
-          <span class="text-sm text-gray-400">Coming Soon</span>
+          <a id="manage-positions-link" href="programs-positions.html" class="text-sm text-legend-blue hover:underline">Manage Positions &rarr;</a>
         </div>
-        <div class="text-gray-400 italic">Positions management is not yet implemented.</div>
+
+        <div id="positions-loading" class="text-gray-500 italic mb-4">Loading positions...</div>
+        <div id="positions-list" class="hidden space-y-2 mb-4"></div>
+        <div id="positions-none" class="hidden text-gray-500 italic">
+          No positions defined yet. <a id="create-positions-link" href="programs-positions.html" class="text-legend-blue hover:underline">Create positions first</a>.
+        </div>
+
+        <button id="save-positions-btn" class="hidden bg-legend-blue hover:bg-blue-800 text-white font-semibold py-2 px-4 rounded-lg shadow transition">
+          Save Position Activations
+        </button>
       </div>
 
     </div>

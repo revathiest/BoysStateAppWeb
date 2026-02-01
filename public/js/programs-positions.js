@@ -312,6 +312,11 @@ function renderPositionCard(position) {
     ? `<span class="bg-blue-100 text-blue-700 text-xs px-2 py-0.5 rounded">${position.seatCount} seats</span>`
     : '';
 
+  // Show non-partisan badge if elected and non-partisan (no primary)
+  const nonPartisanBadge = (position.isElected && position.isNonPartisan)
+    ? '<span class="bg-amber-100 text-amber-700 text-xs px-2 py-0.5 rounded" title="No primary election">Non-Partisan</span>'
+    : '';
+
   // Show ballot level badge if it differs from organizational level
   let ballotBadge = '';
   if (position.isElected && position.ballotGroupingTypeId &&
@@ -332,6 +337,7 @@ function renderPositionCard(position) {
         <div class="flex items-center gap-2 flex-wrap">
           <h4 class="font-semibold text-legend-blue">${escapeHtml(position.name)}</h4>
           ${electedBadge}
+          ${nonPartisanBadge}
           ${ballotBadge}
           ${countBadge}
         </div>
@@ -434,16 +440,45 @@ function updateBallotDropdown() {
     }).join('');
 }
 
-// Show/hide ballot level section based on elected checkbox
+// Show/hide elected position sections based on elected checkbox
 function toggleBallotSection() {
   const electedCheckbox = document.getElementById('position-elected-checkbox');
   const ballotSection = document.getElementById('ballot-level-section');
-  if (ballotSection) {
-    if (electedCheckbox && electedCheckbox.checked) {
-      ballotSection.classList.remove('hidden');
-    } else {
-      ballotSection.classList.add('hidden');
-    }
+  const nonpartisanSection = document.getElementById('nonpartisan-section');
+  const candidacySection = document.getElementById('candidacy-requirements-section');
+  const nonpartisanCheckbox = document.getElementById('position-nonpartisan-checkbox');
+  const declarationCheckbox = document.getElementById('position-declaration-checkbox');
+  const petitionCheckbox = document.getElementById('position-petition-checkbox');
+  const signaturesInput = document.getElementById('position-signatures-input');
+
+  if (electedCheckbox && electedCheckbox.checked) {
+    if (ballotSection) ballotSection.classList.remove('hidden');
+    if (nonpartisanSection) nonpartisanSection.classList.remove('hidden');
+    if (candidacySection) candidacySection.classList.remove('hidden');
+  } else {
+    if (ballotSection) ballotSection.classList.add('hidden');
+    if (nonpartisanSection) nonpartisanSection.classList.add('hidden');
+    if (candidacySection) candidacySection.classList.add('hidden');
+    // Reset related checkboxes when unchecking elected
+    if (nonpartisanCheckbox) nonpartisanCheckbox.checked = false;
+    if (declarationCheckbox) declarationCheckbox.checked = false;
+    if (petitionCheckbox) petitionCheckbox.checked = false;
+    if (signaturesInput) signaturesInput.value = '';
+    togglePetitionSignatures();
+  }
+}
+
+// Show/hide petition signatures input based on petition checkbox
+function togglePetitionSignatures() {
+  const petitionCheckbox = document.getElementById('position-petition-checkbox');
+  const signaturesSection = document.getElementById('petition-signatures-section');
+  const signaturesInput = document.getElementById('position-signatures-input');
+
+  if (petitionCheckbox && petitionCheckbox.checked) {
+    if (signaturesSection) signaturesSection.classList.remove('hidden');
+  } else {
+    if (signaturesSection) signaturesSection.classList.add('hidden');
+    if (signaturesInput) signaturesInput.value = '';
   }
 }
 
@@ -488,10 +523,14 @@ function resetPositionForm() {
   document.getElementById('position-order-input').value = '';
   document.getElementById('position-description-input').value = '';
   document.getElementById('position-elected-checkbox').checked = false;
+  document.getElementById('position-nonpartisan-checkbox').checked = false;
   document.getElementById('position-ballot-select').value = '';
+  document.getElementById('position-declaration-checkbox').checked = false;
+  document.getElementById('position-petition-checkbox').checked = false;
+  document.getElementById('position-signatures-input').value = '';
   document.getElementById('position-form-title').textContent = 'Add New Position';
   document.getElementById('save-position-btn').textContent = 'Save Position';
-  // Hide ballot section since elected is unchecked
+  // Hide ballot and non-partisan sections since elected is unchecked
   toggleBallotSection();
 }
 
@@ -511,6 +550,7 @@ function editPosition(positionId) {
   document.getElementById('position-order-input').value = position.displayOrder || '';
   document.getElementById('position-description-input').value = position.description || '';
   document.getElementById('position-elected-checkbox').checked = position.isElected || false;
+  document.getElementById('position-nonpartisan-checkbox').checked = position.isNonPartisan || false;
 
   // Set ballot level - if same as groupingTypeId or null, show empty (same as org level)
   const ballotSelect = document.getElementById('position-ballot-select');
@@ -520,8 +560,15 @@ function editPosition(positionId) {
     ballotSelect.value = '';
   }
 
-  // Show/hide ballot section based on elected status
+  // Set candidacy requirement fields
+  document.getElementById('position-declaration-checkbox').checked = position.requiresDeclaration || false;
+  document.getElementById('position-petition-checkbox').checked = position.requiresPetition || false;
+  document.getElementById('position-signatures-input').value = position.petitionSignatures || '';
+
+  // Show/hide ballot and non-partisan sections based on elected status
   toggleBallotSection();
+  // Show/hide petition signatures based on petition checkbox
+  togglePetitionSignatures();
 
   document.getElementById('position-form-title').textContent = 'Edit Position';
   document.getElementById('save-position-btn').textContent = 'Update Position';
@@ -545,10 +592,17 @@ async function savePosition() {
   const displayOrder = document.getElementById('position-order-input').value ? parseInt(document.getElementById('position-order-input').value) : null;
   const description = document.getElementById('position-description-input').value.trim();
   const isElected = document.getElementById('position-elected-checkbox').checked;
+  const isNonPartisan = isElected && document.getElementById('position-nonpartisan-checkbox').checked;
 
   // Get ballot level (only relevant for elected positions)
   const ballotSelectValue = document.getElementById('position-ballot-select').value;
   const ballotGroupingTypeId = isElected && ballotSelectValue ? parseInt(ballotSelectValue) : null;
+
+  // Get candidacy requirements (only relevant for elected positions)
+  const requiresDeclaration = isElected && document.getElementById('position-declaration-checkbox').checked;
+  const requiresPetition = isElected && document.getElementById('position-petition-checkbox').checked;
+  const petitionSignaturesValue = document.getElementById('position-signatures-input').value;
+  const petitionSignatures = requiresPetition && petitionSignaturesValue ? parseInt(petitionSignaturesValue) : null;
 
   if (!name) {
     showError('Please provide a position name.');
@@ -570,11 +624,19 @@ async function savePosition() {
       Object.assign(headers, getAuthHeaders());
     }
 
-    const body = { name, groupingTypeId, description, displayOrder, isElected, ballotGroupingTypeId };
-    // Include count if backend supports it
-    if (count > 1) {
-      body.seatCount = count;
-    }
+    const body = {
+      name,
+      groupingTypeId,
+      description,
+      displayOrder,
+      isElected,
+      isNonPartisan,
+      ballotGroupingTypeId,
+      requiresDeclaration,
+      requiresPetition,
+      petitionSignatures,
+      seatCount: count
+    };
 
     let response;
     if (editingPositionId) {
@@ -810,6 +872,7 @@ function renderQuickSetupContent() {
               data-level="${levelName}"
               data-name="${escapeHtml(pos.name)}"
               data-elected="${pos.isElected}"
+              data-nonpartisan="${pos.isNonPartisan || false}"
               data-seats="${pos.seatCount}"
               ${exists ? 'disabled checked' : ''}
             >
@@ -922,6 +985,7 @@ async function addSelectedPositions() {
     const levelName = checkbox.dataset.level;
     const name = checkbox.dataset.name;
     const isElected = checkbox.dataset.elected === 'true';
+    const isNonPartisan = checkbox.dataset.nonpartisan === 'true';
     const seatCount = parseInt(checkbox.dataset.seats) || 1;
 
     const level = findLevelByName(levelName);
@@ -940,6 +1004,7 @@ async function addSelectedPositions() {
         name,
         groupingTypeId: level.id,
         isElected,
+        isNonPartisan: isElected ? isNonPartisan : false,
         seatCount,
         status: 'active'
       };
@@ -1028,6 +1093,9 @@ function setupEventListeners() {
 
   // Elected checkbox - toggle ballot section visibility
   document.getElementById('position-elected-checkbox').addEventListener('change', toggleBallotSection);
+
+  // Petition checkbox - toggle signatures input visibility
+  document.getElementById('position-petition-checkbox').addEventListener('change', togglePetitionSignatures);
 
   // Cancel / close modal
   document.getElementById('cancel-position-btn').addEventListener('click', hidePositionModal);
