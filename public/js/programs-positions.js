@@ -132,8 +132,9 @@ async function loadGroupingTypes() {
       return aOrder - bOrder;
     });
 
-    // Update the dropdown in the form
+    // Update the dropdowns in the form
     updateLevelDropdown();
+    updateBallotDropdown();
 
     // Update quick setup visibility
     updateQuickSetupVisibility();
@@ -311,6 +312,16 @@ function renderPositionCard(position) {
     ? `<span class="bg-blue-100 text-blue-700 text-xs px-2 py-0.5 rounded">${position.seatCount} seats</span>`
     : '';
 
+  // Show ballot level badge if it differs from organizational level
+  let ballotBadge = '';
+  if (position.isElected && position.ballotGroupingTypeId &&
+      position.ballotGroupingTypeId !== position.groupingTypeId) {
+    const ballotLevelName = getLevelNameById(position.ballotGroupingTypeId);
+    if (ballotLevelName) {
+      ballotBadge = `<span class="bg-purple-100 text-purple-700 text-xs px-2 py-0.5 rounded" title="Elected on ${escapeHtml(ballotLevelName)} ballot">${escapeHtml(ballotLevelName)} ballot</span>`;
+    }
+  }
+
   const description = position.description
     ? `<p class="text-xs text-gray-500 mt-1">${escapeHtml(position.description)}</p>`
     : '';
@@ -318,9 +329,10 @@ function renderPositionCard(position) {
   return `
     <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200 hover:border-legend-blue transition">
       <div>
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-2 flex-wrap">
           <h4 class="font-semibold text-legend-blue">${escapeHtml(position.name)}</h4>
           ${electedBadge}
+          ${ballotBadge}
           ${countBadge}
         </div>
         ${description}
@@ -410,6 +422,37 @@ function updateLevelDropdown() {
     }).join('');
 }
 
+// Update ballot level dropdown in the form
+function updateBallotDropdown() {
+  const select = document.getElementById('position-ballot-select');
+  if (!select) return;
+
+  select.innerHTML = '<option value="">Same as organizational level</option>' +
+    groupingTypes.map(t => {
+      const displayName = t.customName || t.defaultName;
+      return `<option value="${t.id}">${displayName}</option>`;
+    }).join('');
+}
+
+// Show/hide ballot level section based on elected checkbox
+function toggleBallotSection() {
+  const electedCheckbox = document.getElementById('position-elected-checkbox');
+  const ballotSection = document.getElementById('ballot-level-section');
+  if (ballotSection) {
+    if (electedCheckbox && electedCheckbox.checked) {
+      ballotSection.classList.remove('hidden');
+    } else {
+      ballotSection.classList.add('hidden');
+    }
+  }
+}
+
+// Get level name by ID
+function getLevelNameById(levelId) {
+  const level = groupingTypes.find(t => t.id === levelId || String(t.id) === String(levelId));
+  return level ? (level.customName || level.defaultName) : null;
+}
+
 // Update quick setup visibility
 function updateQuickSetupVisibility() {
   const quickSetupButtons = document.getElementById('quick-setup-buttons');
@@ -445,8 +488,11 @@ function resetPositionForm() {
   document.getElementById('position-order-input').value = '';
   document.getElementById('position-description-input').value = '';
   document.getElementById('position-elected-checkbox').checked = false;
+  document.getElementById('position-ballot-select').value = '';
   document.getElementById('position-form-title').textContent = 'Add New Position';
   document.getElementById('save-position-btn').textContent = 'Save Position';
+  // Hide ballot section since elected is unchecked
+  toggleBallotSection();
 }
 
 // Populate form for editing
@@ -465,6 +511,17 @@ function editPosition(positionId) {
   document.getElementById('position-order-input').value = position.displayOrder || '';
   document.getElementById('position-description-input').value = position.description || '';
   document.getElementById('position-elected-checkbox').checked = position.isElected || false;
+
+  // Set ballot level - if same as groupingTypeId or null, show empty (same as org level)
+  const ballotSelect = document.getElementById('position-ballot-select');
+  if (position.ballotGroupingTypeId && position.ballotGroupingTypeId !== position.groupingTypeId) {
+    ballotSelect.value = position.ballotGroupingTypeId;
+  } else {
+    ballotSelect.value = '';
+  }
+
+  // Show/hide ballot section based on elected status
+  toggleBallotSection();
 
   document.getElementById('position-form-title').textContent = 'Edit Position';
   document.getElementById('save-position-btn').textContent = 'Update Position';
@@ -489,6 +546,10 @@ async function savePosition() {
   const description = document.getElementById('position-description-input').value.trim();
   const isElected = document.getElementById('position-elected-checkbox').checked;
 
+  // Get ballot level (only relevant for elected positions)
+  const ballotSelectValue = document.getElementById('position-ballot-select').value;
+  const ballotGroupingTypeId = isElected && ballotSelectValue ? parseInt(ballotSelectValue) : null;
+
   if (!name) {
     showError('Please provide a position name.');
     return;
@@ -509,7 +570,7 @@ async function savePosition() {
       Object.assign(headers, getAuthHeaders());
     }
 
-    const body = { name, groupingTypeId, description, displayOrder, isElected };
+    const body = { name, groupingTypeId, description, displayOrder, isElected, ballotGroupingTypeId };
     // Include count if backend supports it
     if (count > 1) {
       body.seatCount = count;
@@ -964,6 +1025,9 @@ function setupEventListeners() {
 
   // Save position
   document.getElementById('save-position-btn').addEventListener('click', savePosition);
+
+  // Elected checkbox - toggle ballot section visibility
+  document.getElementById('position-elected-checkbox').addEventListener('change', toggleBallotSection);
 
   // Cancel / close modal
   document.getElementById('cancel-position-btn').addEventListener('click', hidePositionModal);
