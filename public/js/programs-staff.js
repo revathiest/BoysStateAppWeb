@@ -311,6 +311,16 @@ function escapeHtml(str) {
     .replace(/"/g, '&quot;');
 }
 
+// Generate a random temporary password
+function generateTempPassword() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
+  let password = '';
+  for (let i = 0; i < 12; i++) {
+    password += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return password;
+}
+
 // Open add modal
 function openAddModal() {
   editingStaffId = null;
@@ -325,6 +335,8 @@ function openAddModal() {
   document.getElementById('custom-role-container').classList.add('hidden');
   document.getElementById('staff-grouping').value = '';
   document.getElementById('staff-status').value = 'active';
+  const tempPasswordField = document.getElementById('staff-temp-password');
+  if (tempPasswordField) tempPasswordField.value = '';
   document.getElementById('staff-modal').classList.remove('hidden');
 }
 
@@ -356,6 +368,8 @@ function openEditModal(staffId) {
 
   document.getElementById('staff-grouping').value = staff.groupingId || '';
   document.getElementById('staff-status').value = staff.status || 'active';
+  const tempPasswordField = document.getElementById('staff-temp-password');
+  if (tempPasswordField) tempPasswordField.value = '';
   document.getElementById('staff-modal').classList.remove('hidden');
 }
 
@@ -377,6 +391,7 @@ async function saveStaff() {
   const customRole = document.getElementById('staff-custom-role').value.trim();
   const groupingId = document.getElementById('staff-grouping').value;
   const status = document.getElementById('staff-status').value;
+  const tempPassword = document.getElementById('staff-temp-password')?.value.trim() || '';
 
   // Determine actual role
   const role = roleSelect === 'other' ? customRole : roleSelect;
@@ -401,6 +416,11 @@ async function saveStaff() {
     groupingId: groupingId ? parseInt(groupingId) : null,
     status,
   };
+
+  // Only include password if provided
+  if (tempPassword) {
+    data.tempPassword = tempPassword;
+  }
 
   try {
     let response;
@@ -554,6 +574,12 @@ async function savePassword() {
 function init() {
   currentProgramId = getProgramId();
 
+  // Update back link with programId
+  const backLink = document.querySelector('a[href^="user-management.html"]');
+  if (backLink && currentProgramId) {
+    backLink.href = `user-management.html?programId=${encodeURIComponent(currentProgramId)}`;
+  }
+
   // Display program context
   displayProgramContext();
 
@@ -606,6 +632,17 @@ function init() {
   const saveStaffBtn = document.getElementById('save-staff-btn');
   if (saveStaffBtn) {
     saveStaffBtn.addEventListener('click', saveStaff);
+  }
+
+  // Generate password button
+  const generatePasswordBtn = document.getElementById('generate-staff-password-btn');
+  if (generatePasswordBtn) {
+    generatePasswordBtn.addEventListener('click', () => {
+      const passwordField = document.getElementById('staff-temp-password');
+      if (passwordField) {
+        passwordField.value = generateTempPassword();
+      }
+    });
   }
 
   // Cancel staff button

@@ -653,6 +653,13 @@ function switchTab(tab) {
     // Display program context for debugging/clarity
     displayProgramContext();
 
+    // Update back link with programId
+    const programIdForLink = window.getProgramId ? window.getProgramId() : null;
+    const backLink = document.querySelector('a[href^="user-management.html"]');
+    if (backLink && programIdForLink) {
+      backLink.href = `user-management.html?programId=${encodeURIComponent(programIdForLink)}`;
+    }
+
     // Logout button handler
     const logoutBtn = document.getElementById('logoutBtn');
     if (logoutBtn) {

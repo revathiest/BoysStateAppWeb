@@ -37,9 +37,9 @@
         Then create actual locations within each level in Step 2 (e.g., "Springfield" under City, "Sangamon County" under County).
       </p>
       <p class="text-sm text-gray-700 mb-3">
-        <strong>Required level:</strong> Mark the lowest/most specific level where delegates must be assigned.
-        For example, if you track delegates by City, mark City as required. If you only track by County, mark County as required.
-        Typically, only ONE level should be marked as required (the most specific level you care about).
+        <strong>Delegate assignment level:</strong> Mark the level where delegates will be assigned during auto-assignment.
+        For example, if delegates are assigned to Cities, check "Assign delegates to this level" for City.
+        Typically, only ONE level should be marked (the most specific level where delegates belong).
       </p>
       <p class="text-sm text-gray-700">
         <strong>Year activation:</strong> After creating groupings here, you'll need to activate them for each program year.
@@ -83,7 +83,7 @@
           <button id="add-city-btn" class="bg-legend-blue hover:bg-blue-800 text-white font-semibold py-2 px-4 rounded-lg shadow transition">
             Add City
           </button>
-          <button id="add-all-defaults-btn" class="bg-legend-gold hover:bg-yellow-500 text-legend-blue font-semibold py-2 px-4 rounded-lg shadow transition">
+          <button id="add-all-defaults-btn" class="bg-legend-gold hover:bg-yellow-400 text-legend-blue font-semibold py-2 px-4 rounded-lg shadow transition">
             Add All Three
           </button>
         </div>
@@ -177,8 +177,8 @@
         <label class="flex items-start gap-2 cursor-pointer">
           <input type="checkbox" id="type-required-checkbox" class="w-4 h-4 mt-0.5 text-legend-blue focus:ring-2 focus:ring-legend-blue rounded">
           <div>
-            <span class="text-sm text-gray-700 font-medium">Delegates must be assigned at this level</span>
-            <p class="text-xs text-gray-500 mt-1">Check this for the most specific level where you'll assign delegates.</p>
+            <span class="text-sm text-gray-700 font-medium">Assign delegates to this level</span>
+            <p class="text-xs text-gray-500 mt-1">When checked, delegates will be auto-assigned to groupings of this type (e.g., assign to Cities).</p>
           </div>
         </label>
       </div>

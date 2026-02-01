@@ -164,7 +164,7 @@ async function loadGroupingTypes() {
             <span class="bg-legend-blue text-white font-bold text-sm px-3 py-1 rounded">Level ${type.levelOrder}</span>
             <div>
               <h3 class="font-semibold text-legend-blue">${escapeHtml(displayName)}${pluralDisplay}</h3>
-              <p class="text-xs text-gray-500">${type.defaultName !== displayName ? `Default: ${type.defaultName}` : ''} ${type.isRequired ? '• Required' : ''}</p>
+              <p class="text-xs text-gray-500">${type.defaultName !== displayName ? `Default: ${type.defaultName}` : ''} ${type.isRequired ? '<span class="text-green-600 font-medium">✓ Assign Delegates</span>' : ''}</p>
             </div>
           </div>
           <div class="flex gap-2">

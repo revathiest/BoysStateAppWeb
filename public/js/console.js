@@ -6,6 +6,7 @@ function updateNavLinks() {
   const links = {
     'user-management-link': 'user-management.html',
     'programs-config-link': 'programs-config.html',
+    'elections-link': 'elections-management.html',
   };
 
   for (const [id, basePath] of Object.entries(links)) {
