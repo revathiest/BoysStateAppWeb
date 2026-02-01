@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Manage Parents – Boys State App</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="tailwind.css">
+  <link rel="stylesheet" href="logo.css">
+</head>
+<body class="bg-gray-50 font-sans min-h-screen">
+
+  <!-- NAVBAR -->
+  <nav class="bg-legend-blue text-white px-6 py-4 flex items-center justify-between shadow">
+    <div class="flex items-center gap-3">
+      <img src="images/Boys-State-Shield-White-on-Blue.png" alt="Logo" class="w-8 h-8 p-1 rounded-full" />
+      <span class="text-xl font-semibold">Boys State App <span class="text-sm font-normal text-legend-gold ml-2">Admin Portal</span></span>
+    </div>
+    <button id="logoutBtn" type="button" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-2xl shadow transition" aria-label="Logout">Logout</button>
+  </nav>
+
+  <main class="flex-1 p-6 lg:p-10 bg-gray-50 min-h-screen">
+    <a href="user-management.html" class="inline-flex items-center text-legend-blue font-semibold mb-4 hover:underline group">
+      <span class="mr-2 text-lg">&larr;</span>
+      Back to User Management
+    </a>
+
+    <div id="program-context" class="text-sm text-gray-500 mb-2"></div>
+
+    <h1 class="text-3xl font-extrabold text-legend-blue mb-2">Parent Management</h1>
+    <p class="text-gray-700 mb-6">View, search, and manage parent accounts for your program. Parents can be linked to delegates.</p>
+
+    <!-- Year Selector -->
+    <div class="bg-white rounded-xl shadow p-4 mb-6 border-l-4 border-legend-blue">
+      <div class="flex items-center gap-4">
+        <label for="year-select" class="font-semibold text-gray-700">Program Year:</label>
+        <select id="year-select" class="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-legend-blue">
+          <option value="">Loading years...</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Error/Success Messages -->
+    <div id="errorBox" class="hidden bg-red-100 text-red-700 px-4 py-3 rounded-xl mb-4 shadow"></div>
+    <div id="successBox" class="hidden bg-green-100 text-green-700 px-4 py-3 rounded-xl mb-4 shadow"></div>
+
+    <!-- Search and Filters -->
+    <div class="bg-white rounded-2xl shadow-lg p-4 mb-6 border-t-4 border-legend-blue">
+      <div class="flex flex-wrap items-end gap-4">
+        <div class="flex-1 min-w-[200px]">
+          <label for="search-input" class="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wide">Search</label>
+          <input
+            type="text"
+            id="search-input"
+            placeholder="Search by name or email..."
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-legend-blue"
+          />
+        </div>
+        <div>
+          <label for="filter-status" class="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wide">Status</label>
+          <select id="filter-status" class="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-legend-blue">
+            <option value="all">All</option>
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+          </select>
+        </div>
+        <div class="flex gap-2">
+          <button id="apply-filters-btn" class="bg-legend-blue hover:bg-blue-800 text-white font-semibold py-2 px-4 rounded-lg shadow transition">
+            Apply
+          </button>
+          <button id="clear-filters-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-4 rounded-lg transition">
+            Clear
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Parents List Section -->
+    <div class="bg-white rounded-2xl shadow-lg p-6 mb-8 border-t-4 border-legend-gold">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h2 class="text-xl font-bold text-legend-blue">Parents</h2>
+          <p id="results-count" class="text-sm text-gray-600 mt-1">Loading parents...</p>
+        </div>
+        <button id="add-parent-btn" class="bg-legend-blue hover:bg-blue-800 text-white font-semibold py-2 px-4 rounded-lg shadow transition inline-flex items-center gap-2">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+          </svg>
+          Add Parent
+        </button>
+      </div>
+
+      <!-- Parents Table -->
+      <div class="overflow-x-auto">
+        <table class="min-w-full">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Name</th>
+              <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Email</th>
+              <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Phone</th>
+              <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Linked Delegates</th>
+              <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
+              <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="parents-table-body" class="bg-white divide-y divide-gray-200">
+            <tr>
+              <td colspan="6" class="px-4 py-8 text-center text-gray-500 italic">Loading parents...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      <div id="pagination" class="mt-4 flex justify-center gap-2"></div>
+    </div>
+  </main>
+
+  <footer class="bg-legend-blue text-white border-t mt-8 py-4 text-center text-xs">
+    &copy; 2025 Boys State App Admin Portal. Not affiliated with or endorsed by the American Legion.
+  </footer>
+
+  <!-- Add/Edit Parent Modal -->
+  <div id="parent-modal" class="hidden fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full mx-4 p-6 relative max-h-[90vh] overflow-y-auto">
+      <button id="parent-modal-close" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-2xl font-bold">&times;</button>
+      <h3 id="parent-form-title" class="text-xl font-bold text-legend-blue mb-4">Add Parent</h3>
+      <input type="hidden" id="parent-id" value="" />
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <div>
+          <label for="parent-first-name" class="block text-sm font-medium text-gray-700 mb-1">First Name <span class="text-red-500">*</span></label>
+          <input
+            type="text"
+            id="parent-first-name"
+            placeholder="Jane"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-legend-blue"
+            maxlength="100"
+          />
+        </div>
+        <div>
+          <label for="parent-last-name" class="block text-sm font-medium text-gray-700 mb-1">Last Name <span class="text-red-500">*</span></label>
+          <input
+            type="text"
+            id="parent-last-name"
+            placeholder="Doe"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-legend-blue"
+            maxlength="100"
+          />
+        </div>
+        <div>
+          <label for="parent-email" class="block text-sm font-medium text-gray-700 mb-1">Email <span class="text-red-500">*</span></label>
+          <input
+            type="email"
+            id="parent-email"
+            placeholder="jane.doe@example.com"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-legend-blue"
+            maxlength="200"
+          />
+        </div>
+        <div>
+          <label for="parent-phone" class="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+          <input
+            type="tel"
+            id="parent-phone"
+            placeholder="(555) 123-4567"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-legend-blue"
+            maxlength="20"
+          />
+        </div>
+        <div class="md:col-span-2">
+          <label for="parent-status" class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+          <select id="parent-status" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-legend-blue">
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+          </select>
+        </div>
+      </div>
+      <!-- Temporary Password Section -->
+      <div class="border-t border-gray-200 pt-4 mt-4">
+        <h4 class="text-sm font-semibold text-gray-700 mb-2">Set Temporary Password</h4>
+        <p class="text-xs text-gray-500 mb-2">Leave blank to keep the current password. The parent should change this password after logging in.</p>
+        <div class="flex gap-2">
+          <input
+            type="text"
+            id="parent-temp-password"
+            placeholder="Enter new password..."
+            class="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-legend-blue"
+            maxlength="50"
+          />
+          <button type="button" id="generate-parent-password-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-2 px-3 rounded-lg transition text-sm">
+            Generate
+          </button>
+        </div>
+      </div>
+      <div class="flex gap-3 justify-end mt-4">
+        <button id="cancel-parent-btn" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold rounded-lg transition">
+          Cancel
+        </button>
+        <button id="save-parent-btn" class="px-4 py-2 bg-legend-blue hover:bg-blue-800 text-white font-semibold rounded-lg shadow transition">
+          Save
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Link Delegate Modal -->
+  <div id="link-modal" class="hidden fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full mx-4 p-6 relative max-h-[90vh] overflow-y-auto">
+      <button id="link-modal-close" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-2xl font-bold">&times;</button>
+      <h3 id="link-form-title" class="text-xl font-bold text-legend-blue mb-4">Link Delegate to Parent</h3>
+      <input type="hidden" id="link-parent-id" value="" />
+      <p id="link-parent-name" class="text-gray-600 mb-4"></p>
+
+      <div class="mb-4">
+        <label for="link-delegate-select" class="block text-sm font-medium text-gray-700 mb-1">Select Delegate <span class="text-red-500">*</span></label>
+        <select id="link-delegate-select" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-legend-blue">
+          <option value="">Select a delegate...</option>
+        </select>
+        <p class="text-xs text-gray-500 mt-1">Search by typing delegate name</p>
+      </div>
+
+      <div class="flex gap-3 justify-end">
+        <button id="cancel-link-btn" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold rounded-lg transition">
+          Cancel
+        </button>
+        <button id="save-link-btn" class="px-4 py-2 bg-legend-blue hover:bg-blue-800 text-white font-semibold rounded-lg shadow transition">
+          Link Delegate
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Confirmation Modal -->
+  <div id="confirmation-modal" class="hidden fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 relative">
+      <h3 id="confirmation-title" class="text-xl font-bold text-legend-blue mb-4"></h3>
+      <p id="confirmation-message" class="text-gray-700 mb-6"></p>
+      <div class="flex gap-3 justify-end">
+        <button id="confirmation-cancel-btn" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold rounded-lg transition">Cancel</button>
+        <button id="confirmation-confirm-btn" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg transition"></button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/authHelper.js"></script>
+  <script src="js/programs-parents.js"></script>
+</body>
+</html>
