@@ -160,12 +160,17 @@ function switchTab(tab) {
   async function loadStaffApplications() {
     try {
       clearError();
+      console.log('[DEBUG] ========== LOAD STAFF APPLICATIONS START ==========');
+      console.log('[DEBUG] window.getProgramId exists:', !!window.getProgramId);
+      console.log('[DEBUG] URL search params:', window.location.search);
+      console.log('[DEBUG] localStorage lastSelectedProgramId:', localStorage.getItem('lastSelectedProgramId'));
       const programId = window.getProgramId ? window.getProgramId() : null;
-      console.log('[DEBUG] loadStaffApplications - programId:', programId);
+      console.log('[DEBUG] loadStaffApplications - resolved programId:', programId);
       if (!programId) throw new Error('Program ID not found.');
 
       const url = `${window.API_URL}/api/programs/${encodeURIComponent(programId)}/applications/staff?status=pending`;
-      console.log('[DEBUG] loadStaffApplications - Fetching:', url);
+      console.log('[DEBUG] loadStaffApplications - API_URL:', window.API_URL);
+      console.log('[DEBUG] loadStaffApplications - Full URL:', url);
 
       const resp = await fetch(url, {
         credentials: 'include',
@@ -176,7 +181,13 @@ function switchTab(tab) {
 
       // Handle different response scenarios
       if (resp.status === 204 || resp.status === 404) {
-        console.log('[DEBUG] loadStaffApplications - No content (204/404)');
+        console.log('[DEBUG] loadStaffApplications - No content (204/404) - THIS MAY BE THE ISSUE');
+        console.log('[DEBUG] Possible causes:');
+        console.log('[DEBUG]   1. No staff Application form exists for this program/year');
+        console.log('[DEBUG]   2. No pending ApplicationResponses for staff type');
+        console.log('[DEBUG]   3. The programId doesnt match what was used during submission');
+        console.log('[DEBUG] Submission used programId: cmkxi7zc10000mn0foosw9dwu');
+        console.log('[DEBUG] Current programId:', programId);
         // No content or not found - show empty state
         renderApplicationsTable('staff-applications-table', [], 'staff');
         return;
@@ -190,11 +201,15 @@ function switchTab(tab) {
 
       // Try to parse JSON, handle empty responses gracefully
       const text = await resp.text();
+      console.log('[DEBUG] loadStaffApplications - Response text length:', text?.length);
       console.log('[DEBUG] loadStaffApplications - Response text:', text);
       const applications = text ? JSON.parse(text) : [];
-      console.log('[DEBUG] loadStaffApplications - Parsed applications:', applications);
+      console.log('[DEBUG] loadStaffApplications - Parsed applications count:', applications.length);
+      console.log('[DEBUG] loadStaffApplications - Parsed applications:', JSON.stringify(applications, null, 2));
+      console.log('[DEBUG] ========== LOAD STAFF APPLICATIONS END ==========');
       renderApplicationsTable('staff-applications-table', applications, 'staff');
     } catch (err) {
+      console.error('[DEBUG] ========== LOAD STAFF APPLICATIONS ERROR ==========');
       console.error('[DEBUG] loadStaffApplications - Error:', err);
       // Only show error if it's not a JSON parsing issue from empty response
       if (err.message.includes('JSON')) {
@@ -405,11 +420,16 @@ function switchTab(tab) {
 
   // Accept/Reject Application
   async function handleDecision(id, type, action, extraData = {}) {
+    console.log(`[DEBUG] handleDecision called: id=${id}, type=${type}, action=${action}`);
+    console.log(`[DEBUG] handleDecision extraData:`, extraData);
     try {
       clearError();
       const programId = window.getProgramId ? window.getProgramId() : null;
+      console.log(`[DEBUG] handleDecision programId: ${programId}`);
       if (!programId) throw new Error('Program ID not found.');
       const endpoint = `${window.API_URL}/api/programs/${programId}/applications/${type}/${id}/${action}`;
+      console.log(`[DEBUG] handleDecision endpoint: ${endpoint}`);
+      console.log(`[DEBUG] handleDecision request body:`, JSON.stringify(extraData));
       const resp = await fetch(endpoint, {
         method: 'POST',
         credentials: 'include',
@@ -419,11 +439,14 @@ function switchTab(tab) {
         },
         body: JSON.stringify(extraData),
       });
+      console.log(`[DEBUG] handleDecision response status: ${resp.status}`);
       if (!resp.ok) {
         const errorData = await resp.json().catch(() => ({}));
+        console.log(`[DEBUG] handleDecision error response:`, errorData);
         throw new Error(errorData.error || `Failed to ${action} application.`);
       }
       const result = await resp.json();
+      console.log(`[DEBUG] handleDecision success response:`, result);
 
       // Show success message with created record info
       let successMsg = `Application ${action}ed successfully.`;
@@ -431,6 +454,18 @@ function switchTab(tab) {
         successMsg += ` Delegate #${result.delegateId} created (pending city assignment).`;
       } else if (result.staffId) {
         successMsg += ` Staff member #${result.staffId} created.`;
+      }
+
+      // Add user account info if available
+      if (result.userAccount) {
+        if (result.userAccount.isNew) {
+          successMsg += ` User account created.`;
+          if (result.userAccount.tempPassword) {
+            successMsg += ` Temporary password: ${result.userAccount.tempPassword}`;
+          }
+        } else {
+          successMsg += ` Linked to existing user account.`;
+        }
       }
       showSuccess(successMsg);
 
@@ -565,12 +600,16 @@ function switchTab(tab) {
 
     // Role confirm button
     document.getElementById('role-confirm-btn').addEventListener('click', () => {
+      console.log('[DEBUG] Role confirm button clicked');
       const role = getSelectedRole();
+      console.log(`[DEBUG] Selected role: "${role}"`);
+      console.log(`[DEBUG] pendingStaffAcceptId: ${pendingStaffAcceptId}`);
       if (!role) {
         showError('Please select a role for this staff member.');
         return;
       }
       if (pendingStaffAcceptId) {
+        console.log(`[DEBUG] Calling handleDecision for staff acceptance with role: ${role}`);
         handleDecision(pendingStaffAcceptId, 'staff', 'accept', { role });
       }
     });

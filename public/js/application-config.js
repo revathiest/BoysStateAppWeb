@@ -43,6 +43,15 @@ let currentType = 'delegate';
     const currentSelHeading = document.getElementById('current-selection');
     const noAppMsg = document.getElementById('no-app-message');
 
+    // Logout handler
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) {
+      logoutBtn.addEventListener('click', () => {
+        if (typeof clearAuthToken === 'function') clearAuthToken();
+        window.location.href = 'login.html';
+      });
+    }
+
     let yearsList = [];
     let existingApplications = {};
     let existingAppsLoaded = false;

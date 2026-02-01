@@ -15,6 +15,11 @@ function updateNavLinks() {
   if (applicationReviewLink) {
     applicationReviewLink.href = `application-review.html?programId=${encodeURIComponent(programId)}`;
   }
+
+  const staffLink = document.getElementById('staff-link');
+  if (staffLink) {
+    staffLink.href = `programs-staff.html?programId=${encodeURIComponent(programId)}`;
+  }
 }
 
 document.addEventListener('DOMContentLoaded', () => {

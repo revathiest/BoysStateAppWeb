@@ -5,6 +5,9 @@
 // Activity-based timeout: 30 minutes of inactivity
 const INACTIVITY_TIMEOUT_MS = 30 * 60 * 1000;
 
+// Token refresh interval: 20 minutes (refresh before 30-minute token expiry)
+const TOKEN_REFRESH_INTERVAL_MS = 20 * 60 * 1000;
+
 function getAuthHeaders() {
   const token = sessionStorage.getItem('authToken');
   return token ? { 'Authorization': `Bearer ${token}` } : {};
@@ -70,6 +73,38 @@ function storeAuthToken(token) {
   }
 }
 
+// Refresh the token by calling the /refresh endpoint
+async function refreshToken() {
+  const token = sessionStorage.getItem('authToken');
+  if (!token || isTokenExpired(token) || isInactive()) {
+    return false;
+  }
+
+  try {
+    const apiBase = window.API_URL || '';
+    const response = await fetch(`${apiBase}/refresh`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      credentials: 'include'
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      if (data.token) {
+        sessionStorage.setItem('authToken', data.token);
+        return true;
+      }
+    }
+    return false;
+  } catch (error) {
+    console.error('Token refresh failed:', error);
+    return false;
+  }
+}
+
 function storeUser(user){
   if (user) sessionStorage.setItem('user', user);
 }
@@ -105,6 +140,14 @@ function setupActivityTracking() {
       if (window.location) window.location.href = 'login.html?timeout=inactive';
     }
   }, 60000); // Check every minute
+
+  // Refresh token periodically while user is active
+  setInterval(async () => {
+    const token = sessionStorage.getItem('authToken');
+    if (token && !isInactive()) {
+      await refreshToken();
+    }
+  }, TOKEN_REFRESH_INTERVAL_MS);
 }
 
 if (typeof module !== 'undefined' && module.exports) {
@@ -118,7 +161,8 @@ if (typeof module !== 'undefined' && module.exports) {
     isTokenExpired,
     requireAuth,
     updateLastActivity,
-    isInactive
+    isInactive,
+    refreshToken
   };
 } else {
   // Expose functions globally for browser use
@@ -132,6 +176,7 @@ if (typeof module !== 'undefined' && module.exports) {
   window.requireAuth = requireAuth;
   window.updateLastActivity = updateLastActivity;
   window.isInactive = isInactive;
+  window.refreshToken = refreshToken;
 
   if (typeof document !== 'undefined' && typeof document.addEventListener === 'function') {
     document.addEventListener('DOMContentLoaded', () => {

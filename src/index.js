@@ -161,7 +161,7 @@ function createServer() {
     res.on('finish', () => logRequest(req, res, startTime));
     res.setHeader(
       'Content-Security-Policy',
-      "default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self' http://localhost:3000 https://boysstateappservices.up.railway.app"
+      "default-src 'self'; script-src 'self' https://cdn.quilljs.com; style-src 'self' https://cdn.quilljs.com; connect-src 'self' http://localhost:3000 https://boysstateappservices.up.railway.app"
     );
     setCorsHeaders(req, res);
     if (req.method === 'OPTIONS') {
