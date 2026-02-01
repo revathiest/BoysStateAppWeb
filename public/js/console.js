@@ -75,7 +75,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   const logoutBtn = document.getElementById('logoutBtn');
   if (logoutBtn) {
     logoutBtn.addEventListener('click', () => {
-      window.location.href = 'login.html'; // Redirect to login or home
+      if (typeof clearAuthToken === 'function') clearAuthToken();
+      window.location.href = 'login.html';
     });
   }
 

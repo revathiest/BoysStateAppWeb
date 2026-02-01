@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Email Templates Configuration</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <link rel="stylesheet" href="tailwind.css" />
+  <link rel="stylesheet" href="logo.css" />
+  <!-- Quill WYSIWYG Editor -->
+  <link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
+  <style>
+    .ql-container {
+      min-height: 300px;
+      font-size: 14px;
+    }
+    .ql-editor {
+      min-height: 300px;
+    }
+    .ql-toolbar.ql-snow {
+      border-radius: 0.75rem 0.75rem 0 0;
+      border-color: #d1d5db;
+      background: #f9fafb;
+    }
+    .ql-container.ql-snow {
+      border-radius: 0 0 0.75rem 0.75rem;
+      border-color: #d1d5db;
+    }
+    /* Ensure the editor has proper height */
+    #quillEditor {
+      min-height: 300px;
+      background: #fff;
+    }
+    #editorContainer {
+      min-height: 350px;
+    }
+    /* Style for placeholder buttons in editor */
+    .placeholder-insert {
+      cursor: pointer;
+      user-select: none;
+    }
+    /* Fallback styles if Quill fails to load */
+    .quill-fallback {
+      border: 1px solid #d1d5db;
+      border-radius: 0.75rem;
+      padding: 1rem;
+      min-height: 300px;
+      background: #f9fafb;
+    }
+  </style>
+</head>
+<body class="bg-gray-50 font-sans min-h-screen">
+
+  <!-- NAVBAR -->
+  <nav class="bg-legend-blue text-white px-6 py-4 flex items-center justify-between shadow">
+    <div class="flex items-center gap-3">
+      <img src="images/Boys-State-Shield-White-on-Blue.png" alt="Logo" class="w-8 h-8 p-1 rounded-full" />
+      <span class="text-xl font-semibold">Boys State App <span class="text-sm font-normal text-legend-gold ml-2">Admin Portal</span></span>
+    </div>
+    <button id="logoutBtn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-2xl shadow transition">Logout</button>
+  </nav>
+
+  <!-- MAIN CONTENT -->
+  <main class="flex flex-col items-stretch p-6 lg:p-10 bg-gray-50 min-h-screen">
+    <a href="programs-config.html" class="inline-flex items-center text-legend-blue font-semibold mb-4 hover:underline group self-start">
+      <span class="mr-2 text-lg">&larr;</span>
+      Back to Program Configuration
+    </a>
+
+    <!-- Program Label -->
+    <div id="program-selector" class="mb-6 max-w-lg">
+      <div id="programNameLabel" class="mt-2 text-legend-blue text-xl font-bold"></div>
+      <div id="errorMsg" class="hidden text-red-600 font-semibold my-2"></div>
+    </div>
+
+    <!-- Card for Email Templates -->
+    <div class="bg-white rounded-2xl shadow-lg p-8 sm:p-12 max-w-4xl w-full mx-auto border-t-4 border-legend-gold flex flex-col">
+      <h1 class="text-2xl font-bold text-legend-blue mb-2">Email Templates</h1>
+      <p class="text-gray-600 mb-6">Customize the welcome emails sent to delegates and staff when their applications are accepted.</p>
+
+      <!-- Status Message -->
+      <div id="statusMsg" class="hidden rounded-lg px-4 py-3 mb-6"></div>
+
+      <!-- Template Tabs -->
+      <div class="border-b border-gray-200 mb-6">
+        <nav class="flex gap-4" aria-label="Tabs">
+          <button id="tab-delegate" class="tab-btn px-4 py-2 font-semibold text-legend-blue border-b-2 border-legend-blue" data-template="delegate_welcome">
+            Delegate Welcome
+          </button>
+          <button id="tab-staff" class="tab-btn px-4 py-2 font-semibold text-gray-500 border-b-2 border-transparent hover:text-legend-blue hover:border-gray-300" data-template="staff_welcome">
+            Staff Welcome
+          </button>
+        </nav>
+      </div>
+
+      <!-- Template Editor -->
+      <div id="template-editor">
+        <!-- Template Info -->
+        <div class="mb-4">
+          <h2 id="templateName" class="text-lg font-semibold text-legend-blue"></h2>
+          <p id="templateDescription" class="text-gray-600 text-sm"></p>
+        </div>
+
+        <!-- Enabled Toggle -->
+        <div class="flex items-center gap-3 mb-6 p-4 bg-gray-50 rounded-lg">
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" id="templateEnabled" class="sr-only peer">
+            <div class="w-11 h-6 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-legend-gold/50 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
+          </label>
+          <span class="font-semibold text-gray-700">Send this email when application is accepted</span>
+          <span id="enabledStatus" class="ml-2 text-sm text-gray-500">(Disabled)</span>
+        </div>
+
+        <!-- Subject -->
+        <div class="mb-6">
+          <label for="templateSubject" class="font-semibold block mb-1">Email Subject <span class="text-red-500">*</span></label>
+          <input type="text" id="templateSubject" placeholder="Welcome to {{programName}}..."
+            class="appearance-none w-full px-4 py-2 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-legend-gold focus:border-legend-gold bg-gray-50 text-gray-900 placeholder-gray-400 transition" />
+        </div>
+
+        <!-- Body -->
+        <div class="mb-6">
+          <div class="flex items-center justify-between mb-1">
+            <label class="font-semibold">Email Body <span class="text-red-500">*</span></label>
+            <div class="flex items-center gap-2">
+              <button type="button" id="viewVisualBtn" class="px-3 py-1 text-sm font-medium rounded-lg bg-legend-blue text-white">Visual</button>
+              <button type="button" id="viewHtmlBtn" class="px-3 py-1 text-sm font-medium rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300">HTML</button>
+            </div>
+          </div>
+          <!-- Visual Editor (Quill) -->
+          <div id="editorContainer">
+            <div id="quillEditor"></div>
+          </div>
+          <!-- HTML Editor (hidden by default) -->
+          <textarea id="templateBody" rows="15" placeholder="<div>...</div>"
+            class="hidden appearance-none w-full px-4 py-2 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-legend-gold focus:border-legend-gold bg-gray-50 text-gray-900 font-mono text-sm placeholder-gray-400 transition"></textarea>
+        </div>
+
+        <!-- Available Placeholders -->
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+          <h4 class="font-semibold text-blue-800 mb-2">Available Placeholders</h4>
+          <div id="placeholders" class="flex flex-wrap gap-2">
+            <!-- Filled by JS -->
+          </div>
+          <p class="text-sm text-blue-700 mt-3">
+            <strong>Conditional blocks:</strong> Use <code class="bg-blue-100 px-1 rounded">{{#if tempPassword}}...{{/if}}</code> to show content only when a temporary password is generated.
+          </p>
+        </div>
+
+        <!-- Preview Section -->
+        <div class="mb-6">
+          <button id="previewBtn" class="text-legend-blue font-semibold hover:underline flex items-center gap-2">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+            </svg>
+            Preview Email
+          </button>
+          <div id="previewContainer" class="hidden mt-4 border rounded-lg overflow-hidden">
+            <div class="bg-gray-100 px-4 py-2 border-b">
+              <span class="font-semibold text-gray-700">Subject:</span>
+              <span id="previewSubject" class="ml-2"></span>
+            </div>
+            <div id="previewBody" class="p-4 bg-white"></div>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex flex-wrap gap-4 mt-4">
+          <button id="saveBtn" class="bg-legend-blue text-white font-bold py-2 px-6 rounded-xl shadow transition hover:bg-legend-gold hover:text-legend-blue">Save Template</button>
+          <button id="resetBtn" class="bg-gray-200 text-gray-800 font-bold py-2 px-6 rounded-xl shadow transition hover:bg-gray-300">Reset to Default</button>
+          <button id="cancelBtn" class="bg-gray-200 text-gray-800 font-bold py-2 px-6 rounded-xl shadow transition hover:bg-gray-300">Cancel</button>
+        </div>
+
+        <!-- Customization Status -->
+        <div id="customizationStatus" class="mt-4 text-sm text-gray-500"></div>
+      </div>
+    </div>
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="bg-legend-blue text-white border-t mt-8 py-4 text-center text-xs">
+    &copy; 2025 Boys State App Admin Portal. Not affiliated with or endorsed by the American Legion.
+  </footer>
+
+  <!-- Reset Confirmation Modal -->
+  <div id="resetModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
+      <h3 class="text-xl font-bold text-legend-blue mb-4">Reset to Default Template?</h3>
+      <p class="text-gray-700 mb-6">This will discard your customizations and restore the default template. This action cannot be undone.</p>
+      <div class="flex gap-3 justify-end">
+        <button id="cancelResetBtn" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold rounded-lg transition">Cancel</button>
+        <button id="confirmResetBtn" class="px-4 py-2 bg-legend-blue hover:bg-legend-gold hover:text-legend-blue text-white font-semibold rounded-lg transition">Reset</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/authHelper.js"></script>
+  <script src="js/email-templates.js"></script>
+
+</body>
+</html>

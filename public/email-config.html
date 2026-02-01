@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Email Server Configuration</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <link rel="stylesheet" href="tailwind.css" />
+  <link rel="stylesheet" href="logo.css" />
+</head>
+<body class="bg-gray-50 font-sans min-h-screen">
+
+  <!-- NAVBAR -->
+  <nav class="bg-legend-blue text-white px-6 py-4 flex items-center justify-between shadow">
+    <div class="flex items-center gap-3">
+      <img src="images/Boys-State-Shield-White-on-Blue.png" alt="Logo" class="w-8 h-8 p-1 rounded-full" />
+      <span class="text-xl font-semibold">Boys State App <span class="text-sm font-normal text-legend-gold ml-2">Admin Portal</span></span>
+    </div>
+    <button id="logoutBtn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-2xl shadow transition">Logout</button>
+  </nav>
+
+  <!-- MAIN CONTENT -->
+  <main class="flex flex-col items-stretch p-6 lg:p-10 bg-gray-50 min-h-screen">
+    <a href="programs-config.html" class="inline-flex items-center text-legend-blue font-semibold mb-4 hover:underline group self-start">
+      <span class="mr-2 text-lg">&larr;</span>
+      Back to Program Configuration
+    </a>
+
+    <!-- Program Label -->
+    <div id="program-selector" class="mb-6 max-w-lg">
+      <div id="programNameLabel" class="mt-2 text-legend-blue text-xl font-bold"></div>
+      <div id="errorMsg" class="hidden text-red-600 font-semibold my-2"></div>
+    </div>
+
+    <!-- Card for Email Configuration -->
+    <div class="bg-white rounded-2xl shadow-lg p-8 sm:p-12 max-w-3xl w-full mx-auto border-t-4 border-legend-gold flex flex-col">
+      <h1 class="text-2xl font-bold text-legend-blue mb-2">Email Server Configuration</h1>
+      <p class="text-gray-600 mb-6">Configure SMTP settings to send emails to delegates, staff, and parents from your program.</p>
+
+      <!-- Status Message -->
+      <div id="statusMsg" class="hidden rounded-lg px-4 py-3 mb-6"></div>
+
+      <!-- Enable/Disable Toggle -->
+      <div class="flex items-center gap-3 mb-6 p-4 bg-gray-50 rounded-lg">
+        <label class="relative inline-flex items-center cursor-pointer">
+          <input type="checkbox" id="emailEnabled" class="sr-only peer">
+          <div class="w-11 h-6 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-legend-gold/50 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
+        </label>
+        <span class="font-semibold text-gray-700">Email Sending Enabled</span>
+        <span id="enabledStatus" class="ml-2 text-sm text-gray-500">(Disabled)</span>
+      </div>
+
+      <!-- SMTP Settings -->
+      <div class="section-title font-bold mb-4 text-legend-blue">SMTP Server Settings</div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <div>
+          <label for="smtpHost" class="font-semibold">SMTP Host <span class="text-red-500">*</span></label>
+          <input type="text" id="smtpHost" placeholder="smtp.gmail.com"
+            class="appearance-none w-full px-4 py-2 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-legend-gold focus:border-legend-gold bg-gray-50 text-gray-900 placeholder-gray-400 transition mt-1" />
+        </div>
+        <div>
+          <label for="smtpPort" class="font-semibold">SMTP Port</label>
+          <select id="smtpPort" class="appearance-none w-full px-4 py-2 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-legend-gold focus:border-legend-gold bg-gray-50 text-gray-900 transition mt-1">
+            <option value="587">587 (TLS - Recommended)</option>
+            <option value="465">465 (SSL)</option>
+            <option value="25">25 (Unencrypted)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <div>
+          <label for="smtpUser" class="font-semibold">SMTP Username <span class="text-red-500">*</span></label>
+          <input type="text" id="smtpUser" placeholder="your-email@gmail.com"
+            class="appearance-none w-full px-4 py-2 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-legend-gold focus:border-legend-gold bg-gray-50 text-gray-900 placeholder-gray-400 transition mt-1" />
+        </div>
+        <div>
+          <label for="smtpPass" class="font-semibold">SMTP Password <span class="text-red-500">*</span></label>
+          <div class="relative">
+            <input type="password" id="smtpPass" placeholder="Enter password or app-specific password"
+              class="appearance-none w-full px-4 py-2 pr-10 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-legend-gold focus:border-legend-gold bg-gray-50 text-gray-900 placeholder-gray-400 transition mt-1" />
+            <button type="button" id="togglePassword" class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 mt-0.5">
+              <svg id="eyeIcon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+              </svg>
+            </button>
+          </div>
+          <p id="passwordHint" class="text-xs text-gray-500 mt-1 hidden">Leave blank to keep existing password</p>
+        </div>
+      </div>
+
+      <!-- Sender Settings -->
+      <div class="section-title font-bold mb-4 mt-4 text-legend-blue">Sender Information</div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <div>
+          <label for="fromEmail" class="font-semibold">From Email Address <span class="text-red-500">*</span></label>
+          <input type="email" id="fromEmail" placeholder="noreply@yourprogram.org"
+            class="appearance-none w-full px-4 py-2 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-legend-gold focus:border-legend-gold bg-gray-50 text-gray-900 placeholder-gray-400 transition mt-1" />
+        </div>
+        <div>
+          <label for="fromName" class="font-semibold">From Name</label>
+          <input type="text" id="fromName" placeholder="Texas Boys State"
+            class="appearance-none w-full px-4 py-2 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-legend-gold focus:border-legend-gold bg-gray-50 text-gray-900 placeholder-gray-400 transition mt-1" />
+        </div>
+      </div>
+
+      <!-- Help Text -->
+      <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+        <h4 class="font-semibold text-blue-800 mb-2">Common SMTP Providers</h4>
+        <ul class="text-sm text-blue-700 space-y-1">
+          <li><strong>Gmail:</strong> smtp.gmail.com, Port 587 (requires App Password with 2FA)</li>
+          <li><strong>Outlook/Office 365:</strong> smtp.office365.com, Port 587</li>
+          <li><strong>SendGrid:</strong> smtp.sendgrid.net, Port 587</li>
+          <li><strong>Amazon SES:</strong> email-smtp.[region].amazonaws.com, Port 587</li>
+        </ul>
+      </div>
+
+      <!-- Test Email Section -->
+      <div class="section-title font-bold mb-4 text-legend-blue">Test Configuration</div>
+      <div class="bg-gray-50 rounded-lg p-4 mb-6">
+        <p class="text-gray-600 mb-3">Send a test email using the settings above to verify they work correctly <strong>before saving</strong>.</p>
+        <div class="flex flex-col sm:flex-row gap-3">
+          <input type="email" id="testEmail" placeholder="Enter email address for test"
+            class="flex-1 px-4 py-2 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-legend-gold focus:border-legend-gold bg-white text-gray-900 placeholder-gray-400 transition" />
+          <button id="sendTestBtn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-xl shadow transition flex items-center justify-center gap-2">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+            </svg>
+            Send Test Email
+          </button>
+        </div>
+        <div id="testResult" class="hidden mt-3 rounded-lg px-4 py-2 text-sm"></div>
+      </div>
+
+      <!-- Actions -->
+      <div class="flex gap-4 mt-4">
+        <button id="saveBtn" class="bg-legend-blue text-white font-bold py-2 px-6 rounded-xl shadow transition hover:bg-legend-gold hover:text-legend-blue">Save Configuration</button>
+        <button id="cancelBtn" class="bg-gray-200 text-gray-800 font-bold py-2 px-6 rounded-xl shadow transition hover:bg-gray-300">Cancel</button>
+        <button id="deleteBtn" class="hidden bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-xl shadow transition ml-auto">Delete Configuration</button>
+      </div>
+    </div>
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="bg-legend-blue text-white border-t mt-8 py-4 text-center text-xs">
+    &copy; 2025 Boys State App Admin Portal. Not affiliated with or endorsed by the American Legion.
+  </footer>
+
+  <!-- Delete Confirmation Modal -->
+  <div id="deleteModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
+      <h3 class="text-xl font-bold text-red-600 mb-4">Delete Email Configuration?</h3>
+      <p class="text-gray-700 mb-6">This will remove all email settings for this program. Emails will no longer be sent until reconfigured.</p>
+      <div class="flex gap-3 justify-end">
+        <button id="cancelDeleteBtn" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold rounded-lg transition">Cancel</button>
+        <button id="confirmDeleteBtn" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg transition">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/authHelper.js"></script>
+  <script src="js/email-config.js"></script>
+
+</body>
+</html>

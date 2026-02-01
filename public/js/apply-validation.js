@@ -94,9 +94,6 @@ function validateField(q, form) {
         const zip = form[`${name}_zip`]?.value?.trim();
         if (q.required && (!line1 || !city || !state || !zip)) {
           err = "Please complete the address.";
-        } else {
-          const existing = document.getElementById(`err_${name}`)?.textContent;
-          if (existing) err = existing;
         }
         break;
     }

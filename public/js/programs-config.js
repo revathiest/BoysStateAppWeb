@@ -87,6 +87,16 @@ function updateConfigLinks(programId) {
     positionsLink.href = `programs-positions.html?programId=${encodeURIComponent(programId)}`;
   }
 
+  const emailConfigLink = document.getElementById("emailConfigLink");
+  if (emailConfigLink) {
+    emailConfigLink.href = `email-config.html?programId=${encodeURIComponent(programId)}`;
+  }
+
+  const emailTemplatesLink = document.getElementById("emailTemplatesLink");
+  if (emailTemplatesLink) {
+    emailTemplatesLink.href = `email-templates.html?programId=${encodeURIComponent(programId)}`;
+  }
+
   // Store for other navigation
   window.selectedProgramId = programId;
   // Load years for this program
