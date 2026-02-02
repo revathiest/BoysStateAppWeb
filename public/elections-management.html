@@ -33,8 +33,11 @@
       <p class="text-sm text-gray-700 mb-3">
         <strong>Workflow:</strong> Select a level to open nominations for elections. Staff members can then nominate candidates. Once nominations close and requirements are verified, you can start the election.
       </p>
-      <p class="text-sm text-gray-700">
+      <p class="text-sm text-gray-700 mb-3">
         <strong>Election Types:</strong> Partisan positions have a Primary election followed by a General election. Non-partisan positions go directly to General election.
+      </p>
+      <p class="text-sm text-gray-700">
+        <strong>Testing:</strong> <a id="vote-simulation-link" href="vote-simulation.html" class="text-legend-blue font-semibold hover:underline">Open Vote Simulation Tool</a> to simulate voting for active elections (admin only).
       </p>
     </div>
 
@@ -62,14 +65,47 @@
             <option value="">Select a level...</option>
           </select>
         </div>
-        <button id="open-nominations-btn" class="bg-legend-blue hover:bg-blue-800 text-white font-semibold py-2 px-4 rounded-lg shadow transition disabled:opacity-50 disabled:cursor-not-allowed">
-          Open Nominations for Level
+        <button id="open-primary-btn" disabled class="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-lg shadow transition disabled:opacity-50 disabled:cursor-not-allowed">
+          Open Primary Nominations
+        </button>
+        <button id="open-general-btn" disabled class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg shadow transition disabled:opacity-50 disabled:cursor-not-allowed">
+          Open General Nominations
         </button>
       </div>
 
       <div id="positions-preview" class="mt-4 hidden">
         <h3 class="text-sm font-semibold text-gray-700 mb-2">Positions at this level:</h3>
         <div id="positions-list" class="flex flex-wrap gap-2"></div>
+      </div>
+    </div>
+
+    <!-- KPI Dashboard -->
+    <div id="kpi-dashboard" class="hidden mb-8">
+      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        <div class="bg-white rounded-xl shadow p-4 border-l-4 border-legend-blue">
+          <p class="text-xs text-gray-500 uppercase tracking-wide">Total Elections</p>
+          <p id="kpi-total" class="text-2xl font-bold text-legend-blue">0</p>
+        </div>
+        <div class="bg-white rounded-xl shadow p-4 border-l-4 border-green-500">
+          <p class="text-xs text-gray-500 uppercase tracking-wide">Nominations Open</p>
+          <p id="kpi-nominations" class="text-2xl font-bold text-green-600">0</p>
+        </div>
+        <div class="bg-white rounded-xl shadow p-4 border-l-4 border-amber-500">
+          <p class="text-xs text-gray-500 uppercase tracking-wide">Scheduled</p>
+          <p id="kpi-scheduled" class="text-2xl font-bold text-amber-600">0</p>
+        </div>
+        <div class="bg-white rounded-xl shadow p-4 border-l-4 border-blue-500">
+          <p class="text-xs text-gray-500 uppercase tracking-wide">Voting Active</p>
+          <p id="kpi-active" class="text-2xl font-bold text-blue-600">0</p>
+        </div>
+        <div class="bg-white rounded-xl shadow p-4 border-l-4 border-green-600">
+          <p class="text-xs text-gray-500 uppercase tracking-wide">100% Return</p>
+          <p id="kpi-completed" class="text-2xl font-bold text-green-700">0</p>
+        </div>
+        <div class="bg-white rounded-xl shadow p-4 border-l-4 border-purple-500">
+          <p class="text-xs text-gray-500 uppercase tracking-wide">Total Votes</p>
+          <p id="kpi-votes" class="text-2xl font-bold text-purple-600">0</p>
+        </div>
       </div>
     </div>
 
@@ -90,11 +126,40 @@
             <option value="scheduled">Scheduled</option>
             <option value="active">Voting Active</option>
             <option value="completed">Completed</option>
+            <option value="skipped">Appointed</option>
           </select>
           <button id="close-all-nominations-btn" class="bg-amber-500 hover:bg-amber-600 text-white font-semibold py-2 px-4 rounded-lg shadow transition text-sm hidden">
             Close All Nominations
           </button>
+          <button id="start-all-elections-btn" class="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg shadow transition text-sm hidden">
+            Start All Elections
+          </button>
+          <button id="close-all-elections-btn" class="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg shadow transition text-sm hidden">
+            Close All Active Elections
+          </button>
         </div>
+      </div>
+
+      <!-- Status Summary Bar -->
+      <div id="status-summary" class="flex flex-wrap gap-2 mb-4 hidden">
+        <button data-status="" class="status-chip px-3 py-1.5 rounded-full text-sm font-medium transition border-2 border-legend-blue bg-legend-blue text-white">
+          All <span class="status-count ml-1 opacity-75"></span>
+        </button>
+        <button data-status="nomination" class="status-chip px-3 py-1.5 rounded-full text-sm font-medium transition border-2 border-amber-500 bg-white text-amber-700 hover:bg-amber-50">
+          📋 Nominations <span class="status-count ml-1 font-bold">0</span>
+        </button>
+        <button data-status="scheduled" class="status-chip px-3 py-1.5 rounded-full text-sm font-medium transition border-2 border-blue-500 bg-white text-blue-700 hover:bg-blue-50">
+          📅 Scheduled <span class="status-count ml-1 font-bold">0</span>
+        </button>
+        <button data-status="active" class="status-chip px-3 py-1.5 rounded-full text-sm font-medium transition border-2 border-green-500 bg-white text-green-700 hover:bg-green-50">
+          🗳️ Voting <span class="status-count ml-1 font-bold">0</span>
+        </button>
+        <button data-status="completed" class="status-chip px-3 py-1.5 rounded-full text-sm font-medium transition border-2 border-gray-400 bg-white text-gray-600 hover:bg-gray-50">
+          ✅ Completed <span class="status-count ml-1 font-bold">0</span>
+        </button>
+        <button data-status="skipped" class="status-chip px-3 py-1.5 rounded-full text-sm font-medium transition border-2 border-purple-500 bg-white text-purple-700 hover:bg-purple-50">
+          👤 Appointed <span class="status-count ml-1 font-bold">0</span>
+        </button>
       </div>
 
       <div id="elections-list" class="space-y-4">
@@ -117,6 +182,22 @@
         <!-- Election info will be populated here -->
       </div>
 
+      <!-- Error message area for election modal -->
+      <div id="election-modal-error" class="hidden bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4"></div>
+
+      <!-- Voting Results Section (shown for active/completed elections) -->
+      <div id="election-results-section" class="hidden mb-6 border-t border-gray-200 pt-4">
+        <div class="flex items-center justify-between mb-3">
+          <h4 class="text-lg font-semibold text-legend-blue">Voting Results</h4>
+          <button id="refresh-results-btn" class="text-sm text-legend-blue hover:text-blue-800 underline">
+            Refresh
+          </button>
+        </div>
+        <div id="election-results-content">
+          <!-- Results will be populated here -->
+        </div>
+      </div>
+
       <div class="border-t border-gray-200 pt-4">
         <div class="flex items-center justify-between mb-4">
           <h4 class="text-lg font-semibold text-legend-blue">Candidates</h4>
@@ -131,17 +212,20 @@
       </div>
 
       <div class="flex gap-3 justify-between mt-6 pt-4 border-t">
-        <div>
+        <div class="flex gap-2">
           <button id="archive-election-btn" class="px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 font-semibold rounded-lg transition text-sm">
             Archive Election
           </button>
+          <button id="skip-to-appointed-btn" class="hidden px-4 py-2 bg-purple-100 hover:bg-purple-200 text-purple-700 font-semibold rounded-lg transition text-sm">
+            Skip &rarr; Appointed
+          </button>
         </div>
         <div class="flex gap-3">
+          <button id="reopen-nominations-btn" class="hidden px-4 py-2 bg-green-100 hover:bg-green-200 text-green-700 font-semibold rounded-lg transition">
+            Reopen Nominations
+          </button>
           <button id="close-nominations-btn" class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white font-semibold rounded-lg shadow transition hidden">
             Close Nominations
-          </button>
-          <button id="start-election-btn" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg shadow transition hidden">
-            Start Election
           </button>
           <button id="election-modal-done" class="px-4 py-2 bg-legend-blue hover:bg-blue-800 text-white font-semibold rounded-lg shadow transition">
             Done
@@ -153,9 +237,14 @@
 
   <!-- Add Candidate Modal -->
   <div id="add-candidate-modal" class="hidden fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-    <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full mx-4 p-6 relative max-h-[90vh] overflow-y-auto">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full mx-4 p-6 relative max-h-[90vh] overflow-y-auto">
       <button id="add-candidate-modal-close" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-2xl font-bold">&times;</button>
       <h3 class="text-xl font-bold text-legend-blue mb-4">Add Candidate</h3>
+
+      <!-- Primary election info -->
+      <div id="primary-info-section" class="mb-4 hidden">
+        <p class="text-sm text-gray-600">For primary elections, delegates can only run in their own party's primary. Click on a party header to close/reopen nominations for that party.</p>
+      </div>
 
       <div class="mb-4">
         <label for="candidate-search" class="block text-sm font-medium text-gray-700 mb-1">Search Delegates</label>
@@ -167,13 +256,26 @@
         />
       </div>
 
-      <div id="eligible-delegates-list" class="max-h-64 overflow-y-auto border border-gray-200 rounded-lg">
+      <!-- Select All row -->
+      <div id="select-all-row" class="hidden flex items-center justify-between p-3 bg-gray-100 border border-gray-200 rounded-t-lg">
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" id="select-all-checkbox" class="w-4 h-4 text-legend-blue focus:ring-2 focus:ring-legend-blue rounded">
+          <span class="text-sm font-medium text-gray-700">Select All</span>
+        </label>
+        <span id="selection-count" class="text-sm text-gray-500">0 selected</span>
+      </div>
+
+      <div id="eligible-delegates-list" class="max-h-96 overflow-y-auto border border-gray-200 rounded-lg">
         <p class="text-gray-500 italic p-4">Loading eligible delegates...</p>
       </div>
 
-      <div class="flex gap-3 justify-end mt-4">
+      <div class="flex gap-3 justify-between mt-4">
+        <button id="nominate-selected-btn" class="hidden px-4 py-2 bg-legend-blue hover:bg-blue-800 text-white font-semibold rounded-lg shadow transition disabled:opacity-50 disabled:cursor-not-allowed">
+          Nominate Selected (0)
+        </button>
+        <div class="flex-1"></div>
         <button id="cancel-add-candidate-btn" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold rounded-lg transition">
-          Cancel
+          Close
         </button>
       </div>
     </div>
@@ -222,13 +324,22 @@
           </div>
         </div>
 
+        <!-- Computed Status Badge -->
         <div>
-          <label for="candidate-status-select" class="block text-sm font-medium text-gray-700 mb-1">Candidate Status</label>
-          <select id="candidate-status-select" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-legend-blue">
-            <option value="nominated">Nominated</option>
-            <option value="qualified">Qualified</option>
-            <option value="withdrawn">Withdrawn</option>
-          </select>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Candidate Status</label>
+          <div class="flex items-center gap-3">
+            <span id="candidate-status-badge" class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium"></span>
+            <span id="status-hint" class="text-xs text-gray-500"></span>
+          </div>
+        </div>
+
+        <!-- Withdrawn Checkbox -->
+        <div class="mt-3">
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" id="withdrawn-checkbox" class="w-4 h-4 text-red-600 focus:ring-2 focus:ring-red-500 rounded">
+            <span class="text-sm text-gray-700 font-medium">Mark as Withdrawn</span>
+          </label>
+          <p class="text-xs text-gray-500 mt-1 ml-6">Withdrawn candidates are removed from the ballot.</p>
         </div>
       </div>
 
@@ -243,13 +354,43 @@
     </div>
   </div>
 
+  <!-- Incomplete Requirements Modal -->
+  <div id="incomplete-requirements-modal" class="hidden fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full mx-4 p-6 relative max-h-[90vh] overflow-hidden flex flex-col">
+      <button id="incomplete-requirements-modal-close" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-2xl font-bold">&times;</button>
+      <div class="flex items-center gap-3 mb-4">
+        <span class="text-amber-500 text-2xl">⚠️</span>
+        <h3 class="text-xl font-bold text-legend-blue">Cannot Start Elections</h3>
+      </div>
+      <p class="text-gray-700 mb-4">
+        The following candidates have not completed required candidacy forms or petitions.
+        All requirements must be met before elections can start.
+      </p>
+      <div id="incomplete-requirements-list" class="flex-1 overflow-y-auto max-h-96">
+        <!-- List will be populated dynamically -->
+      </div>
+      <div class="flex justify-end mt-4 pt-4 border-t">
+        <button id="incomplete-requirements-done-btn" class="px-4 py-2 bg-legend-blue hover:bg-blue-800 text-white font-semibold rounded-lg shadow transition">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- Confirmation Modal -->
   <!-- Hidden element to ensure Tailwind compiles dynamic button colors -->
   <div class="hidden bg-amber-500 hover:bg-amber-600 bg-green-600 hover:bg-green-700 bg-legend-blue hover:bg-blue-800"></div>
   <div id="confirmation-modal" class="hidden fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
     <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 relative">
       <h3 id="confirmation-title" class="text-xl font-bold text-legend-blue mb-4"></h3>
-      <p id="confirmation-message" class="text-gray-700 mb-6"></p>
+      <p id="confirmation-message" class="text-gray-700 mb-4"></p>
+      <div id="confirmation-checkbox-container" class="hidden mb-4">
+        <label class="flex items-center gap-2 text-gray-700 cursor-pointer">
+          <input type="checkbox" id="confirmation-checkbox" class="w-4 h-4 text-legend-blue border-gray-300 rounded focus:ring-legend-blue">
+          <span id="confirmation-checkbox-label"></span>
+        </label>
+      </div>
+      <div id="confirmation-error" class="hidden bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4"></div>
       <div class="flex gap-3 justify-end">
         <button id="confirmation-cancel-btn" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold rounded-lg transition">Cancel</button>
         <button id="confirmation-confirm-btn" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg shadow transition"></button>
