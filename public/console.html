@@ -21,7 +21,7 @@
     <h1 class="text-3xl font-extrabold text-legend-blue mb-8">Admin Dashboard</h1>
     <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
       <!-- User Management Card -->
-      <div class="bg-white rounded-2xl shadow-lg p-6 border-t-4 border-legend-gold hover:shadow-xl transition">
+      <div data-permission="console.user_management" class="bg-white rounded-2xl shadow-lg p-6 border-t-4 border-legend-gold hover:shadow-xl transition">
         <div class="flex items-start justify-between mb-2">
           <h2 class="text-lg font-semibold text-legend-blue">User Management</h2>
           <span class="bg-green-100 text-green-800 text-xs font-semibold px-2 py-1 rounded">Active</span>
@@ -31,7 +31,7 @@
       </div>
 
       <!-- Register New Program Card -->
-      <div class="bg-white rounded-2xl shadow-lg p-6 border-t-4 border-legend-gold hover:shadow-xl transition">
+      <div data-permission="console.program_create" class="bg-white rounded-2xl shadow-lg p-6 border-t-4 border-legend-gold hover:shadow-xl transition">
         <div class="flex items-start justify-between mb-2">
           <h2 class="text-lg font-semibold text-legend-blue">Register New Program</h2>
           <span class="bg-green-100 text-green-800 text-xs font-semibold px-2 py-1 rounded">Active</span>
@@ -41,7 +41,7 @@
       </div>
 
       <!-- Program Configuration Card -->
-      <div class="bg-white rounded-2xl shadow-lg p-6 border-t-4 border-legend-gold hover:shadow-xl transition">
+      <div data-permission="console.program_config" class="bg-white rounded-2xl shadow-lg p-6 border-t-4 border-legend-gold hover:shadow-xl transition">
         <div class="flex items-start justify-between mb-2">
           <h2 class="text-lg font-semibold text-legend-blue">Program Configuration</h2>
           <span class="bg-green-100 text-green-800 text-xs font-semibold px-2 py-1 rounded">Active</span>
@@ -51,7 +51,7 @@
       </div>
 
       <!-- Content Management Card -->
-      <div class="bg-white rounded-2xl shadow-lg p-6 border-t-4 border-gray-300 opacity-60">
+      <div data-permission="console.content_management" class="bg-white rounded-2xl shadow-lg p-6 border-t-4 border-gray-300 opacity-60">
         <div class="flex items-start justify-between mb-2">
           <h2 class="text-lg font-semibold text-gray-600">Content Management</h2>
           <span class="bg-gray-200 text-gray-600 text-xs font-semibold px-2 py-1 rounded">Planned</span>
@@ -61,7 +61,7 @@
       </div>
 
       <!-- Elections Card -->
-      <div class="bg-white rounded-2xl shadow-lg p-6 border-t-4 border-legend-gold hover:shadow-xl transition">
+      <div data-permission="console.elections" class="bg-white rounded-2xl shadow-lg p-6 border-t-4 border-legend-gold hover:shadow-xl transition">
         <div class="flex items-start justify-between mb-2">
           <h2 class="text-lg font-semibold text-legend-blue">Elections</h2>
           <span class="bg-green-100 text-green-800 text-xs font-semibold px-2 py-1 rounded">Active</span>
@@ -71,7 +71,7 @@
       </div>
 
       <!-- Audit Logs Card -->
-      <div class="bg-white rounded-2xl shadow-lg p-6 border-t-4 border-legend-gold hover:shadow-xl transition">
+      <div data-permission="console.audit_logs" class="bg-white rounded-2xl shadow-lg p-6 border-t-4 border-legend-gold hover:shadow-xl transition">
         <div class="flex items-start justify-between mb-2">
           <h2 class="text-lg font-semibold text-legend-blue">Audit Logs</h2>
           <span class="bg-green-100 text-green-800 text-xs font-semibold px-2 py-1 rounded">Active</span>
@@ -88,6 +88,7 @@
   <script src="js/config.js"></script>
   <script src="js/clientLogger.js"></script>
   <script src="js/authHelper.js"></script>
+  <script src="js/permissions.js"></script>
   <script src="js/console.js"></script>
 </body>
 </html>

@@ -29,7 +29,7 @@
     <h1 class="text-3xl font-extrabold text-legend-blue mb-8 self-start">Program Configuration</h1>
 
     <!-- Program Years Section -->
-    <div class="bg-white rounded-2xl shadow-lg p-6 mb-8 border-l-4 border-legend-blue">
+    <div data-permission="program_config.years" class="bg-white rounded-2xl shadow-lg p-6 mb-8 border-l-4 border-legend-blue">
       <div class="flex items-center justify-between mb-4">
         <div>
           <h2 class="text-xl font-bold text-legend-blue">Program Years</h2>
@@ -81,10 +81,32 @@
       </div>
     </div>
 
+    <!-- Election Settings Section -->
+    <div data-permission="program_config.election_settings" class="bg-white rounded-2xl shadow-lg p-6 mb-8 border-l-4 border-legend-blue">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h2 class="text-xl font-bold text-legend-blue">Election Settings</h2>
+          <p class="text-sm text-gray-600 mt-1">Configure default settings for elections in this program.</p>
+        </div>
+      </div>
+
+      <div class="max-w-md">
+        <label for="voting-method-select" class="block text-sm font-medium text-gray-700 mb-1">Default Voting Method</label>
+        <select id="voting-method-select" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-legend-blue">
+          <option value="plurality">Plurality (most votes wins)</option>
+          <option value="majority">Majority (requires &gt;50%, may need runoff)</option>
+          <option value="ranked">Ranked Choice (instant runoff)</option>
+        </select>
+        <p class="text-xs text-gray-500 mt-2">This default applies to all new elections. Individual elections inherit this setting when created.</p>
+      </div>
+
+      <div id="voting-method-status" class="mt-3 text-sm hidden"></div>
+    </div>
+
     <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
 
       <!-- Branding & Contact -->
-      <div class="bg-white rounded-2xl shadow-lg p-6 border-t-4 border-legend-gold hover:shadow-xl transition flex flex-col">
+      <div data-permission="program_config.branding" class="bg-white rounded-2xl shadow-lg p-6 border-t-4 border-legend-gold hover:shadow-xl transition flex flex-col">
         <div class="flex items-start justify-between mb-2">
           <h2 class="text-lg font-semibold text-legend-blue">Branding & Contact</h2>
           <span class="bg-green-100 text-green-800 text-xs font-semibold px-2 py-1 rounded">Active</span>
@@ -94,7 +116,7 @@
       </div>
 
       <!-- Application Configuration -->
-      <div class="bg-white rounded-2xl shadow-lg p-6 border-t-4 border-legend-gold hover:shadow-xl transition flex flex-col">
+      <div data-permission="program_config.application" class="bg-white rounded-2xl shadow-lg p-6 border-t-4 border-legend-gold hover:shadow-xl transition flex flex-col">
         <div class="flex items-start justify-between mb-2">
           <h2 class="text-lg font-semibold text-legend-blue">Application Configuration</h2>
           <span class="bg-green-100 text-green-800 text-xs font-semibold px-2 py-1 rounded">Active</span>
@@ -104,7 +126,7 @@
       </div>
 
       <!-- Groupings -->
-      <div class="bg-white rounded-2xl shadow-lg p-6 border-t-4 border-legend-gold hover:shadow-xl transition flex flex-col">
+      <div data-permission="program_config.groupings" class="bg-white rounded-2xl shadow-lg p-6 border-t-4 border-legend-gold hover:shadow-xl transition flex flex-col">
         <div class="flex items-start justify-between mb-2">
           <h2 class="text-lg font-semibold text-legend-blue">Groupings</h2>
           <span class="bg-green-100 text-green-800 text-xs font-semibold px-2 py-1 rounded">Active</span>
@@ -114,7 +136,7 @@
       </div>
 
       <!-- Parties -->
-      <div class="bg-white rounded-2xl shadow-lg p-6 border-t-4 border-legend-gold hover:shadow-xl transition flex flex-col">
+      <div data-permission="program_config.parties" class="bg-white rounded-2xl shadow-lg p-6 border-t-4 border-legend-gold hover:shadow-xl transition flex flex-col">
         <div class="flex items-start justify-between mb-2">
           <h2 class="text-lg font-semibold text-legend-blue">Parties</h2>
           <span class="bg-green-100 text-green-800 text-xs font-semibold px-2 py-1 rounded">Active</span>
@@ -124,7 +146,7 @@
       </div>
 
       <!-- Positions -->
-      <div class="bg-white rounded-2xl shadow-lg p-6 border-t-4 border-legend-gold flex flex-col">
+      <div data-permission="program_config.positions" class="bg-white rounded-2xl shadow-lg p-6 border-t-4 border-legend-gold flex flex-col">
         <div class="flex items-start justify-between mb-2">
           <h2 class="text-lg font-semibold text-legend-blue">Positions</h2>
           <span class="bg-green-100 text-green-800 text-xs font-semibold px-2 py-1 rounded">Active</span>
@@ -134,7 +156,7 @@
       </div>
 
       <!-- Email Configuration -->
-      <div class="bg-white rounded-2xl shadow-lg p-6 border-t-4 border-legend-gold hover:shadow-xl transition flex flex-col">
+      <div data-permission="program_config.email_server" class="bg-white rounded-2xl shadow-lg p-6 border-t-4 border-legend-gold hover:shadow-xl transition flex flex-col">
         <div class="flex items-start justify-between mb-2">
           <h2 class="text-lg font-semibold text-legend-blue">Email Server</h2>
           <span class="bg-green-100 text-green-800 text-xs font-semibold px-2 py-1 rounded">Active</span>
@@ -144,13 +166,23 @@
       </div>
 
       <!-- Email Templates -->
-      <div class="bg-white rounded-2xl shadow-lg p-6 border-t-4 border-legend-gold hover:shadow-xl transition flex flex-col">
+      <div data-permission="program_config.email_templates" class="bg-white rounded-2xl shadow-lg p-6 border-t-4 border-legend-gold hover:shadow-xl transition flex flex-col">
         <div class="flex items-start justify-between mb-2">
           <h2 class="text-lg font-semibold text-legend-blue">Email Templates</h2>
           <span class="bg-green-100 text-green-800 text-xs font-semibold px-2 py-1 rounded">Active</span>
         </div>
         <p class="text-gray-700 mb-4 flex-1">Customize welcome emails for delegates and staff.</p>
         <a id="emailTemplatesLink" href="email-templates.html" class="text-legend-blue font-semibold hover:text-legend-gold transition mt-auto">Configure Templates &rarr;</a>
+      </div>
+
+      <!-- Roles & Permissions -->
+      <div data-permission="program_config.roles" class="bg-white rounded-2xl shadow-lg p-6 border-t-4 border-legend-gold hover:shadow-xl transition flex flex-col">
+        <div class="flex items-start justify-between mb-2">
+          <h2 class="text-lg font-semibold text-legend-blue">Roles & Permissions</h2>
+          <span class="bg-green-100 text-green-800 text-xs font-semibold px-2 py-1 rounded">Active</span>
+        </div>
+        <p class="text-gray-700 mb-4 flex-1">Define staff roles and manage feature permissions.</p>
+        <a id="rolesLink" href="programs-roles.html" class="text-legend-blue font-semibold hover:text-legend-gold transition mt-auto">Manage Roles &rarr;</a>
       </div>
     </div>
   </main>
@@ -162,6 +194,7 @@
 
   <script src="js/config.js"></script>
   <script src="js/authHelper.js"></script>
+  <script src="js/permissions.js"></script>
   <script src="js/programs-config.js"></script>
 </body>
 </html>

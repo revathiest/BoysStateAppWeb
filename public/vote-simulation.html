@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Vote Simulation – Boys State App</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="tailwind.css">
+  <link rel="stylesheet" href="logo.css">
+</head>
+<body class="bg-gray-50 font-sans min-h-screen">
+
+  <!-- NAVBAR -->
+  <nav class="bg-legend-blue text-white px-6 py-4 flex items-center justify-between shadow">
+    <div class="flex items-center gap-3">
+      <img src="images/Boys-State-Shield-White-on-Blue.png" alt="Logo" class="w-8 h-8 p-1 rounded-full" />
+      <span class="text-xl font-semibold">Boys State App <span class="text-sm font-normal text-legend-gold ml-2">Admin Portal</span></span>
+    </div>
+    <button id="logoutBtn" type="button" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-2xl shadow transition" aria-label="Logout">Logout</button>
+  </nav>
+
+  <main class="flex-1 p-6 lg:p-10 bg-gray-50 min-h-screen">
+    <a href="elections-management.html" class="inline-flex items-center text-legend-blue font-semibold mb-4 hover:underline group">
+      <span class="mr-2 text-lg">&larr;</span>
+      Back to Elections Management
+    </a>
+
+    <div class="flex items-center justify-between mb-6">
+      <div>
+        <h1 class="text-3xl font-extrabold text-legend-blue mb-2">Vote Simulation</h1>
+        <p class="text-gray-700">Simulate voting for testing and demonstration purposes. Admin only.</p>
+      </div>
+      <div class="bg-amber-100 border border-amber-400 text-amber-800 px-4 py-2 rounded-lg text-sm">
+        <strong>Admin Tool</strong> - For testing only
+      </div>
+    </div>
+
+    <!-- Error/Success Messages -->
+    <div id="errorBox" class="hidden bg-red-100 text-red-700 px-4 py-3 rounded-xl mb-4 shadow"></div>
+    <div id="successBox" class="hidden bg-green-100 text-green-700 px-4 py-3 rounded-xl mb-4 shadow"></div>
+
+    <!-- Step 1: Select Election -->
+    <div class="bg-white rounded-2xl shadow-lg p-6 mb-6 border-t-4 border-legend-gold">
+      <h2 class="text-xl font-bold text-legend-blue mb-4">Step 1: Select an Active Election</h2>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <div>
+          <label for="year-select" class="block text-sm font-medium text-gray-700 mb-1">Program Year</label>
+          <select id="year-select" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-legend-blue">
+            <option value="">Loading years...</option>
+          </select>
+        </div>
+        <div>
+          <label for="election-select" class="block text-sm font-medium text-gray-700 mb-1">Election</label>
+          <select id="election-select" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-legend-blue">
+            <option value="">Select year first...</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="election-details" class="hidden bg-gray-50 rounded-lg p-4">
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
+          <div>
+            <span class="text-gray-600">Position:</span>
+            <span id="detail-position" class="font-semibold ml-1">-</span>
+          </div>
+          <div>
+            <span class="text-gray-600">Grouping:</span>
+            <span id="detail-grouping" class="font-semibold ml-1">-</span>
+          </div>
+          <div>
+            <span class="text-gray-600">Type:</span>
+            <span id="detail-type" class="font-semibold ml-1">-</span>
+          </div>
+          <div>
+            <span class="text-gray-600">Status:</span>
+            <span id="detail-status" class="font-semibold ml-1">-</span>
+          </div>
+          <div>
+            <span class="text-gray-600">Method:</span>
+            <span id="detail-method" class="font-semibold ml-1">-</span>
+          </div>
+        </div>
+        <!-- RCV Notice -->
+        <div id="rcv-notice" class="hidden mt-3 bg-purple-50 border border-purple-200 rounded-lg p-3">
+          <div class="flex items-center gap-2 text-purple-800">
+            <span class="text-lg">🗳️</span>
+            <span class="font-semibold">Ranked Choice Voting</span>
+          </div>
+          <p class="text-sm text-purple-700 mt-1">
+            This election uses Instant Runoff Voting. Each simulated voter will submit a ranked ballot (1st choice, 2nd choice, etc.).
+            The first choice is determined by your simulation mode; other rankings are randomized.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 2: Simulation Options -->
+    <div id="simulation-section" class="hidden">
+      <div class="bg-white rounded-2xl shadow-lg p-6 mb-6 border-t-4 border-legend-gold">
+        <h2 class="text-xl font-bold text-legend-blue mb-4">Step 2: Configure Simulation</h2>
+
+        <!-- Stats -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          <div class="bg-blue-50 rounded-lg p-3 text-center">
+            <div id="stat-candidates" class="text-2xl font-bold text-legend-blue">0</div>
+            <div class="text-sm text-gray-600">Candidates</div>
+          </div>
+          <div class="bg-green-50 rounded-lg p-3 text-center">
+            <div id="stat-eligible" class="text-2xl font-bold text-green-600">0</div>
+            <div class="text-sm text-gray-600">Eligible Voters</div>
+          </div>
+          <div class="bg-purple-50 rounded-lg p-3 text-center">
+            <div id="stat-voted" class="text-2xl font-bold text-purple-600">0</div>
+            <div class="text-sm text-gray-600">Already Voted</div>
+          </div>
+          <div class="bg-amber-50 rounded-lg p-3 text-center">
+            <div id="stat-remaining" class="text-2xl font-bold text-amber-600">0</div>
+            <div class="text-sm text-gray-600">Remaining</div>
+          </div>
+        </div>
+
+        <!-- Candidates -->
+        <div class="mb-6">
+          <h3 class="text-lg font-semibold text-gray-800 mb-2">Candidates</h3>
+          <div id="candidates-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            <p class="text-gray-500 italic">Select an election to see candidates</p>
+          </div>
+        </div>
+
+        <!-- Simulation Mode -->
+        <div class="mb-6">
+          <h3 class="text-lg font-semibold text-gray-800 mb-2">Simulation Mode</h3>
+          <div class="flex flex-wrap gap-3">
+            <label class="flex items-center gap-2 cursor-pointer bg-gray-100 hover:bg-gray-200 rounded-lg px-4 py-2 transition">
+              <input type="radio" name="sim-mode" value="random" checked class="text-legend-blue focus:ring-legend-blue">
+              <span>Random Distribution</span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer bg-gray-100 hover:bg-gray-200 rounded-lg px-4 py-2 transition">
+              <input type="radio" name="sim-mode" value="weighted" class="text-legend-blue focus:ring-legend-blue">
+              <span>Weighted (Set percentages)</span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer bg-gray-100 hover:bg-gray-200 rounded-lg px-4 py-2 transition">
+              <input type="radio" name="sim-mode" value="single" class="text-legend-blue focus:ring-legend-blue">
+              <span>All votes to one candidate</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Weighted Distribution -->
+        <div id="weighted-section" class="hidden mb-6 bg-gray-50 rounded-lg p-4">
+          <h4 class="text-md font-semibold text-gray-700 mb-3">Set Vote Distribution (%)</h4>
+          <div id="weight-inputs" class="space-y-2">
+            <!-- Will be populated dynamically -->
+          </div>
+          <p id="weight-total" class="text-sm text-gray-600 mt-2">Total: 0%</p>
+        </div>
+
+        <!-- Single Candidate Selection -->
+        <div id="single-section" class="hidden mb-6 bg-gray-50 rounded-lg p-4">
+          <h4 class="text-md font-semibold text-gray-700 mb-3">Select Winning Candidate</h4>
+          <select id="single-candidate-select" class="w-full md:w-1/2 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-legend-blue">
+            <option value="">Select a candidate...</option>
+          </select>
+        </div>
+
+        <!-- Vote Count -->
+        <div class="mb-6">
+          <label class="block text-lg font-semibold text-gray-800 mb-2">Number of Votes to Simulate</label>
+          <div class="flex items-center gap-3">
+            <input type="number" id="vote-count-input" min="1" max="1000" value="10" class="w-32 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-legend-blue">
+            <button id="set-all-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-2 px-4 rounded-lg transition">
+              Use All Remaining
+            </button>
+          </div>
+          <p class="text-sm text-gray-500 mt-1">Enter how many votes to simulate (up to remaining voters)</p>
+        </div>
+
+        <!-- Run Simulation -->
+        <div class="flex items-center gap-4">
+          <button id="run-simulation-btn" class="bg-legend-blue hover:bg-blue-800 text-white font-bold py-3 px-6 rounded-lg shadow transition">
+            Run Simulation
+          </button>
+          <button id="refresh-stats-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-3 px-4 rounded-lg transition">
+            Refresh Stats
+          </button>
+        </div>
+      </div>
+
+      <!-- Progress & Results -->
+      <div id="progress-section" class="hidden bg-white rounded-2xl shadow-lg p-6 mb-6 border-t-4 border-legend-gold">
+        <h2 class="text-xl font-bold text-legend-blue mb-4">Simulation Progress</h2>
+
+        <div class="mb-4">
+          <div class="flex justify-between text-sm text-gray-600 mb-1">
+            <span>Progress</span>
+            <span id="progress-text">0 / 0 votes</span>
+          </div>
+          <div class="w-full bg-gray-200 rounded-full h-4">
+            <div id="progress-bar" class="bg-legend-blue h-4 rounded-full transition-all duration-200 w-0"></div>
+          </div>
+        </div>
+
+        <div id="progress-log" class="bg-gray-900 text-green-400 font-mono text-sm p-4 rounded-lg max-h-64 overflow-y-auto">
+          <p>Ready to start simulation...</p>
+        </div>
+      </div>
+
+      <!-- Current Results -->
+      <div id="results-section" class="hidden bg-white rounded-2xl shadow-lg p-6 border-t-4 border-legend-gold">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-xl font-bold text-legend-blue">Current Results</h2>
+          <button id="view-full-results-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-2 px-4 rounded-lg transition">
+            View Full Results
+          </button>
+        </div>
+
+        <div id="results-list" class="space-y-3">
+          <!-- Results will be populated here -->
+        </div>
+      </div>
+    </div>
+
+    <!-- No Active Elections Warning -->
+    <div id="no-active-warning" class="hidden bg-amber-50 border-l-4 border-amber-400 p-4 rounded">
+      <div class="flex items-start">
+        <span class="text-amber-400 text-xl mr-3">&#9888;</span>
+        <div>
+          <h3 class="font-semibold text-amber-800">No Active Elections</h3>
+          <p class="text-amber-700 text-sm">There are no active elections to simulate voting for. Elections must be in "active" status (voting started) to receive votes.</p>
+          <a href="elections-management.html" class="text-legend-blue font-semibold hover:underline text-sm">Go to Elections Management &rarr;</a>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="bg-legend-blue text-white border-t mt-8 py-4 text-center text-xs">
+    &copy; 2025 Boys State App Admin Portal. Not affiliated with or endorsed by the American Legion.
+  </footer>
+
+  <!-- Vote Audit Modal -->
+  <div id="audit-modal" class="hidden fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full mx-4 p-6 relative max-h-[90vh] overflow-hidden flex flex-col">
+      <button id="audit-modal-close" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-2xl font-bold">&times;</button>
+      <h3 id="audit-modal-title" class="text-xl font-bold text-legend-blue mb-4">Vote Audit</h3>
+
+      <div id="audit-election-info" class="bg-gray-50 rounded-lg p-3 mb-4">
+        <!-- Election info will be populated here -->
+      </div>
+
+      <div class="flex-1 overflow-auto">
+        <table class="w-full text-sm">
+          <thead class="bg-gray-100 sticky top-0">
+            <tr>
+              <th class="px-3 py-2 text-left font-semibold text-gray-700">#</th>
+              <th class="px-3 py-2 text-left font-semibold text-gray-700">Voter</th>
+              <th class="px-3 py-2 text-left font-semibold text-gray-700">Voted For</th>
+              <th class="px-3 py-2 text-left font-semibold text-gray-700">Party</th>
+              <th class="px-3 py-2 text-left font-semibold text-gray-700">Timestamp</th>
+            </tr>
+          </thead>
+          <tbody id="audit-table-body">
+            <tr><td colspan="5" class="text-center py-4 text-gray-500">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="flex justify-end mt-4 pt-4 border-t">
+        <button id="audit-modal-done" class="px-4 py-2 bg-legend-blue hover:bg-blue-800 text-white font-semibold rounded-lg shadow transition">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/authHelper.js"></script>
+  <script src="js/vote-simulation.js"></script>
+</body>
+</html>

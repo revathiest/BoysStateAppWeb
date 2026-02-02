@@ -35,4 +35,22 @@ describe('application-messages.js', () => {
     expect(successBox.classList.add).toHaveBeenCalledWith('hidden');
     expect(successBox.textContent).toBe('');
   });
+
+  test('showError handles missing errorBox', () => {
+    global.document.getElementById = () => null;
+    // Should not throw
+    expect(() => showError('test')).not.toThrow();
+  });
+
+  test('clearError handles missing errorBox', () => {
+    global.document.getElementById = () => null;
+    // Should not throw
+    expect(() => clearError()).not.toThrow();
+  });
+
+  test('showSuccess handles missing successBox', () => {
+    global.document.getElementById = () => null;
+    // Should not throw
+    expect(() => showSuccess('test')).not.toThrow();
+  });
 });

@@ -327,6 +327,18 @@ function renderPositionCard(position) {
     }
   }
 
+  // Show election method badge if overridden from program default
+  let electionMethodBadge = '';
+  if (position.isElected && position.electionMethod) {
+    const methodLabels = {
+      plurality: 'Plurality',
+      majority: 'Majority',
+      ranked: 'Ranked Choice'
+    };
+    const methodLabel = methodLabels[position.electionMethod] || position.electionMethod;
+    electionMethodBadge = `<span class="bg-indigo-100 text-indigo-700 text-xs px-2 py-0.5 rounded" title="Custom election method">${escapeHtml(methodLabel)}</span>`;
+  }
+
   const description = position.description
     ? `<p class="text-xs text-gray-500 mt-1">${escapeHtml(position.description)}</p>`
     : '';
@@ -339,6 +351,7 @@ function renderPositionCard(position) {
           ${electedBadge}
           ${nonPartisanBadge}
           ${ballotBadge}
+          ${electionMethodBadge}
           ${countBadge}
         </div>
         ${description}
@@ -528,6 +541,7 @@ function resetPositionForm() {
   document.getElementById('position-declaration-checkbox').checked = false;
   document.getElementById('position-petition-checkbox').checked = false;
   document.getElementById('position-signatures-input').value = '';
+  document.getElementById('position-election-method-select').value = '';
   document.getElementById('position-form-title').textContent = 'Add New Position';
   document.getElementById('save-position-btn').textContent = 'Save Position';
   // Hide ballot and non-partisan sections since elected is unchecked
@@ -564,6 +578,9 @@ function editPosition(positionId) {
   document.getElementById('position-declaration-checkbox').checked = position.requiresDeclaration || false;
   document.getElementById('position-petition-checkbox').checked = position.requiresPetition || false;
   document.getElementById('position-signatures-input').value = position.petitionSignatures || '';
+
+  // Set election method (empty string means use program default)
+  document.getElementById('position-election-method-select').value = position.electionMethod || '';
 
   // Show/hide ballot and non-partisan sections based on elected status
   toggleBallotSection();
@@ -604,6 +621,10 @@ async function savePosition() {
   const petitionSignaturesValue = document.getElementById('position-signatures-input').value;
   const petitionSignatures = requiresPetition && petitionSignaturesValue ? parseInt(petitionSignaturesValue) : null;
 
+  // Get election method override (only relevant for elected positions)
+  const electionMethodValue = document.getElementById('position-election-method-select').value;
+  const electionMethod = isElected && electionMethodValue ? electionMethodValue : null;
+
   if (!name) {
     showError('Please provide a position name.');
     return;
@@ -635,6 +656,7 @@ async function savePosition() {
       requiresDeclaration,
       requiresPetition,
       petitionSignatures,
+      electionMethod,
       seatCount: count
     };
 

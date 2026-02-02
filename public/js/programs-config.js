@@ -97,10 +97,17 @@ function updateConfigLinks(programId) {
     emailTemplatesLink.href = `email-templates.html?programId=${encodeURIComponent(programId)}`;
   }
 
+  const rolesLink = document.getElementById("rolesLink");
+  if (rolesLink) {
+    rolesLink.href = `programs-roles.html?programId=${encodeURIComponent(programId)}`;
+  }
+
   // Store for other navigation
   window.selectedProgramId = programId;
   // Load years for this program
   loadProgramYears(programId);
+  // Load election settings
+  loadElectionSettings(programId);
 }
 
 async function fetchProgramsAndRenderSelector() {
@@ -257,6 +264,67 @@ async function saveNewYear(programId, year) {
   }
 }
 
+// Election Settings
+async function loadElectionSettings(programId) {
+  const votingMethodSelect = document.getElementById('voting-method-select');
+  if (!programId || !votingMethodSelect) return;
+
+  try {
+    const response = await fetch(`${apiBase}/programs/${encodeURIComponent(programId)}`, {
+      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+      credentials: 'include',
+    });
+
+    if (!response.ok) throw new Error('Failed to load program settings');
+    const program = await response.json();
+
+    // Set the voting method dropdown
+    votingMethodSelect.value = program.defaultVotingMethod || 'plurality';
+  } catch (err) {
+    console.error('Error loading election settings:', err);
+  }
+}
+
+async function saveVotingMethod(programId, method) {
+  const statusDiv = document.getElementById('voting-method-status');
+
+  try {
+    const response = await fetch(`${apiBase}/programs/${encodeURIComponent(programId)}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+      credentials: 'include',
+      body: JSON.stringify({ defaultVotingMethod: method }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to save voting method');
+    }
+
+    // Show success message
+    statusDiv.textContent = 'Voting method saved successfully';
+    statusDiv.classList.remove('hidden', 'text-red-600');
+    statusDiv.classList.add('text-green-700');
+    setTimeout(() => statusDiv.classList.add('hidden'), 3000);
+  } catch (err) {
+    statusDiv.textContent = err.message || 'Failed to save voting method';
+    statusDiv.classList.remove('hidden', 'text-green-700');
+    statusDiv.classList.add('text-red-600');
+  }
+}
+
+function setupElectionSettings() {
+  const votingMethodSelect = document.getElementById('voting-method-select');
+  if (!votingMethodSelect) return;
+
+  votingMethodSelect.addEventListener('change', () => {
+    const programId = window.selectedProgramId || document.getElementById('current-program-id')?.value;
+    if (programId) {
+      saveVotingMethod(programId, votingMethodSelect.value);
+    }
+  });
+}
+
 function setupYearManagement() {
   const addYearBtn = document.getElementById('add-year-btn');
   const addYearForm = document.getElementById('add-year-form');
@@ -304,7 +372,7 @@ function setupYearManagement() {
 }
 
 // On load
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
   const logoutBtn = document.getElementById('logoutBtn');
   if (logoutBtn) {
     logoutBtn.addEventListener('click', () => {
@@ -312,8 +380,23 @@ document.addEventListener("DOMContentLoaded", () => {
       window.location.href = 'login.html';
     });
   }
+
+  // Check if user has access to this page (any program_config permission)
+  const programId = localStorage.getItem('lastSelectedProgramId') ||
+    new URLSearchParams(window.location.search).get('programId');
+  if (programId && typeof checkPageAccess === 'function') {
+    const hasAccess = await checkPageAccess(programId, 'program_config.');
+    if (!hasAccess) return; // Redirect handled by checkPageAccess
+  }
+
+  // Apply permissions to show/hide cards
+  if (programId && typeof applyPermissions === 'function') {
+    await applyPermissions(programId);
+  }
+
   fetchProgramsAndRenderSelector();
   setupYearManagement();
+  setupElectionSettings();
 });
 
 // Utility function for other pages to get selected year
@@ -334,7 +417,10 @@ if (typeof module !== 'undefined' && module.exports) {
     updateConfigLinks,
     fetchProgramsAndRenderSelector,
     loadProgramYears,
-    getSelectedYear
+    getSelectedYear,
+    loadElectionSettings,
+    saveVotingMethod,
+    setupElectionSettings
   };
 }
 

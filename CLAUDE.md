@@ -265,6 +265,34 @@ Features documented in PROJECT_OVERVIEW.md but not yet implemented:
 - **Election Agent**: Admin interface for elections, ballots, results
 - **Progress Tracking Agent**: Delegate milestone/award tracking
 - **Integration Agents**: Google Calendar, Google Docs, Discord integrations
+- **Performance Evaluation**: Investigate slowness - could be resources, network, or code inefficiency
+- ~~**Bug: Primary runoff display**: Runoffs created from primaries don't show as "Primary Runoff"~~ ✅ Fixed - backend now sets `primary_runoff` type, frontend displays appropriately
+
+**Primary Election Models** (planned):
+- **Open Primary**: Any voter can vote in any party's primary
+- **Closed Primary**: Only registered party members can vote in their party's primary
+- **Semi-Open Primary**: Voters can choose which party's primary to vote in at the polls
+- **Blanket/Jungle Primary**: All candidates on single ballot regardless of party
+
+**Primary Advancement Models** (planned - for primaries only):
+- **Top 2**: Top 2 vote-getters from primary advance to general election (regardless of party)
+- **Top 4 with IRV**: Top 4 from primary advance, general election uses Instant Runoff Voting
+
+### Architecture Note: Year-Specific Tables
+
+**CRITICAL**: The base `Position`, `Grouping`, and `Party` tables should ONLY be used as templates when initially setting up a year's configuration. All runtime logic MUST use year-specific tables:
+- `ProgramYearPosition` (not `Position`)
+- `ProgramYearGrouping` (not `Grouping`)
+- `ProgramYearParty` (not `Party`)
+
+The base tables are essentially "defaults" - only used for a "reset to default" option or initial year setup. Even when setting up a new year, we typically copy from the previous year rather than from base tables.
+
+**Known violations to fix**:
+- `elections.ts:128-130` - Filters by `position.isElected` instead of `ProgramYearPosition.isElected`
+- `elections.ts:2043` - Same issue
+- `elections.ts:678-680, 1407-1409` - Accesses `position.requiresDeclaration/requiresPetition/petitionSignatures`
+- `bulkOperations.ts` - Multiple queries to base `grouping` and `party` tables
+- `elections.ts:578` - Close all nominations queries base `grouping` table
 
 ### Incomplete Features
 
@@ -395,3 +423,31 @@ if (!validProgram && programs.length > 0) {
 - `console.js`: Auto-selects program after login
 - `dashboard.js`: Sets programId when user clicks a program
 - `programs-config.js`: Corrects stale values when loading program list
+
+### 5. CSP Blocks Inline Styles
+
+**Problem**: The server's Content Security Policy (CSP) blocks inline styles. When generating HTML with template literals, using `style="..."` attributes will be blocked by CSP.
+
+**Symptoms**:
+- Console error: `Applying inline style violates the following Content Security Policy directive 'style-src 'self'...`
+- Dynamic width/height styles not applied (e.g., progress bars stuck at 0%)
+- Visual elements not rendering correctly
+
+**Fix Pattern**: Instead of inline style attributes in HTML strings, use JavaScript to set styles via the DOM after inserting the HTML:
+
+```javascript
+// BAD - CSP will block this
+container.innerHTML = `<div class="bar" style="width: ${percent}%"></div>`;
+
+// GOOD - Apply style via JavaScript
+container.innerHTML = `<div class="bar" data-width="${percent}"></div>`;
+const bar = container.querySelector('.bar');
+bar.style.width = percent + '%';
+```
+
+**Common locations where this occurs**:
+- Progress bars with dynamic widths
+- Charts/graphs with dynamic sizing
+- Any dynamically generated visual elements
+
+**Note**: Setting `element.style.width` via JavaScript is allowed; only inline `style="..."` attributes in HTML are blocked.

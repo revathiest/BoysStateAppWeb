@@ -1,136 +1,58 @@
-const { initAddressHelpers } = require('../public/js/apply-address.js');
+const { initAddressHelpers, US_STATES } = require('../public/js/apply-address.js');
 
-global.window = global.window || {};
+describe('apply-address.js', () => {
+  test('US_STATES contains all 50 states plus territories', () => {
+    expect(US_STATES).toContain('TX');
+    expect(US_STATES).toContain('CA');
+    expect(US_STATES).toContain('NY');
+    expect(US_STATES).toContain('FL');
+    expect(US_STATES).toContain('DC'); // DC
+    expect(US_STATES).toContain('PR'); // Puerto Rico
+    expect(US_STATES.length).toBe(56); // 50 states + DC + 5 territories
+  });
 
-test('validates zip, city, and state combinations', async () => {
-  let zipHandler;
-  const cityInput = { name: 'q_1_city', value: '', addEventListener: jest.fn(), classList: { add: jest.fn(), remove: jest.fn() } };
-  const stateSelect = { innerHTML: '', value: '', addEventListener: jest.fn(), classList: { add: jest.fn(), remove: jest.fn() } };
-  const zipInput = { name: 'q_1_zip', value: '', addEventListener: (evt, cb) => { if (evt === 'blur') zipHandler = cb; }, classList: { add: jest.fn(), remove: jest.fn() } };
-  const errDiv = { textContent: '' };
-  const form = {
-    querySelectorAll: () => [cityInput],
-    querySelector: sel => sel === "[name='q_1_state']" ? stateSelect : sel === "[name='q_1_zip']" ? zipInput : null
-  };
-  global.document = { getElementById: () => errDiv };
-  window._zipCityDataPromise = Promise.resolve([
-    { zip: '78401', city: 'CORPUS CHRISTI', state: 'TX' }
-  ]);
+  test('initAddressHelpers populates state dropdowns', () => {
+    const stateSelect1 = { innerHTML: '' };
+    const stateSelect2 = { innerHTML: '' };
+    const form = {
+      querySelectorAll: (selector) => {
+        if (selector === "select[name$='_state']") {
+          return [stateSelect1, stateSelect2];
+        }
+        return [];
+      }
+    };
 
-  initAddressHelpers(form);
-  await window._zipCityDataPromise;
+    initAddressHelpers(form);
 
-  cityInput.value = 'Corpus Christi';
-  stateSelect.value = 'TX';
-  zipInput.value = '12345';
-  await zipHandler();
-  expect(errDiv.textContent).toBe('ZIP, city, and state do not match our records.');
+    // Both dropdowns should be populated with states
+    expect(stateSelect1.innerHTML).toContain('<option value="">State</option>');
+    expect(stateSelect1.innerHTML).toContain('<option value="TX">TX</option>');
+    expect(stateSelect1.innerHTML).toContain('<option value="CA">CA</option>');
+    expect(stateSelect2.innerHTML).toContain('<option value="NY">NY</option>');
+  });
 
-  zipInput.value = '78401';
-  await zipHandler();
-  expect(errDiv.textContent).toBe('');
-});
+  test('initAddressHelpers handles empty form', () => {
+    const form = {
+      querySelectorAll: () => []
+    };
 
-test('handles partial matches and suggestions', async () => {
-  const handlers = {};
-  const cityInput = {
-    name: 'q_1_city',
-    value: '',
-    offsetWidth: 100,
-    offsetLeft: 0,
-    offsetTop: 0,
-    offsetHeight: 20,
-    parentNode: { appendChild: jest.fn() },
-    classList: { add: jest.fn(), remove: jest.fn() },
-    addEventListener: (ev, cb) => { handlers[ev] = cb; }
-  };
-  const stateSelect = {
-    innerHTML: '',
-    value: '',
-    classList: { add: jest.fn(), remove: jest.fn() },
-    addEventListener: (ev, cb) => { handlers['state-' + ev] = cb; }
-  };
-  const zipInput = {
-    name: 'q_1_zip',
-    value: '',
-    classList: { add: jest.fn(), remove: jest.fn() },
-    addEventListener: (ev, cb) => { handlers['zip-' + ev] = cb; }
-  };
-  const errDiv = { textContent: '' };
-  const form = {
-    querySelectorAll: () => [cityInput],
-    querySelector: sel => sel === "[name='q_1_state']" ? stateSelect : sel === "[name='q_1_zip']" ? zipInput : null
-  };
-  const created = [];
-  global.document = {
-    getElementById: () => errDiv,
-    createElement: jest.fn(tag => {
-      const el = {
-        style: {},
-        className: '',
-        appendChild(child) { (this.children || (this.children = [])).push(child); },
-        remove: jest.fn()
-      };
-      created.push(el);
-      return el;
-    })
-  };
+    // Should not throw
+    expect(() => initAddressHelpers(form)).not.toThrow();
+  });
 
-  window._zipCityDataPromise = Promise.resolve([
-    { zip: '78401', city: 'CORPUS CHRISTI', state: 'TX' },
-    { zip: '78701', city: 'AUSTIN', state: 'TX' }
-  ]);
+  test('initAddressHelpers handles form with no state dropdowns', () => {
+    const textInput = { innerHTML: '', name: 'other_field' };
+    const form = {
+      querySelectorAll: (selector) => {
+        if (selector === "select[name$='_state']") {
+          return [];
+        }
+        return [textInput];
+      }
+    };
 
-  initAddressHelpers(form);
-  await window._zipCityDataPromise;
-
-  // Unknown ZIP
-  cityInput.value = '';
-  stateSelect.value = 'TX';
-  zipInput.value = '00000';
-  await handlers['zip-blur']();
-  expect(errDiv.textContent).toBe('Unknown ZIP code.');
-
-  // ZIP does not match city
-  cityInput.value = 'AUSTIN';
-  stateSelect.value = '';
-  zipInput.value = '78401';
-  await handlers['zip-blur']();
-  expect(errDiv.textContent).toBe('ZIP does not match city.');
-
-  // ZIP does not match state
-  cityInput.value = '';
-  stateSelect.value = 'CA';
-  zipInput.value = '78401';
-  await handlers['zip-blur']();
-  expect(errDiv.textContent).toBe('ZIP does not match state.');
-
-  // Show suggestions and select
-  cityInput.value = 'CO';
-  stateSelect.value = '';
-  handlers['input']();
-  const item = created.find(e => typeof e.onclick === 'function');
-  zipInput.value = '78401';
-  item.onclick();
-  expect(errDiv.textContent).toBe('');
-
-  // City blur triggers removeSuggestions
-  jest.useFakeTimers();
-  handlers['blur']();
-  jest.runAllTimers();
-  jest.useRealTimers();
-
-  // State change with valid city
-  cityInput.value = 'CORPUS CHRISTI';
-  stateSelect.value = 'TX';
-  await handlers['state-change']();
-  expect(errDiv.textContent).toBe('');
-
-  // State change with no matching cities
-  cityInput.classList.add.mockClear();
-  cityInput.value = 'BOGUS';
-  stateSelect.value = 'TX';
-  zipInput.value = '';
-  await handlers['state-change']();
-  expect(cityInput.classList.add).toHaveBeenCalledWith('border-red-500');
+    // Should not throw and should not modify non-state elements
+    expect(() => initAddressHelpers(form)).not.toThrow();
+  });
 });

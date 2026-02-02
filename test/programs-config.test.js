@@ -1086,3 +1086,242 @@ describe('programs-config.js DOMContentLoaded and year management (require-based
     expect(saveYearBtn.click).not.toHaveBeenCalled();
   });
 });
+
+describe('loadElectionSettings', () => {
+  let votingMethodSelect;
+
+  beforeEach(() => {
+    jest.resetModules();
+    votingMethodSelect = { value: '' };
+    global.window = { API_URL: 'http://api.test' };
+    global.document = {
+      getElementById: id => {
+        if (id === 'voting-method-select') return votingMethodSelect;
+        return null;
+      },
+      addEventListener: jest.fn()
+    };
+    global.localStorage = { getItem: jest.fn(() => null), setItem: jest.fn() };
+    global.sessionStorage = { getItem: jest.fn(() => null) };
+    global.console = { log: jest.fn(), error: jest.fn() };
+    global.getAuthHeaders = () => ({});
+  });
+
+  test('loadElectionSettings loads and sets voting method', async () => {
+    global.fetch = jest.fn(() => Promise.resolve({
+      ok: true,
+      json: () => Promise.resolve({ defaultVotingMethod: 'runoff' })
+    }));
+    const funcs = require('../public/js/programs-config.js');
+    await funcs.loadElectionSettings('p1');
+    expect(votingMethodSelect.value).toBe('runoff');
+  });
+
+  test('loadElectionSettings defaults to plurality when not set', async () => {
+    global.fetch = jest.fn(() => Promise.resolve({
+      ok: true,
+      json: () => Promise.resolve({})
+    }));
+    const funcs = require('../public/js/programs-config.js');
+    await funcs.loadElectionSettings('p1');
+    expect(votingMethodSelect.value).toBe('plurality');
+  });
+
+  test('loadElectionSettings handles fetch error', async () => {
+    global.fetch = jest.fn(() => Promise.reject(new Error('Network error')));
+    const funcs = require('../public/js/programs-config.js');
+    await funcs.loadElectionSettings('p1');
+    expect(global.console.error).toHaveBeenCalled();
+  });
+
+  test('loadElectionSettings handles non-ok response', async () => {
+    global.fetch = jest.fn(() => Promise.resolve({ ok: false }));
+    const funcs = require('../public/js/programs-config.js');
+    await funcs.loadElectionSettings('p1');
+    expect(global.console.error).toHaveBeenCalled();
+  });
+
+  test('loadElectionSettings returns early without programId', async () => {
+    global.fetch = jest.fn();
+    const funcs = require('../public/js/programs-config.js');
+    await funcs.loadElectionSettings(null);
+    expect(global.fetch).not.toHaveBeenCalled();
+  });
+
+  test('loadElectionSettings returns early without votingMethodSelect element', async () => {
+    global.document.getElementById = () => null;
+    global.fetch = jest.fn();
+    const funcs = require('../public/js/programs-config.js');
+    await funcs.loadElectionSettings('p1');
+    expect(global.fetch).not.toHaveBeenCalled();
+  });
+});
+
+describe('saveVotingMethod', () => {
+  let statusDiv;
+
+  beforeEach(() => {
+    jest.resetModules();
+    statusDiv = {
+      textContent: '',
+      classList: {
+        add: jest.fn(),
+        remove: jest.fn()
+      }
+    };
+    global.window = { API_URL: 'http://api.test' };
+    global.document = {
+      getElementById: id => {
+        if (id === 'voting-method-status') return statusDiv;
+        return null;
+      },
+      addEventListener: jest.fn()
+    };
+    global.localStorage = { getItem: jest.fn(() => null), setItem: jest.fn() };
+    global.sessionStorage = { getItem: jest.fn(() => null) };
+    global.console = { log: jest.fn(), error: jest.fn() };
+    global.getAuthHeaders = () => ({});
+    global.setTimeout = jest.fn((fn, _delay) => fn());
+  });
+
+  test('saveVotingMethod shows success on successful save', async () => {
+    global.fetch = jest.fn(() => Promise.resolve({ ok: true }));
+    const funcs = require('../public/js/programs-config.js');
+    await funcs.saveVotingMethod('p1', 'runoff');
+    expect(statusDiv.textContent).toBe('Voting method saved successfully');
+    expect(statusDiv.classList.add).toHaveBeenCalledWith('text-green-700');
+  });
+
+  test('saveVotingMethod shows error on API failure', async () => {
+    global.fetch = jest.fn(() => Promise.resolve({
+      ok: false,
+      json: () => Promise.resolve({ error: 'Invalid method' })
+    }));
+    const funcs = require('../public/js/programs-config.js');
+    await funcs.saveVotingMethod('p1', 'invalid');
+    expect(statusDiv.textContent).toBe('Invalid method');
+    expect(statusDiv.classList.add).toHaveBeenCalledWith('text-red-600');
+  });
+
+  test('saveVotingMethod shows default error message on API failure without error field', async () => {
+    global.fetch = jest.fn(() => Promise.resolve({
+      ok: false,
+      json: () => Promise.resolve({})
+    }));
+    const funcs = require('../public/js/programs-config.js');
+    await funcs.saveVotingMethod('p1', 'invalid');
+    expect(statusDiv.textContent).toBe('Failed to save voting method');
+  });
+
+  test('saveVotingMethod shows error on network failure', async () => {
+    global.fetch = jest.fn(() => Promise.reject(new Error('Network error')));
+    const funcs = require('../public/js/programs-config.js');
+    await funcs.saveVotingMethod('p1', 'runoff');
+    expect(statusDiv.textContent).toBe('Network error');
+    expect(statusDiv.classList.add).toHaveBeenCalledWith('text-red-600');
+  });
+});
+
+describe('setupElectionSettings', () => {
+  let votingMethodSelect;
+  let changeHandler;
+
+  beforeEach(() => {
+    jest.resetModules();
+    changeHandler = null;
+    votingMethodSelect = {
+      value: 'plurality',
+      addEventListener: jest.fn((event, handler) => {
+        if (event === 'change') changeHandler = handler;
+      })
+    };
+    global.window = { API_URL: 'http://api.test', selectedProgramId: 'p1' };
+    global.document = {
+      getElementById: id => {
+        if (id === 'voting-method-select') return votingMethodSelect;
+        if (id === 'voting-method-status') return {
+          textContent: '',
+          classList: { add: jest.fn(), remove: jest.fn() }
+        };
+        return null;
+      },
+      addEventListener: jest.fn()
+    };
+    global.localStorage = { getItem: jest.fn(() => null), setItem: jest.fn() };
+    global.sessionStorage = { getItem: jest.fn(() => null) };
+    global.console = { log: jest.fn(), error: jest.fn() };
+    global.getAuthHeaders = () => ({});
+    global.fetch = jest.fn(() => Promise.resolve({ ok: true }));
+  });
+
+  test('setupElectionSettings registers change handler', () => {
+    const funcs = require('../public/js/programs-config.js');
+    funcs.setupElectionSettings();
+    expect(votingMethodSelect.addEventListener).toHaveBeenCalledWith('change', expect.any(Function));
+  });
+
+  test('setupElectionSettings change handler calls saveVotingMethod', async () => {
+    const funcs = require('../public/js/programs-config.js');
+    funcs.setupElectionSettings();
+    expect(changeHandler).toBeDefined();
+    votingMethodSelect.value = 'runoff';
+    changeHandler();
+    expect(global.fetch).toHaveBeenCalledWith(
+      expect.stringContaining('/programs/p1'),
+      expect.objectContaining({ method: 'PUT' })
+    );
+  });
+
+  test('setupElectionSettings returns early without votingMethodSelect', () => {
+    global.document.getElementById = () => null;
+    const funcs = require('../public/js/programs-config.js');
+    funcs.setupElectionSettings();
+    // Should not throw and should not register handler
+    expect(votingMethodSelect.addEventListener).not.toHaveBeenCalled();
+  });
+});
+
+describe('updateConfigLinks with additional link elements', () => {
+  let emailConfigLink, emailTemplatesLink, rolesLink;
+
+  beforeEach(() => {
+    jest.resetModules();
+    emailConfigLink = { href: '' };
+    emailTemplatesLink = { href: '' };
+    rolesLink = { href: '' };
+    global.window = { API_URL: 'http://api.test' };
+    global.document = {
+      getElementById: id => {
+        if (id === 'emailConfigLink') return emailConfigLink;
+        if (id === 'emailTemplatesLink') return emailTemplatesLink;
+        if (id === 'rolesLink') return rolesLink;
+        if (id === 'years-list') return { innerHTML: '' };
+        return null;
+      },
+      addEventListener: jest.fn()
+    };
+    global.localStorage = { getItem: jest.fn(() => null), setItem: jest.fn() };
+    global.sessionStorage = { getItem: jest.fn(() => null) };
+    global.console = { log: jest.fn(), error: jest.fn() };
+    global.getAuthHeaders = () => ({});
+    global.fetch = jest.fn(() => Promise.resolve({ ok: true, json: () => Promise.resolve({}) }));
+  });
+
+  test('updateConfigLinks updates emailConfigLink', () => {
+    const funcs = require('../public/js/programs-config.js');
+    funcs.updateConfigLinks('test-prog');
+    expect(emailConfigLink.href).toBe('email-config.html?programId=test-prog');
+  });
+
+  test('updateConfigLinks updates emailTemplatesLink', () => {
+    const funcs = require('../public/js/programs-config.js');
+    funcs.updateConfigLinks('test-prog');
+    expect(emailTemplatesLink.href).toBe('email-templates.html?programId=test-prog');
+  });
+
+  test('updateConfigLinks updates rolesLink', () => {
+    const funcs = require('../public/js/programs-config.js');
+    funcs.updateConfigLinks('test-prog');
+    expect(rolesLink.href).toBe('programs-roles.html?programId=test-prog');
+  });
+});

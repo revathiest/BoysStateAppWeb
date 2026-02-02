@@ -342,3 +342,203 @@ test('register handles invalid JSON without server logging', async () => {
   await handler({ preventDefault: () => {} });
   expect(global.console.error).toHaveBeenCalled();
 });
+
+test('login handles invalid JSON with server logging', async () => {
+  let handler;
+  const loginForm = { addEventListener: jest.fn((ev, fn) => { if (ev === 'submit') handler = fn; }) };
+  const msgEl = { textContent: '', classList: { remove: jest.fn(), add: jest.fn() } };
+  const logToServerMock = jest.fn();
+  const doc = {
+    getElementById: jest.fn(id => {
+      switch(id){
+        case 'loginForm': return loginForm;
+        case 'loginEmail': return { value: 'a@b.com' };
+        case 'loginPassword': return { value: 'p' };
+        case 'loginMessage': return msgEl;
+        case 'cancelLogin': return null;
+        case 'cancelRegister': return null;
+        case 'registerForm': return null;
+      }
+      return null;
+    }),
+    querySelectorAll: jest.fn(() => []),
+    addEventListener: jest.fn((ev, fn) => { if (ev === 'DOMContentLoaded') fn(); })
+  };
+  const fetchMock = jest.fn().mockResolvedValue({ ok: true, json: () => { throw new Error('bad json'); } });
+  global.window = { API_URL: 'http://api.test', location: { href: '' }, logToServer: logToServerMock };
+  global.document = doc;
+  global.fetch = fetchMock;
+  global.console = { error: jest.fn() };
+  global.alert = jest.fn();
+
+  require('../public/js/auth.js');
+  await handler({ preventDefault: () => {} });
+  expect(global.console.error).toHaveBeenCalled();
+  expect(logToServerMock).toHaveBeenCalledWith('Invalid JSON from login endpoint', expect.objectContaining({ level: 'error' }));
+});
+
+test('register handles invalid JSON with server logging', async () => {
+  let handler;
+  const registerForm = { addEventListener: jest.fn((ev, fn) => { if (ev === 'submit') handler = fn; }) };
+  const msgEl = { textContent: '', classList: { remove: jest.fn(), add: jest.fn() } };
+  const logToServerMock = jest.fn();
+  const doc = {
+    getElementById: jest.fn(id => {
+      switch(id){
+        case 'registerForm': return registerForm;
+        case 'regEmail': return { value: 'a@b.com' };
+        case 'regPassword': return { value: 'p' };
+        case 'registerMessage': return msgEl;
+        case 'cancelLogin': return null;
+        case 'cancelRegister': return null;
+        case 'loginForm': return null;
+      }
+      return null;
+    }),
+    querySelectorAll: jest.fn(() => []),
+    addEventListener: jest.fn((ev, fn) => { if (ev === 'DOMContentLoaded') fn(); })
+  };
+  const fetchMock = jest.fn().mockResolvedValue({ status: 201, json: () => { throw new Error('bad json'); } });
+  global.window = { API_URL: 'http://api.test', location: { href: '' }, logToServer: logToServerMock };
+  global.document = doc;
+  global.fetch = fetchMock;
+  global.console = { error: jest.fn() };
+  global.alert = jest.fn();
+
+  require('../public/js/auth.js');
+  await handler({ preventDefault: () => {} });
+  expect(global.console.error).toHaveBeenCalled();
+  expect(logToServerMock).toHaveBeenCalledWith('Invalid JSON from registration endpoint', expect.objectContaining({ level: 'error' }));
+});
+
+test('login handles network error with server logging', async () => {
+  let handler;
+  const loginForm = { addEventListener: jest.fn((ev, fn) => { if (ev === 'submit') handler = fn; }) };
+  const msgEl = { textContent: '', classList: { remove: jest.fn(), add: jest.fn() } };
+  const logToServerMock = jest.fn();
+  const doc = {
+    getElementById: jest.fn(id => {
+      switch(id){
+        case 'loginForm': return loginForm;
+        case 'loginEmail': return { value: 'a@b.com' };
+        case 'loginPassword': return { value: 'p' };
+        case 'loginMessage': return msgEl;
+        case 'cancelLogin': return null;
+        case 'cancelRegister': return null;
+        case 'registerForm': return null;
+      }
+      return null;
+    }),
+    querySelectorAll: jest.fn(() => []),
+    addEventListener: jest.fn((ev, fn) => { if (ev === 'DOMContentLoaded') fn(); })
+  };
+  const fetchMock = jest.fn().mockRejectedValue(new Error('network fail'));
+  global.window = { API_URL: 'http://api.test', location: { href: '' }, logToServer: logToServerMock };
+  global.document = doc;
+  global.fetch = fetchMock;
+  global.console = { error: jest.fn() };
+  global.alert = jest.fn();
+
+  require('../public/js/auth.js');
+  await handler({ preventDefault: () => {} });
+  expect(global.console.error).toHaveBeenCalled();
+  expect(logToServerMock).toHaveBeenCalledWith('Network error during login', expect.objectContaining({ level: 'error' }));
+});
+
+test('register handles network error with server logging', async () => {
+  let handler;
+  const registerForm = { addEventListener: jest.fn((ev, fn) => { if (ev === 'submit') handler = fn; }) };
+  const msgEl = { textContent: '', classList: { remove: jest.fn(), add: jest.fn() } };
+  const logToServerMock = jest.fn();
+  const doc = {
+    getElementById: jest.fn(id => {
+      switch(id){
+        case 'registerForm': return registerForm;
+        case 'regEmail': return { value: 'a@b.com' };
+        case 'regPassword': return { value: 'p' };
+        case 'registerMessage': return msgEl;
+        case 'cancelLogin': return null;
+        case 'cancelRegister': return null;
+        case 'loginForm': return null;
+      }
+      return null;
+    }),
+    querySelectorAll: jest.fn(() => []),
+    addEventListener: jest.fn((ev, fn) => { if (ev === 'DOMContentLoaded') fn(); })
+  };
+  const fetchMock = jest.fn().mockRejectedValue(new Error('network fail'));
+  global.window = { API_URL: 'http://api.test', location: { href: '' }, logToServer: logToServerMock };
+  global.document = doc;
+  global.fetch = fetchMock;
+  global.console = { error: jest.fn() };
+  global.alert = jest.fn();
+
+  require('../public/js/auth.js');
+  await handler({ preventDefault: () => {} });
+  expect(global.console.error).toHaveBeenCalled();
+  expect(logToServerMock).toHaveBeenCalledWith('Network error during registration', expect.objectContaining({ level: 'error' }));
+});
+
+test('login shows default error when data.error is empty', async () => {
+  let handler;
+  const loginForm = { addEventListener: jest.fn((ev, fn) => { if (ev === 'submit') handler = fn; }) };
+  const msgEl = { textContent: '', classList: { remove: jest.fn(), add: jest.fn() } };
+  const doc = {
+    getElementById: jest.fn(id => {
+      switch(id){
+        case 'loginForm': return loginForm;
+        case 'loginEmail': return { value: 'a@b.com' };
+        case 'loginPassword': return { value: 'p' };
+        case 'loginMessage': return msgEl;
+        case 'cancelLogin': return null;
+        case 'cancelRegister': return null;
+        case 'registerForm': return null;
+      }
+      return null;
+    }),
+    querySelectorAll: jest.fn(() => []),
+    addEventListener: jest.fn((ev, fn) => { if (ev === 'DOMContentLoaded') fn(); })
+  };
+  const fetchMock = jest.fn().mockResolvedValue({ ok: false, json: () => ({}) });
+  global.window = { API_URL: 'http://api.test', location: { href: '' } };
+  global.document = doc;
+  global.fetch = fetchMock;
+  global.console = { error: jest.fn() };
+  global.alert = jest.fn();
+
+  require('../public/js/auth.js');
+  await handler({ preventDefault: () => {} });
+  expect(msgEl.textContent).toBe('Login failed.');
+});
+
+test('register shows default error when data.error is empty', async () => {
+  let handler;
+  const registerForm = { addEventListener: jest.fn((ev, fn) => { if (ev === 'submit') handler = fn; }) };
+  const msgEl = { textContent: '', classList: { remove: jest.fn(), add: jest.fn() } };
+  const doc = {
+    getElementById: jest.fn(id => {
+      switch(id){
+        case 'registerForm': return registerForm;
+        case 'regEmail': return { value: 'a@b.com' };
+        case 'regPassword': return { value: 'p' };
+        case 'registerMessage': return msgEl;
+        case 'cancelLogin': return null;
+        case 'cancelRegister': return null;
+        case 'loginForm': return null;
+      }
+      return null;
+    }),
+    querySelectorAll: jest.fn(() => []),
+    addEventListener: jest.fn((ev, fn) => { if (ev === 'DOMContentLoaded') fn(); })
+  };
+  const fetchMock = jest.fn().mockResolvedValue({ status: 400, json: () => ({}) });
+  global.window = { API_URL: 'http://api.test', location: { href: '' } };
+  global.document = doc;
+  global.fetch = fetchMock;
+  global.console = { error: jest.fn() };
+  global.alert = jest.fn();
+
+  require('../public/js/auth.js');
+  await handler({ preventDefault: () => {} });
+  expect(msgEl.textContent).toBe('Registration failed.');
+});

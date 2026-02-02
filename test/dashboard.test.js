@@ -27,13 +27,21 @@ test('dashboard fetches user programs', async () => {
     status: 200,
     json: () => ({ username: 'u', programs: [{ programName: 'P', role: 'admin' }] })
   });
+  const storage = { authToken: 'abc', lastActivity: Date.now().toString() };
   const ctx = {
     window: { API_URL: 'http://api.test', logToServer: jest.fn(), location: { href: '' } },
-    sessionStorage: { getItem: () => 'abc' },
+    sessionStorage: {
+      getItem: (key) => storage[key] || null,
+      setItem: (key, val) => { storage[key] = val; },
+      removeItem: (key) => { delete storage[key]; },
+      keys: () => Object.keys(storage),
+      [Symbol.iterator]: function* () { yield* Object.keys(storage); }
+    },
     document: doc,
     fetch: fetchMock,
     console: { log: jest.fn(), error: jest.fn() },
-    alert: jest.fn()
+    alert: jest.fn(),
+    Object: Object
   };
   vm.createContext(ctx);
   const helper = fs.readFileSync(path.join(__dirname, '../public/js/authHelper.js'), 'utf8');
@@ -256,4 +264,102 @@ test('dashboard handles invalid JSON', async () => {
   require('../public/js/dashboard.js');
   await ready();
   expect(mainContent.innerHTML).toContain('Unexpected');
+});
+
+test('dashboard stores programId in localStorage when program is selected', async () => {
+  let ready;
+  let clickHandler;
+  const localStorageMock = {
+    getItem: jest.fn(),
+    setItem: jest.fn()
+  };
+  const features = { classList: { remove: jest.fn(), add: jest.fn() } };
+  const programListEl = { appendChild: jest.fn() };
+  const doc = {
+    getElementById: jest.fn(id => {
+      if (id === 'logoutBtn') return { addEventListener: jest.fn() };
+      if (id === 'main-content') return { classList: { remove: jest.fn() } };
+      if (id === 'programList') return programListEl;
+      if (id === 'features') return features;
+      if (id === 'userRole') return { textContent: '' };
+      return null;
+    }),
+    querySelectorAll: jest.fn(() => []),
+    createElement: jest.fn(() => ({
+      addEventListener: jest.fn((evt, fn) => {
+        if (evt === 'click') clickHandler = fn;
+      })
+    })),
+    addEventListener: jest.fn((ev, fn) => { if (ev === 'DOMContentLoaded') ready = fn; })
+  };
+  const fetchMock = jest.fn().mockResolvedValue({
+    status: 200,
+    json: () => ({ username: 'u', programs: [{ programId: 'prog-123', programName: 'Test Program', role: 'admin' }] })
+  });
+  global.window = { API_URL: 'http://api.test', logToServer: jest.fn(), location: { href: '' } };
+  global.localStorage = localStorageMock;
+  global.document = doc;
+  global.fetch = fetchMock;
+  global.console = { log: jest.fn(), error: jest.fn() };
+  global.alert = jest.fn();
+
+  require('../public/js/dashboard.js');
+  await ready();
+
+  // Simulate clicking on a program card
+  expect(clickHandler).toBeDefined();
+  clickHandler();
+
+  // Verify programId was stored
+  expect(localStorageMock.setItem).toHaveBeenCalledWith('lastSelectedProgramId', 'prog-123');
+  expect(global.window.selectedProgramId).toBe('prog-123');
+});
+
+test('dashboard handles program with id instead of programId', async () => {
+  let ready;
+  let clickHandler;
+  const localStorageMock = {
+    getItem: jest.fn(),
+    setItem: jest.fn()
+  };
+  const features = { classList: { remove: jest.fn(), add: jest.fn() } };
+  const programListEl = { appendChild: jest.fn() };
+  const doc = {
+    getElementById: jest.fn(id => {
+      if (id === 'logoutBtn') return { addEventListener: jest.fn() };
+      if (id === 'main-content') return { classList: { remove: jest.fn() } };
+      if (id === 'programList') return programListEl;
+      if (id === 'features') return features;
+      if (id === 'userRole') return { textContent: '' };
+      return null;
+    }),
+    querySelectorAll: jest.fn(() => []),
+    createElement: jest.fn(() => ({
+      addEventListener: jest.fn((evt, fn) => {
+        if (evt === 'click') clickHandler = fn;
+      })
+    })),
+    addEventListener: jest.fn((ev, fn) => { if (ev === 'DOMContentLoaded') ready = fn; })
+  };
+  const fetchMock = jest.fn().mockResolvedValue({
+    status: 200,
+    json: () => ({ username: 'u', programs: [{ id: 'alt-prog-456', programName: 'Alt Program', role: 'admin' }] })
+  });
+  global.window = { API_URL: 'http://api.test', logToServer: jest.fn(), location: { href: '' } };
+  global.localStorage = localStorageMock;
+  global.document = doc;
+  global.fetch = fetchMock;
+  global.console = { log: jest.fn(), error: jest.fn() };
+  global.alert = jest.fn();
+
+  require('../public/js/dashboard.js');
+  await ready();
+
+  // Simulate clicking on a program card
+  expect(clickHandler).toBeDefined();
+  clickHandler();
+
+  // Verify id was used as fallback
+  expect(localStorageMock.setItem).toHaveBeenCalledWith('lastSelectedProgramId', 'alt-prog-456');
+  expect(global.window.selectedProgramId).toBe('alt-prog-456');
 });
