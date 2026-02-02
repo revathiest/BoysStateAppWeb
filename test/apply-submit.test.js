@@ -133,5 +133,68 @@ describe('handleFormSubmit', () => {
     await handleFormSubmit({ preventDefault(){} }, optForm, optConfig, formStatus);
     expect(global.fetch).toHaveBeenCalled();
   });
+
+  test('validates date_range when start is after end', async () => {
+    global.validateField = jest.fn().mockReturnValue(true);
+    const form = {
+      q_range_start: { value: '2024-12-31' },
+      q_range_end: { value: '2024-01-01' },
+      reset: jest.fn(),
+      style: {}
+    };
+    const formStatus = { textContent: '', innerHTML: '', classList: { remove: jest.fn(), add: jest.fn() } };
+    const config = {
+      questions: [{ id: 'range', type: 'date_range', text: 'Date Range', required: false }]
+    };
+    await handleFormSubmit({ preventDefault(){} }, form, config, formStatus);
+    expect(global.fetch).not.toHaveBeenCalled();
+    expect(formStatus.textContent).toContain('Start date cannot be after end date');
+  });
+
+  test('validates file when exceeds maxFiles', async () => {
+    global.validateField = jest.fn().mockReturnValue(true);
+    const form = {
+      q_file: { files: [{ name: 'f1' }, { name: 'f2' }, { name: 'f3' }] },
+      reset: jest.fn(),
+      style: {}
+    };
+    const formStatus = { textContent: '', innerHTML: '', classList: { remove: jest.fn(), add: jest.fn() } };
+    const config = {
+      questions: [{ id: 'file', type: 'file', text: 'Upload', required: false, maxFiles: 2 }]
+    };
+    await handleFormSubmit({ preventDefault(){} }, form, config, formStatus);
+    expect(global.fetch).not.toHaveBeenCalled();
+    expect(formStatus.textContent).toContain('up to 2 file(s)');
+  });
+
+  test('handles submission failure with server error', async () => {
+    global.validateField = jest.fn().mockReturnValue(true);
+    global.fetch = jest.fn().mockResolvedValue({ ok: false });
+    const form = {
+      q_1: { value: 'A' },
+      reset: jest.fn(),
+      style: {}
+    };
+    const formStatus = { textContent: '', innerHTML: '', classList: { remove: jest.fn(), add: jest.fn() } };
+    const config = { questions: [{ id: 1, type: 'short_answer', text: 'Name', required: false }] };
+    await handleFormSubmit({ preventDefault(){} }, form, config, formStatus);
+    expect(formStatus.textContent).toContain('Submission failed');
+    expect(formStatus.classList.add).toHaveBeenCalledWith('text-red-700');
+  });
+
+  test('handles submission failure with network error', async () => {
+    global.validateField = jest.fn().mockReturnValue(true);
+    global.fetch = jest.fn().mockRejectedValue(new Error('Network error'));
+    const form = {
+      q_1: { value: 'A' },
+      reset: jest.fn(),
+      style: {}
+    };
+    const formStatus = { textContent: '', innerHTML: '', classList: { remove: jest.fn(), add: jest.fn() } };
+    const config = { questions: [{ id: 1, type: 'short_answer', text: 'Name', required: false }] };
+    await handleFormSubmit({ preventDefault(){} }, form, config, formStatus);
+    expect(formStatus.textContent).toContain('Submission failed');
+    expect(formStatus.classList.add).toHaveBeenCalledWith('text-red-700');
+  });
 });
 

@@ -796,8 +796,8 @@ function renderAutoAssignPreview(data) {
             <span class="w-24 truncate" title="${escapeHtml(p.partyName)}">${escapeHtml(p.partyName)}</span>
             <div class="flex-1 bg-gray-200 rounded-full h-4 overflow-hidden">
               <div class="h-full flex">
-                <div class="bg-gray-400" style="width: ${existingWidth}%"></div>
-                <div style="width: ${newWidth}%; background-color: ${p.partyColor || '#8B5CF6'}"></div>
+                <div class="bg-gray-400 assign-bar" data-width="${existingWidth}"></div>
+                <div class="assign-bar" data-width="${newWidth}" data-color="${p.partyColor || '#8B5CF6'}"></div>
               </div>
             </div>
             <span class="w-16 text-right text-gray-600">${p.existingCount} + ${p.newCount}</span>
@@ -817,6 +817,14 @@ function renderAutoAssignPreview(data) {
         </div>
       `;
     }).join('');
+
+    // Apply widths and colors via JS to avoid CSP inline style violations
+    distributionEl.querySelectorAll('.assign-bar').forEach(bar => {
+      const width = bar.getAttribute('data-width');
+      const color = bar.getAttribute('data-color');
+      if (width) bar.style.width = width + '%';
+      if (color) bar.style.backgroundColor = color;
+    });
   } else {
     distributionEl.innerHTML = '<p class="text-gray-500 text-center py-4">No distribution data available</p>';
   }

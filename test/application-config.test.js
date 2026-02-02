@@ -248,5 +248,23 @@ describe('application-config.js', () => {
     await createOrCopyApplication({ programId: 'p1', year: 2025, type: 'delegate', fetchFn: fetchMock });
     expect(fetchMock).toHaveBeenCalledTimes(4);
   });
+
+  test('createOrCopyApplication throws on missing programId', async () => {
+    const { createOrCopyApplication } = require('../public/js/application-config.js');
+    await expect(createOrCopyApplication({ year: 2025, type: 'delegate' }))
+      .rejects.toThrow('Missing parameters');
+  });
+
+  test('createOrCopyApplication throws on missing year', async () => {
+    const { createOrCopyApplication } = require('../public/js/application-config.js');
+    await expect(createOrCopyApplication({ programId: 'p1', type: 'delegate' }))
+      .rejects.toThrow('Missing parameters');
+  });
+
+  test('createOrCopyApplication throws on missing type', async () => {
+    const { createOrCopyApplication } = require('../public/js/application-config.js');
+    await expect(createOrCopyApplication({ programId: 'p1', year: 2025 }))
+      .rejects.toThrow('Missing parameters');
+  });
 });
 

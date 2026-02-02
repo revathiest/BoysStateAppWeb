@@ -234,6 +234,16 @@
             />
           </div>
         </div>
+        <div class="mt-4 pt-4 border-t border-gray-100">
+          <label for="position-election-method-select" class="block text-sm font-medium text-gray-700 mb-1">Election Method</label>
+          <select id="position-election-method-select" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-legend-blue">
+            <option value="">Use Program Default</option>
+            <option value="plurality">Plurality (Most votes wins)</option>
+            <option value="majority">Majority (Requires >50%)</option>
+            <option value="ranked">Ranked Choice</option>
+          </select>
+          <p class="text-xs text-gray-500 mt-1">Override the program's default voting method for this position only.</p>
+        </div>
       </div>
       <div class="flex gap-3 justify-end">
         <button id="cancel-position-btn" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold rounded-lg transition">

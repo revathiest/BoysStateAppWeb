@@ -9,6 +9,7 @@ let currentProgramId = null;
 let currentProgramYearId = null;
 let staffList = [];
 let groupingsList = [];
+let programRoles = [];
 let editingStaffId = null;
 
 // Get programId from URL or localStorage
@@ -143,12 +144,12 @@ async function loadStaff() {
   if (!tbody || !currentProgramYearId) {
     console.log('[DEBUG] loadStaff - no tbody or programYearId, tbody:', !!tbody, 'programYearId:', currentProgramYearId);
     if (tbody) {
-      tbody.innerHTML = '<tr><td colspan="7" class="px-4 py-8 text-center text-gray-500 italic">Select a program year to view staff</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="8" class="px-4 py-8 text-center text-gray-500 italic">Select a program year to view staff</td></tr>';
     }
     return;
   }
 
-  tbody.innerHTML = '<tr><td colspan="7" class="px-4 py-8 text-center text-gray-500 italic">Loading staff...</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="8" class="px-4 py-8 text-center text-gray-500 italic">Loading staff...</td></tr>';
 
   const url = `${apiBase}/program-years/${currentProgramYearId}/staff`;
   console.log('[DEBUG] loadStaff - fetching:', url);
@@ -173,7 +174,7 @@ async function loadStaff() {
     renderStaffTable();
   } catch (err) {
     console.error('Error loading staff:', err);
-    tbody.innerHTML = '<tr><td colspan="7" class="px-4 py-8 text-center text-red-500">Error loading staff</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" class="px-4 py-8 text-center text-red-500">Error loading staff</td></tr>';
   }
 }
 
@@ -199,6 +200,47 @@ async function loadGroupings() {
     console.error('Error loading groupings:', err);
     groupingsList = [];
   }
+}
+
+// Load permission roles for the program
+async function loadProgramRoles() {
+  const programId = getProgramId();
+  if (!programId) return;
+
+  try {
+    const response = await fetch(`${apiBase}/programs/${encodeURIComponent(programId)}/roles`, {
+      headers: { 'Content-Type': 'application/json', ...(typeof getAuthHeaders === 'function' ? getAuthHeaders() : {}) },
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      programRoles = [];
+      return;
+    }
+
+    programRoles = await response.json();
+    updatePermissionRoleSelect();
+  } catch (err) {
+    console.error('Error loading permission roles:', err);
+    programRoles = [];
+  }
+}
+
+// Update the permission role select dropdown
+function updatePermissionRoleSelect() {
+  const select = document.getElementById('staff-permission-role');
+  if (!select) return;
+
+  let options = '<option value="">No portal access</option>';
+
+  programRoles.forEach(role => {
+    if (role.isActive) {
+      const defaultBadge = role.isDefault ? ' (Default)' : '';
+      options += `<option value="${role.id}">${escapeHtml(role.name)}${defaultBadge}</option>`;
+    }
+  });
+
+  select.innerHTML = options;
 }
 
 // Update the grouping select dropdown
@@ -249,7 +291,7 @@ function renderStaffTable() {
   if (!tbody) return;
 
   if (staffList.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="7" class="px-4 py-8 text-center text-gray-500 italic">No staff members found for this year</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" class="px-4 py-8 text-center text-gray-500 italic">No staff members found for this year</td></tr>';
     return;
   }
 
@@ -268,12 +310,27 @@ function renderStaffTable() {
         : escapeHtml(grouping.name);
     }
 
+    // Format permission role display
+    let permissionRoleDisplay = '<span class="text-gray-400">None</span>';
+    if (staff.programRole) {
+      const roleBadgeClass = staff.programRole.isDefault ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800';
+      permissionRoleDisplay = `<span class="px-2 py-1 text-xs font-semibold rounded-full ${roleBadgeClass}">${escapeHtml(staff.programRole.name)}</span>`;
+    } else if (staff.programRoleId) {
+      // Role ID exists but role object wasn't included - find it in programRoles
+      const role = programRoles.find(r => r.id === staff.programRoleId);
+      if (role) {
+        const roleBadgeClass = role.isDefault ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800';
+        permissionRoleDisplay = `<span class="px-2 py-1 text-xs font-semibold rounded-full ${roleBadgeClass}">${escapeHtml(role.name)}</span>`;
+      }
+    }
+
     return `
       <tr class="hover:bg-gray-50">
         <td class="px-4 py-3 text-sm font-medium text-gray-900">${escapeHtml(staff.firstName)} ${escapeHtml(staff.lastName)}</td>
         <td class="px-4 py-3 text-sm text-gray-600">${escapeHtml(staff.email)}</td>
         <td class="px-4 py-3 text-sm text-gray-600">${escapeHtml(staff.phone || '-')}</td>
         <td class="px-4 py-3 text-sm text-gray-600">${escapeHtml(staff.role)}</td>
+        <td class="px-4 py-3 text-sm">${permissionRoleDisplay}</td>
         <td class="px-4 py-3 text-sm text-gray-600">${groupingDisplay}</td>
         <td class="px-4 py-3">
           <span class="px-2 py-1 text-xs font-semibold rounded-full ${statusClass}">${staff.status}</span>
@@ -335,6 +392,8 @@ function openAddModal() {
   document.getElementById('custom-role-container').classList.add('hidden');
   document.getElementById('staff-grouping').value = '';
   document.getElementById('staff-status').value = 'active';
+  const permissionRoleSelect = document.getElementById('staff-permission-role');
+  if (permissionRoleSelect) permissionRoleSelect.value = '';
   const tempPasswordField = document.getElementById('staff-temp-password');
   if (tempPasswordField) tempPasswordField.value = '';
   document.getElementById('staff-modal').classList.remove('hidden');
@@ -368,6 +427,15 @@ function openEditModal(staffId) {
 
   document.getElementById('staff-grouping').value = staff.groupingId || '';
   document.getElementById('staff-status').value = staff.status || 'active';
+
+  // Set permission role
+  const permissionRoleSelect = document.getElementById('staff-permission-role');
+  if (permissionRoleSelect) {
+    // Check for programRoleId from staff or from programRole relation
+    const roleId = staff.programRoleId || (staff.programRole ? staff.programRole.id : null);
+    permissionRoleSelect.value = roleId || '';
+  }
+
   const tempPasswordField = document.getElementById('staff-temp-password');
   if (tempPasswordField) tempPasswordField.value = '';
   document.getElementById('staff-modal').classList.remove('hidden');
@@ -392,6 +460,7 @@ async function saveStaff() {
   const groupingId = document.getElementById('staff-grouping').value;
   const status = document.getElementById('staff-status').value;
   const tempPassword = document.getElementById('staff-temp-password')?.value.trim() || '';
+  const permissionRoleId = document.getElementById('staff-permission-role')?.value || '';
 
   // Determine actual role
   const role = roleSelect === 'other' ? customRole : roleSelect;
@@ -424,6 +493,7 @@ async function saveStaff() {
 
   try {
     let response;
+    let savedStaff;
     if (editingStaffId) {
       // Update existing
       response = await fetch(`${apiBase}/staff/${editingStaffId}`, {
@@ -447,11 +517,47 @@ async function saveStaff() {
       throw new Error(errorData.error || 'Failed to save staff member');
     }
 
+    savedStaff = await response.json();
+
+    // Assign permission role if staff has a userId
+    const userId = savedStaff.userId || (editingStaffId ? staffList.find(s => s.id === editingStaffId)?.userId : null);
+    if (userId && currentProgramId) {
+      await assignPermissionRole(userId, permissionRoleId ? parseInt(permissionRoleId) : null);
+    }
+
     closeStaffModal();
     showSuccess(editingStaffId ? 'Staff member updated successfully' : 'Staff member added successfully');
     await loadStaff();
   } catch (err) {
     showError(err.message || 'Failed to save staff member');
+  }
+}
+
+// Assign permission role to a user
+async function assignPermissionRole(userId, roleId) {
+  if (!currentProgramId) return;
+
+  try {
+    const response = await fetch(`${apiBase}/programs/${encodeURIComponent(currentProgramId)}/users/${userId}/role`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', ...(typeof getAuthHeaders === 'function' ? getAuthHeaders() : {}) },
+      credentials: 'include',
+      body: JSON.stringify({ roleId }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error('Failed to assign permission role:', errorData.error || 'Unknown error');
+      // Don't throw - staff was saved successfully, just log the role assignment failure
+    } else {
+      // Clear permissions cache so changes take effect immediately
+      if (typeof clearPermissionsCache === 'function') {
+        clearPermissionsCache(currentProgramId);
+      }
+    }
+  } catch (err) {
+    console.error('Error assigning permission role:', err);
+    // Don't throw - staff was saved successfully
   }
 }
 
@@ -702,6 +808,7 @@ function init() {
   }
 
   // Load initial data
+  loadProgramRoles();
   loadProgramYears();
 }
 
@@ -719,6 +826,8 @@ if (typeof module !== 'undefined' && module.exports) {
     renderStaffTable,
     loadStaff,
     loadGroupings,
+    loadProgramRoles,
+    assignPermissionRole,
     saveStaff,
     removeStaff,
     openAddModal,

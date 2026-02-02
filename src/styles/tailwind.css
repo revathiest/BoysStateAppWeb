@@ -2,6 +2,12 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Permission-controlled elements are hidden by default until JS applies permissions */
+/* Elements with data-permission that haven't been checked yet are hidden */
+[data-permission]:not(.permission-checked) {
+  display: none;
+}
+
 /* Custom semantic component classes */
 @layer components {
   /* Card Styles */

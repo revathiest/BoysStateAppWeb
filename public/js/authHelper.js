@@ -74,6 +74,12 @@ function requireAuth() {
 function clearAuthToken() {
   sessionStorage.removeItem('authToken');
   sessionStorage.removeItem('lastActivity');
+  // Clear all permissions cache entries
+  Object.keys(sessionStorage).forEach(key => {
+    if (key.startsWith('permissions_')) {
+      sessionStorage.removeItem(key);
+    }
+  });
 }
 
 function storeAuthToken(token) {
@@ -121,20 +127,8 @@ async function refreshToken() {
 // Check if token needs refresh and refresh if necessary
 async function checkAndRefreshToken() {
   const token = sessionStorage.getItem('authToken');
-  if (!token) return;
-
-  const data = parseJwt(token);
-  if (data && data.exp) {
-    const timeLeftMs = (data.exp * 1000) - Date.now();
-    const timeLeftMin = Math.floor(timeLeftMs / 60000);
-    const timeLeftSec = Math.floor((timeLeftMs % 60000) / 1000);
-    console.log(`[Auth] Token check: ${timeLeftMin}m ${timeLeftSec}s remaining`);
-
-    if (!isInactive() && isTokenExpiringSoon(token)) {
-      console.log('[Auth] Token expiring soon, refreshing...');
-      const success = await refreshToken();
-      console.log(`[Auth] Token refresh ${success ? 'succeeded' : 'failed'}`);
-    }
+  if (token && !isInactive() && isTokenExpiringSoon(token)) {
+    await refreshToken();
   }
 }
 

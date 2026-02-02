@@ -545,3 +545,37 @@ test('logs error to server when fetch fails and logToServer exists', async () =>
   expect(global.console.error).toHaveBeenCalledWith('Network error while loading programs', networkError);
   expect(logToServer).toHaveBeenCalledWith('Network error while loading programs', expect.objectContaining({ level: 'error' }));
 });
+
+test('calls applyConsoleParentVisibility when function exists and programId is set', async () => {
+  let ready;
+  const logoutBtn = { addEventListener: jest.fn() };
+  const applyConsoleParentVisibilityMock = jest.fn().mockResolvedValue(undefined);
+  const document = {
+    getElementById: jest.fn(id => {
+      if (id === 'user-management-link') return { href: '' };
+      if (id === 'programs-config-link') return { href: '' };
+      if (id === 'logoutBtn') return logoutBtn;
+      if (id === 'main-content') return { classList: { remove: jest.fn() } };
+      return null;
+    }),
+    addEventListener: jest.fn((ev, fn) => { if (ev === 'DOMContentLoaded') ready = fn; })
+  };
+  const fetchMock = jest.fn().mockResolvedValue({
+    ok: true,
+    json: () => Promise.resolve({ programs: [{ programId: 'p1', programName: 'Test' }] })
+  });
+  global.window = { API_URL: 'http://api.test', logToServer: jest.fn(), location: { href: '' } };
+  global.document = document;
+  global.localStorage = { getItem: jest.fn((key) => key === 'lastSelectedProgramId' ? 'p1' : null), setItem: jest.fn() };
+  global.fetch = fetchMock;
+  global.console = { log: jest.fn(), error: jest.fn() };
+  global.alert = jest.fn();
+  global.applyConsoleParentVisibility = applyConsoleParentVisibilityMock;
+
+  require('../public/js/console.js');
+  await ready();
+
+  expect(applyConsoleParentVisibilityMock).toHaveBeenCalledWith('p1');
+
+  delete global.applyConsoleParentVisibility;
+});

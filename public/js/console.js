@@ -73,6 +73,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   document.getElementById('main-content').classList.remove('hidden');
 
+  // Apply permissions to show/hide cards based on user's role
+  const programId = localStorage.getItem('lastSelectedProgramId');
+  if (programId && typeof applyConsoleParentVisibility === 'function') {
+    await applyConsoleParentVisibility(programId);
+  }
+
   const logoutBtn = document.getElementById('logoutBtn');
   if (logoutBtn) {
     logoutBtn.addEventListener('click', () => {

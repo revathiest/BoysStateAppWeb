@@ -6,9 +6,12 @@ const {
   getUsername,
   parseJwt,
   isTokenExpired,
+  isTokenExpiringSoon,
   requireAuth,
   updateLastActivity,
-  isInactive
+  isInactive,
+  refreshToken,
+  checkAndRefreshToken
 } = require('../public/js/authHelper.js');
 
 describe('auth helper functions', () => {
@@ -171,6 +174,196 @@ describe('auth helper functions', () => {
     global.document = { addEventListener: (ev, fn) => fn() };
     requireAuth();
     expect(global.window.location.href).toBe('login.html');
+  });
+
+  test('isTokenExpiringSoon returns true when token expires in less than 5 minutes', () => {
+    const exp = Math.floor(Date.now() / 1000) + 60; // Expires in 1 minute
+    const token = 'x.' + Buffer.from(JSON.stringify({ exp })).toString('base64') + '.y';
+    expect(isTokenExpiringSoon(token)).toBe(true);
+  });
+
+  test('isTokenExpiringSoon returns false when token has more than 5 minutes', () => {
+    const exp = Math.floor(Date.now() / 1000) + 600; // Expires in 10 minutes
+    const token = 'x.' + Buffer.from(JSON.stringify({ exp })).toString('base64') + '.y';
+    expect(isTokenExpiringSoon(token)).toBe(false);
+  });
+
+  test('isTokenExpiringSoon returns true for token without exp', () => {
+    const token = 'x.' + Buffer.from(JSON.stringify({})).toString('base64') + '.y';
+    expect(isTokenExpiringSoon(token)).toBe(true);
+  });
+
+  test('clearAuthToken removes permissions cache entries', () => {
+    // Create a proxy-based sessionStorage mock that properly supports Object.keys
+    const store = {
+      authToken: 'test',
+      lastActivity: Date.now().toString(),
+      permissions_program1: 'cached',
+      permissions_program2: 'cached',
+      otherKey: 'keep'
+    };
+
+    global.sessionStorage = new Proxy(store, {
+      get(target, prop) {
+        if (prop === 'getItem') return (k) => target[k];
+        if (prop === 'setItem') return (k, v) => { target[k] = v; };
+        if (prop === 'removeItem') return (k) => { delete target[k]; };
+        return target[prop];
+      },
+      ownKeys(target) {
+        return Object.keys(target);
+      },
+      getOwnPropertyDescriptor(target, prop) {
+        return { enumerable: true, configurable: true, value: target[prop] };
+      }
+    });
+
+    clearAuthToken();
+    expect(store.authToken).toBeUndefined();
+    expect(store.lastActivity).toBeUndefined();
+    expect(store.permissions_program1).toBeUndefined();
+    expect(store.permissions_program2).toBeUndefined();
+    expect(store.otherKey).toBe('keep');
+  });
+
+  test('refreshToken returns false when no token', async () => {
+    global.window = { API_URL: 'http://api.test' };
+    global.fetch = jest.fn();
+    const result = await refreshToken();
+    expect(result).toBe(false);
+    expect(global.fetch).not.toHaveBeenCalled();
+  });
+
+  test('refreshToken returns false when token is expired', async () => {
+    const exp = Math.floor(Date.now() / 1000) - 10; // Expired
+    const token = 'x.' + Buffer.from(JSON.stringify({ exp })).toString('base64') + '.y';
+    storage.authToken = token;
+    storage.lastActivity = Date.now().toString();
+    global.window = { API_URL: 'http://api.test' };
+    global.fetch = jest.fn();
+    const result = await refreshToken();
+    expect(result).toBe(false);
+  });
+
+  test('refreshToken returns false when user is inactive', async () => {
+    const exp = Math.floor(Date.now() / 1000) + 3600;
+    const token = 'x.' + Buffer.from(JSON.stringify({ exp })).toString('base64') + '.y';
+    storage.authToken = token;
+    storage.lastActivity = (Date.now() - (31 * 60 * 1000)).toString(); // 31 minutes ago
+    global.window = { API_URL: 'http://api.test' };
+    global.fetch = jest.fn();
+    const result = await refreshToken();
+    expect(result).toBe(false);
+  });
+
+  test('refreshToken makes API call and updates token on success', async () => {
+    const exp = Math.floor(Date.now() / 1000) + 3600;
+    const token = 'x.' + Buffer.from(JSON.stringify({ exp })).toString('base64') + '.y';
+    const newToken = 'newtoken';
+    storage.authToken = token;
+    storage.lastActivity = Date.now().toString();
+    global.window = { API_URL: 'http://api.test' };
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ token: newToken })
+    });
+
+    const result = await refreshToken();
+    expect(result).toBe(true);
+    expect(storage.authToken).toBe(newToken);
+    expect(global.fetch).toHaveBeenCalledWith(
+      'http://api.test/refresh',
+      expect.objectContaining({ method: 'POST' })
+    );
+  });
+
+  test('refreshToken returns false on API error', async () => {
+    const exp = Math.floor(Date.now() / 1000) + 3600;
+    const token = 'x.' + Buffer.from(JSON.stringify({ exp })).toString('base64') + '.y';
+    storage.authToken = token;
+    storage.lastActivity = Date.now().toString();
+    global.window = { API_URL: 'http://api.test' };
+    global.fetch = jest.fn().mockResolvedValue({ ok: false });
+    global.console = { error: jest.fn() };
+
+    const result = await refreshToken();
+    expect(result).toBe(false);
+  });
+
+  test('refreshToken handles network error', async () => {
+    const exp = Math.floor(Date.now() / 1000) + 3600;
+    const token = 'x.' + Buffer.from(JSON.stringify({ exp })).toString('base64') + '.y';
+    storage.authToken = token;
+    storage.lastActivity = Date.now().toString();
+    global.window = { API_URL: 'http://api.test' };
+    global.fetch = jest.fn().mockRejectedValue(new Error('Network error'));
+    global.console = { error: jest.fn() };
+
+    const result = await refreshToken();
+    expect(result).toBe(false);
+    expect(global.console.error).toHaveBeenCalled();
+  });
+
+  test('refreshToken returns false when response has no token', async () => {
+    const exp = Math.floor(Date.now() / 1000) + 3600;
+    const token = 'x.' + Buffer.from(JSON.stringify({ exp })).toString('base64') + '.y';
+    storage.authToken = token;
+    storage.lastActivity = Date.now().toString();
+    global.window = { API_URL: 'http://api.test' };
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({}) // No token in response
+    });
+
+    const result = await refreshToken();
+    expect(result).toBe(false);
+  });
+
+  test('checkAndRefreshToken calls refreshToken when token is expiring soon', async () => {
+    const exp = Math.floor(Date.now() / 1000) + 60; // Expires in 1 minute
+    const token = 'x.' + Buffer.from(JSON.stringify({ exp })).toString('base64') + '.y';
+    storage.authToken = token;
+    storage.lastActivity = Date.now().toString();
+    global.window = { API_URL: 'http://api.test' };
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ token: 'newtoken' })
+    });
+
+    await checkAndRefreshToken();
+    expect(global.fetch).toHaveBeenCalled();
+  });
+
+  test('checkAndRefreshToken does nothing when token is not expiring soon', async () => {
+    const exp = Math.floor(Date.now() / 1000) + 3600; // Expires in 1 hour
+    const token = 'x.' + Buffer.from(JSON.stringify({ exp })).toString('base64') + '.y';
+    storage.authToken = token;
+    storage.lastActivity = Date.now().toString();
+    global.window = { API_URL: 'http://api.test' };
+    global.fetch = jest.fn();
+
+    await checkAndRefreshToken();
+    expect(global.fetch).not.toHaveBeenCalled();
+  });
+
+  test('checkAndRefreshToken does nothing when user is inactive', async () => {
+    const exp = Math.floor(Date.now() / 1000) + 60; // Expires in 1 minute
+    const token = 'x.' + Buffer.from(JSON.stringify({ exp })).toString('base64') + '.y';
+    storage.authToken = token;
+    storage.lastActivity = (Date.now() - (31 * 60 * 1000)).toString(); // 31 minutes ago
+    global.window = { API_URL: 'http://api.test' };
+    global.fetch = jest.fn();
+
+    await checkAndRefreshToken();
+    expect(global.fetch).not.toHaveBeenCalled();
+  });
+
+  test('checkAndRefreshToken does nothing when no token', async () => {
+    global.window = { API_URL: 'http://api.test' };
+    global.fetch = jest.fn();
+
+    await checkAndRefreshToken();
+    expect(global.fetch).not.toHaveBeenCalled();
   });
 });
 

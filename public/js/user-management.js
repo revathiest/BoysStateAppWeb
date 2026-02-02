@@ -37,9 +37,21 @@ function updateNavLinks() {
   }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   // Update links with programId
   updateNavLinks();
+
+  // Check if user has access to this page (any user_management permission)
+  const programId = getProgramId();
+  if (programId && typeof checkPageAccess === 'function') {
+    const hasAccess = await checkPageAccess(programId, 'user_management.');
+    if (!hasAccess) return; // Redirect handled by checkPageAccess
+  }
+
+  // Apply permissions to show/hide cards
+  if (programId && typeof applyPermissions === 'function') {
+    await applyPermissions(programId);
+  }
 
   // Logout handler
   const logoutBtn = document.getElementById('logoutBtn');

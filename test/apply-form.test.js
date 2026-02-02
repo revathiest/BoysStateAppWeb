@@ -54,5 +54,46 @@ describe('renderApplicationForm', () => {
     expect(global.elements.applicationForm.innerHTML).toContain('type="file"');
     expect(global.elements.applicationForm.innerHTML).toContain('checkbox');
   });
+
+  test('shows deadline message when closingDate is provided and not closed', () => {
+    const futureDate = new Date(Date.now() + 86400000); // tomorrow
+    const config = {
+      title: 'Test App',
+      description: '',
+      closingDate: futureDate,
+      questions: []
+    };
+    renderApplicationForm(config, futureDate, false);
+    expect(global.elements.programBranding.innerHTML).toContain('Application Deadline');
+    expect(global.elements.programBranding.innerHTML).toContain('bg-blue-100');
+  });
+
+  test('shows closed message when application is closed', () => {
+    const pastDate = new Date(Date.now() - 86400000); // yesterday
+    const config = {
+      title: 'Test App',
+      description: '',
+      closingDate: pastDate,
+      questions: []
+    };
+    renderApplicationForm(config, pastDate, true);
+    expect(global.elements.programBranding.innerHTML).toContain('Applications Closed');
+    expect(global.elements.programBranding.innerHTML).toContain('bg-red-100');
+    expect(global.elements.applicationForm.innerHTML).toContain('Applications are no longer being accepted');
+  });
+
+  test('handles unknown field type with default input', () => {
+    const config = {
+      title: '',
+      description: '',
+      questions: [
+        { id: 1, order: 1, type: 'unknown_type', text: 'Unknown Field', required: false }
+      ]
+    };
+    renderApplicationForm(config);
+    // Default case renders a text input
+    expect(global.elements.applicationForm.innerHTML).toContain('type="text"');
+    expect(global.elements.applicationForm.innerHTML).toContain('Unknown Field');
+  });
 });
 
