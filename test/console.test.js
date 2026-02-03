@@ -484,7 +484,7 @@ test('handles null json response', async () => {
   await ready();
 
   // Should handle null data gracefully (programs = [])
-  expect(global.console.log).toHaveBeenCalledWith('Loaded programs', []);
+  expect(global.console.log).toHaveBeenCalledWith('Console: Loaded programs array =', []);
 });
 
 test('handles missing logoutBtn element', async () => {
@@ -549,7 +549,7 @@ test('logs error to server when fetch fails and logToServer exists', async () =>
 test('calls applyConsoleParentVisibility when function exists and programId is set', async () => {
   let ready;
   const logoutBtn = { addEventListener: jest.fn() };
-  const applyConsoleParentVisibilityMock = jest.fn().mockResolvedValue(undefined);
+  const applyConsoleParentVisibilityMock = jest.fn().mockResolvedValue({ hasVisibleCards: true });
   const document = {
     getElementById: jest.fn(id => {
       if (id === 'user-management-link') return { href: '' };

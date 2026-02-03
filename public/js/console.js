@@ -36,10 +36,13 @@ document.addEventListener('DOMContentLoaded', async () => {
       credentials: 'include',
       headers: typeof getAuthHeaders === 'function' ? getAuthHeaders() : {}
     });
+    console.log('Console: /programs response status =', res.status, res.ok);
     if (res.ok) {
       const data = await res.json().catch(() => null);
-      const programs = data?.programs || [];
-      console.log('Loaded programs', programs);
+      console.log('Console: /programs raw data =', data);
+      // Handle both array response and { programs: [...] } response
+      const programs = Array.isArray(data) ? data : (data?.programs || []);
+      console.log('Console: Loaded programs array =', programs);
       if (window.logToServer) {
         window.logToServer('Loaded programs', { level: 'info' });
       }
@@ -75,8 +78,28 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Apply permissions to show/hide cards based on user's role
   const programId = localStorage.getItem('lastSelectedProgramId');
-  if (programId && typeof applyConsoleParentVisibility === 'function') {
-    await applyConsoleParentVisibility(programId);
+  console.log('Console: programId =', programId);
+  if (typeof applyConsoleParentVisibility === 'function') {
+    console.log('Console: calling applyConsoleParentVisibility');
+    const result = await applyConsoleParentVisibility(programId);
+    console.log('Console: permissions result =', result);
+
+    // Show error message if permissions couldn't be loaded
+    if (result.error || !result.hasVisibleCards) {
+      const mainContent = document.getElementById('main-content');
+      const grid = mainContent.querySelector('.grid');
+      if (grid) {
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'col-span-full bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center';
+        errorDiv.innerHTML = result.error
+          ? `<p class="text-yellow-800 font-medium">Unable to load permissions.</p>
+             <p class="text-yellow-700 text-sm mt-2">Please try refreshing the page or logging out and back in.</p>
+             <p class="text-yellow-600 text-xs mt-2">Error: ${result.error}</p>`
+          : `<p class="text-yellow-800 font-medium">No accessible features found.</p>
+             <p class="text-yellow-700 text-sm mt-2">You don't have permissions for any features. Contact your program administrator.</p>`;
+        grid.prepend(errorDiv);
+      }
+    }
   }
 
   const logoutBtn = document.getElementById('logoutBtn');

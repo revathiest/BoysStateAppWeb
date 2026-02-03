@@ -46,11 +46,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   document.getElementById('main-content').classList.remove('hidden');
   const listEl = document.getElementById('programList');
-  // if (!data.programs || data.programs.length === 0) {
+  // Handle both array response and { programs: [...] } response
+  const programs = Array.isArray(data) ? data : (data?.programs || []);
+  // if (!programs || programs.length === 0) {
   //   window.location.href = 'onboarding.html';
   //   return;
   // }
-  data.programs.forEach((p, idx) => {
+  programs.forEach((p, idx) => {
     const li = document.createElement('li');
     li.className = 'bg-white shadow p-4 rounded-lg flex items-center justify-between';
     li.innerHTML = `<span>${p.programName}</span><span class="px-2 py-1 rounded text-white ${p.role === 'admin' ? 'bg-blue-700' : 'bg-yellow-500 text-blue-900'}">${p.role}</span>`;
