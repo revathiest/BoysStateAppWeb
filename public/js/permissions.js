@@ -114,15 +114,26 @@ async function hasAnyPermission(programId, permissions) {
  * Returns object with visibility info for parent page decisions.
  */
 async function applyPermissions(programId) {
+  // Find all elements with data-permission attribute first
+  const elements = document.querySelectorAll('[data-permission]');
+
+  // Helper to mark all elements as checked but hidden (secure default)
+  const markCheckedButHidden = (reason) => {
+    console.warn(`applyPermissions: ${reason}`);
+    elements.forEach(el => {
+      el.classList.add('permission-checked');
+      // Don't show - leave hidden for security
+    });
+    return { hasVisibleCards: false, visibleGroups: {}, error: reason };
+  };
+
   if (!programId) {
-    console.warn('applyPermissions called without programId');
-    return { hasVisibleCards: false, visibleGroups: {} };
+    return markCheckedButHidden('no programId provided');
   }
 
   const permData = await getUserPermissions(programId);
   if (!permData) {
-    console.warn('Could not load permissions for program:', programId);
-    return { hasVisibleCards: false, visibleGroups: {} };
+    return markCheckedButHidden(`could not load permissions for program ${programId}`);
   }
 
   const userPermissions = permData.permissions || [];
@@ -136,9 +147,6 @@ async function applyPermissions(programId) {
   };
 
   let totalVisibleCards = 0;
-
-  // Find all elements with data-permission attribute
-  const elements = document.querySelectorAll('[data-permission]');
 
   elements.forEach(el => {
     const permission = el.getAttribute('data-permission');
