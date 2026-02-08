@@ -2,3 +2,4 @@ node_modules/
 coverage/
 API_ENDPOINTS.md
 .claude/settings.local.json
+claude.local.md
