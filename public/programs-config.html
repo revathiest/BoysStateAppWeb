@@ -5,15 +5,14 @@
   <title>Program Configuration</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <link rel="stylesheet" href="tailwind.css" />
-  <link rel="stylesheet" href="logo.css" />
 </head>
 <body class="bg-gray-50 font-sans min-h-screen">
 
   <!-- NAVBAR -->
   <nav class="bg-legend-blue text-white px-6 py-4 flex items-center justify-between shadow">
     <div class="flex items-center gap-3">
-      <img src="images/Boys-State-Shield-White-on-Blue.png" alt="Logo" class="w-8 h-8 p-1 rounded-full" />
-      <span class="text-xl font-semibold">Boys State App <span class="text-sm font-normal text-legend-gold ml-2">Admin Portal</span></span>
+      <img src="images/State-Forge-Shield-White-on-Blue.png" alt="Logo" class="w-8 h-8 p-1 rounded-full" />
+      <span class="text-xl font-semibold">State Forge <span class="text-sm font-normal text-legend-gold ml-2">Admin Portal</span></span>
     </div>
     <button id="logoutBtn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-2xl shadow transition">Logout</button>
   </nav>
@@ -90,17 +89,40 @@
         </div>
       </div>
 
-      <div class="max-w-md">
-        <label for="voting-method-select" class="block text-sm font-medium text-gray-700 mb-1">Default Voting Method</label>
-        <select id="voting-method-select" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-legend-blue">
-          <option value="plurality">Plurality (most votes wins)</option>
-          <option value="majority">Majority (requires &gt;50%, may need runoff)</option>
-          <option value="ranked">Ranked Choice (instant runoff)</option>
-        </select>
-        <p class="text-xs text-gray-500 mt-2">This default applies to all new elections. Individual elections inherit this setting when created.</p>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <label for="voting-method-select" class="block text-sm font-medium text-gray-700 mb-1">Default Voting Method</label>
+          <select id="voting-method-select" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-legend-blue">
+            <option value="plurality">Plurality (most votes wins)</option>
+            <option value="majority">Majority (requires &gt;50%, may need runoff)</option>
+            <option value="ranked">Ranked Choice (instant runoff)</option>
+          </select>
+          <p class="text-xs text-gray-500 mt-2">Individual elections inherit this setting when created.</p>
+        </div>
+
+        <div>
+          <label for="primary-model-select" class="block text-sm font-medium text-gray-700 mb-1">Primary Model</label>
+          <select id="primary-model-select" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-legend-blue">
+            <option value="closed">Closed (only party members vote)</option>
+            <option value="open">Open (any voter can participate)</option>
+            <option value="semi_open">Semi-Open (voter chooses one primary)</option>
+            <option value="blanket">Blanket (combined ballot, all parties)</option>
+          </select>
+          <p class="text-xs text-gray-500 mt-2">Controls who can vote in primary elections. This applies to all parties in the program.</p>
+        </div>
+
+        <!-- Advancement Model - only shown for Blanket primaries -->
+        <div id="advancement-model-container" class="hidden">
+          <label for="advancement-model-select" class="block text-sm font-medium text-gray-700 mb-1">Advancement Model</label>
+          <select id="advancement-model-select" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-legend-blue">
+            <option value="top_2">Top 2 (California-style: top 2 advance to general)</option>
+            <option value="top_4_irv">Top 4 + RCV (Alaska-style: top 4 advance, general uses ranked choice)</option>
+          </select>
+          <p class="text-xs text-gray-500 mt-2">How candidates advance from blanket primary to general election.</p>
+        </div>
       </div>
 
-      <div id="voting-method-status" class="mt-3 text-sm hidden"></div>
+      <div id="election-settings-status" class="mt-3 text-sm hidden"></div>
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
@@ -189,7 +211,7 @@
 
   <!-- FOOTER -->
   <footer class="bg-legend-blue text-white border-t mt-8 py-4 text-center text-xs">
-    &copy; 2025 Boys State App Admin Portal. Not affiliated with or endorsed by the American Legion.
+    &copy; 2025 State Forge Admin. Not affiliated with or endorsed by the American Legion.
   </footer>
 
   <script src="js/config.js"></script>

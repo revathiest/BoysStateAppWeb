@@ -267,6 +267,9 @@ async function saveNewYear(programId, year) {
 // Election Settings
 async function loadElectionSettings(programId) {
   const votingMethodSelect = document.getElementById('voting-method-select');
+  const primaryModelSelect = document.getElementById('primary-model-select');
+  const advancementModelContainer = document.getElementById('advancement-model-container');
+  const advancementModelSelect = document.getElementById('advancement-model-select');
   if (!programId || !votingMethodSelect) return;
 
   try {
@@ -280,49 +283,117 @@ async function loadElectionSettings(programId) {
 
     // Set the voting method dropdown
     votingMethodSelect.value = program.defaultVotingMethod || 'plurality';
+
+    // Set the primary model dropdown
+    const primaryModel = program.defaultPrimaryModel || 'closed';
+    if (primaryModelSelect) {
+      primaryModelSelect.value = primaryModel;
+    }
+
+    // Show/hide advancement model based on primary model
+    // Only blanket primaries need advancement model selection
+    if (advancementModelContainer && advancementModelSelect) {
+      if (primaryModel === 'blanket') {
+        advancementModelContainer.classList.remove('hidden');
+        advancementModelSelect.value = program.defaultAdvancementModel || 'top_2';
+      } else {
+        advancementModelContainer.classList.add('hidden');
+      }
+    }
   } catch (err) {
     console.error('Error loading election settings:', err);
   }
 }
 
-async function saveVotingMethod(programId, method) {
-  const statusDiv = document.getElementById('voting-method-status');
+async function saveElectionSetting(programId, setting, value) {
+  const statusDiv = document.getElementById('election-settings-status');
 
   try {
     const response = await fetch(`${apiBase}/programs/${encodeURIComponent(programId)}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
       credentials: 'include',
-      body: JSON.stringify({ defaultVotingMethod: method }),
+      body: JSON.stringify({ [setting]: value }),
     });
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.error || 'Failed to save voting method');
+      throw new Error(error.error || 'Failed to save setting');
     }
 
     // Show success message
-    statusDiv.textContent = 'Voting method saved successfully';
-    statusDiv.classList.remove('hidden', 'text-red-600');
-    statusDiv.classList.add('text-green-700');
-    setTimeout(() => statusDiv.classList.add('hidden'), 3000);
+    if (statusDiv) {
+      const settingNames = {
+        defaultVotingMethod: 'Voting method',
+        defaultPrimaryModel: 'Primary model',
+        defaultAdvancementModel: 'Advancement model'
+      };
+      const settingName = settingNames[setting] || 'Setting';
+      statusDiv.textContent = `${settingName} saved successfully`;
+      statusDiv.classList.remove('hidden', 'text-red-600');
+      statusDiv.classList.add('text-green-700');
+      setTimeout(() => statusDiv.classList.add('hidden'), 3000);
+    }
   } catch (err) {
-    statusDiv.textContent = err.message || 'Failed to save voting method';
-    statusDiv.classList.remove('hidden', 'text-green-700');
-    statusDiv.classList.add('text-red-600');
+    if (statusDiv) {
+      statusDiv.textContent = err.message || 'Failed to save setting';
+      statusDiv.classList.remove('hidden', 'text-green-700');
+      statusDiv.classList.add('text-red-600');
+    }
   }
+}
+
+// Legacy alias for backwards compatibility
+async function saveVotingMethod(programId, method) {
+  return saveElectionSetting(programId, 'defaultVotingMethod', method);
 }
 
 function setupElectionSettings() {
   const votingMethodSelect = document.getElementById('voting-method-select');
-  if (!votingMethodSelect) return;
+  const primaryModelSelect = document.getElementById('primary-model-select');
+  const advancementModelContainer = document.getElementById('advancement-model-container');
+  const advancementModelSelect = document.getElementById('advancement-model-select');
 
-  votingMethodSelect.addEventListener('change', () => {
-    const programId = window.selectedProgramId || document.getElementById('current-program-id')?.value;
-    if (programId) {
-      saveVotingMethod(programId, votingMethodSelect.value);
-    }
-  });
+  if (votingMethodSelect) {
+    votingMethodSelect.addEventListener('change', () => {
+      const programId = window.selectedProgramId || document.getElementById('current-program-id')?.value;
+      if (programId) {
+        saveElectionSetting(programId, 'defaultVotingMethod', votingMethodSelect.value);
+      }
+    });
+  }
+
+  if (primaryModelSelect) {
+    primaryModelSelect.addEventListener('change', () => {
+      const programId = window.selectedProgramId || document.getElementById('current-program-id')?.value;
+      const primaryModel = primaryModelSelect.value;
+
+      // Show/hide advancement model dropdown based on primary model
+      // Only blanket primaries need an advancement model choice
+      if (advancementModelContainer && advancementModelSelect) {
+        if (primaryModel === 'blanket') {
+          advancementModelContainer.classList.remove('hidden');
+          // Default to top_2 when switching to blanket
+          advancementModelSelect.value = 'top_2';
+        } else {
+          advancementModelContainer.classList.add('hidden');
+        }
+      }
+
+      if (programId) {
+        saveElectionSetting(programId, 'defaultPrimaryModel', primaryModel);
+      }
+    });
+  }
+
+  if (advancementModelSelect) {
+    advancementModelSelect.addEventListener('change', () => {
+      const programId = window.selectedProgramId || document.getElementById('current-program-id')?.value;
+      if (programId) {
+        saveElectionSetting(programId, 'defaultAdvancementModel', advancementModelSelect.value);
+      }
+    });
+  }
 }
 
 function setupYearManagement() {
@@ -420,6 +491,7 @@ if (typeof module !== 'undefined' && module.exports) {
     getSelectedYear,
     loadElectionSettings,
     saveVotingMethod,
+    saveElectionSetting,
     setupElectionSettings
   };
 }

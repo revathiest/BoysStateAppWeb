@@ -5,9 +5,46 @@
 
 const apiBase = window.API_URL || "";
 
+// Cache for program settings
+let cachedProgramSettings = null;
+
 // Get username from session/localStorage
 function getUsername() {
   return localStorage.getItem("user") || sessionStorage.getItem("user");
+}
+
+// Fetch program settings (cached)
+async function getProgramSettings() {
+  if (cachedProgramSettings) return cachedProgramSettings;
+
+  const programId = getProgramId();
+  if (!programId) return null;
+
+  try {
+    const headers = {};
+    if (typeof getAuthHeaders === 'function') {
+      Object.assign(headers, getAuthHeaders());
+    }
+
+    const response = await fetch(`${apiBase}/programs/${encodeURIComponent(programId)}`, {
+      headers,
+      credentials: 'include',
+    });
+
+    if (response.ok) {
+      cachedProgramSettings = await response.json();
+      return cachedProgramSettings;
+    }
+  } catch (err) {
+    console.error('Error fetching program settings:', err);
+  }
+  return null;
+}
+
+// Get program's primary model (for display purposes)
+async function getProgramPrimaryModel() {
+  const settings = await getProgramSettings();
+  return settings?.defaultPrimaryModel || 'closed';
 }
 
 // Get programId from URL params or localStorage
@@ -130,7 +167,9 @@ async function loadParties() {
     }
 
     // Render parties (without inline styles to comply with CSP)
-    partiesList.innerHTML = activeParties.map(party => `
+    // Note: Primary Model and Advancement Model are now program-level (set in Election Settings)
+    partiesList.innerHTML = activeParties.map(party => {
+      return `
       <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200 hover:border-legend-blue transition">
         <div class="flex items-center gap-3">
           <div class="party-color-indicator w-8 h-8 rounded-full border-2 border-gray-300" data-color="${party.color || '#1B3D6D'}"></div>
@@ -139,11 +178,20 @@ async function loadParties() {
             <p class="text-xs text-gray-500">${party.color || 'No color set'}</p>
           </div>
         </div>
-        <button class="delete-party-btn text-red-600 hover:text-red-800 font-semibold transition" data-id="${party.id}" data-name="${escapeHtml(party.name)}">
-          Delete
-        </button>
+        <div class="flex gap-2">
+          <button class="edit-party-btn text-legend-blue hover:text-blue-800 font-semibold transition"
+                  data-id="${party.id}"
+                  data-name="${escapeHtml(party.name)}"
+                  data-color="${party.color || '#1B3D6D'}">
+            Edit
+          </button>
+          <button class="delete-party-btn text-red-600 hover:text-red-800 font-semibold transition" data-id="${party.id}" data-name="${escapeHtml(party.name)}">
+            Delete
+          </button>
+        </div>
       </div>
-    `).join('');
+    `;
+    }).join('');
 
     // Set party colors via JavaScript to comply with CSP
     document.querySelectorAll('.party-color-indicator').forEach(el => {
@@ -161,6 +209,16 @@ async function loadParties() {
           'Delete',
           () => deleteParty(partyId)
         );
+      });
+    });
+
+    // Attach edit handlers
+    document.querySelectorAll('.edit-party-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const partyId = e.target.dataset.id;
+        const partyName = e.target.dataset.name;
+        const partyColor = e.target.dataset.color;
+        openEditPartyModal(partyId, partyName, partyColor);
       });
     });
 
@@ -196,11 +254,15 @@ async function saveParty(name, color) {
       Object.assign(headers, getAuthHeaders());
     }
 
+    // Note: primaryModel and advancementModel are now set at the program level (Election Settings), not per-party
     const response = await fetch(`${apiBase}/programs/${encodeURIComponent(programId)}/parties`, {
       method: 'POST',
       headers,
       credentials: 'include',
-      body: JSON.stringify({ name: name.trim(), color: color || '#1B3D6D' }),
+      body: JSON.stringify({
+        name: name.trim(),
+        color: color || '#1B3D6D',
+      }),
     });
 
     if (!response.ok) {
@@ -210,9 +272,7 @@ async function saveParty(name, color) {
 
     // Success - reload parties and hide form
     await loadParties();
-    document.getElementById('add-party-form').classList.add('hidden');
-    document.getElementById('party-name-input').value = '';
-    document.getElementById('party-color-input').value = '#1B3D6D';
+    resetPartyForm();
     showSuccess('Party added successfully!');
 
   } catch (err) {
@@ -220,6 +280,14 @@ async function saveParty(name, color) {
     statusDiv.classList.remove('hidden', 'text-green-700');
     statusDiv.classList.add('text-red-600');
   }
+}
+
+// Reset the party form to defaults
+function resetPartyForm() {
+  document.getElementById('add-party-form').classList.add('hidden');
+  document.getElementById('party-name-input').value = '';
+  document.getElementById('party-color-input').value = '#1B3D6D';
+  document.getElementById('party-form-status').classList.add('hidden');
 }
 
 // Delete a party (soft delete - sets status to retired)
@@ -250,6 +318,75 @@ async function deleteParty(partyId) {
 
   } catch (err) {
     showError(err.message || 'Failed to delete party');
+  }
+}
+
+// Open the edit party modal
+function openEditPartyModal(partyId, name, color) {
+  const modal = document.getElementById('edit-party-modal');
+  const statusDiv = document.getElementById('edit-party-status');
+
+  // Populate form fields (primaryModel and advancementModel are now program-level, not per-party)
+  document.getElementById('edit-party-id').value = partyId;
+  document.getElementById('edit-party-name').value = name;
+  document.getElementById('edit-party-color').value = color;
+
+  // Clear any previous status
+  statusDiv.classList.add('hidden');
+  statusDiv.textContent = '';
+
+  modal.classList.remove('hidden');
+}
+
+// Close the edit party modal
+function closeEditPartyModal() {
+  document.getElementById('edit-party-modal').classList.add('hidden');
+}
+
+// Update an existing party
+async function updateParty() {
+  const partyId = document.getElementById('edit-party-id').value;
+  const name = document.getElementById('edit-party-name').value;
+  const color = document.getElementById('edit-party-color').value;
+  const statusDiv = document.getElementById('edit-party-status');
+
+  // Validate
+  if (!name || name.trim().length === 0) {
+    statusDiv.textContent = 'Party name is required.';
+    statusDiv.classList.remove('hidden');
+    return;
+  }
+
+  try {
+    const headers = { 'Content-Type': 'application/json' };
+    if (typeof getAuthHeaders === 'function') {
+      Object.assign(headers, getAuthHeaders());
+    }
+
+    // Note: primaryModel and advancementModel are now set at the program level (Election Settings), not per-party
+    const response = await fetch(`${apiBase}/parties/${partyId}`, {
+      method: 'PUT',
+      headers,
+      credentials: 'include',
+      body: JSON.stringify({
+        name: name.trim(),
+        color: color,
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to update party');
+    }
+
+    // Success - close modal and reload
+    closeEditPartyModal();
+    showSuccess('Party updated successfully!');
+    await loadParties();
+
+  } catch (err) {
+    statusDiv.textContent = err.message || 'Failed to update party';
+    statusDiv.classList.remove('hidden');
   }
 }
 
@@ -333,6 +470,27 @@ function escapeHtml(str) {
     .replace(/"/g, "&quot;");
 }
 
+// Get human-readable label for primary model
+function getPrimaryModelLabel(model) {
+  const labels = {
+    closed: 'Closed Primary',
+    open: 'Open Primary',
+    semi_open: 'Semi-Open Primary',
+    blanket: 'Blanket Primary',
+  };
+  return labels[model] || model;
+}
+
+// Get human-readable label for advancement model
+function getAdvancementModelLabel(model) {
+  const labels = {
+    traditional: 'Traditional',
+    top_2: 'Top 2',
+    top_4_irv: 'Top 4 + RCV',
+  };
+  return labels[model] || model;
+}
+
 // Setup event listeners
 function setupEventListeners() {
   // Add party button
@@ -346,13 +504,10 @@ function setupEventListeners() {
 
   // Cancel button
   document.getElementById('cancel-party-btn').addEventListener('click', () => {
-    document.getElementById('add-party-form').classList.add('hidden');
-    document.getElementById('party-name-input').value = '';
-    document.getElementById('party-color-input').value = '#1B3D6D';
-    document.getElementById('party-form-status').classList.add('hidden');
+    resetPartyForm();
   });
 
-  // Save party button
+  // Save party button (primaryModel and advancementModel are now program-level, set in Election Settings)
   document.getElementById('save-party-btn').addEventListener('click', () => {
     const name = document.getElementById('party-name-input').value;
     const color = document.getElementById('party-color-input').value;
@@ -373,6 +528,21 @@ function setupEventListeners() {
   document.getElementById('confirmation-cancel-btn').addEventListener('click', closeConfirmation);
   document.getElementById('confirmation-modal').addEventListener('click', (e) => {
     if (e.target === e.currentTarget) closeConfirmation();
+  });
+
+  // Edit party modal handlers
+  document.getElementById('edit-party-cancel-btn').addEventListener('click', closeEditPartyModal);
+  document.getElementById('edit-party-save-btn').addEventListener('click', updateParty);
+  document.getElementById('edit-party-modal').addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) closeEditPartyModal();
+  });
+
+  // Allow Enter key to save in edit modal
+  document.getElementById('edit-party-name').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      document.getElementById('edit-party-save-btn').click();
+    }
   });
 
   // Allow Enter key to save
@@ -440,7 +610,15 @@ if (typeof module !== 'undefined' && module.exports) {
     getSelectedYear,
     loadParties,
     saveParty,
+    updateParty,
     deleteParty,
-    addDefaultParties
+    addDefaultParties,
+    resetPartyForm,
+    openEditPartyModal,
+    closeEditPartyModal,
+    getPrimaryModelLabel,
+    getAdvancementModelLabel,
+    getProgramSettings,
+    getProgramPrimaryModel
   };
 }
