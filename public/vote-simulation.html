@@ -2,18 +2,17 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Vote Simulation – Boys State App</title>
+  <title>Vote Simulation – State Forge</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="tailwind.css">
-  <link rel="stylesheet" href="logo.css">
 </head>
 <body class="bg-gray-50 font-sans min-h-screen">
 
   <!-- NAVBAR -->
   <nav class="bg-legend-blue text-white px-6 py-4 flex items-center justify-between shadow">
     <div class="flex items-center gap-3">
-      <img src="images/Boys-State-Shield-White-on-Blue.png" alt="Logo" class="w-8 h-8 p-1 rounded-full" />
-      <span class="text-xl font-semibold">Boys State App <span class="text-sm font-normal text-legend-gold ml-2">Admin Portal</span></span>
+      <img src="images/State-Forge-Shield-White-on-Blue.png" alt="Logo" class="w-8 h-8 p-1 rounded-full" />
+      <span class="text-xl font-semibold">State Forge <span class="text-sm font-normal text-legend-gold ml-2">Admin Portal</span></span>
     </div>
     <button id="logoutBtn" type="button" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-2xl shadow transition" aria-label="Logout">Logout</button>
   </nav>
@@ -26,11 +25,28 @@
 
     <div class="flex items-center justify-between mb-6">
       <div>
-        <h1 class="text-3xl font-extrabold text-legend-blue mb-2">Vote Simulation</h1>
-        <p class="text-gray-700">Simulate voting for testing and demonstration purposes. Admin only.</p>
+        <h1 class="text-3xl font-extrabold text-legend-blue mb-2">Election Testing Console</h1>
+        <p class="text-gray-700">Create nominations, simulate voting, and reset elections for testing. Admin only.</p>
       </div>
-      <div class="bg-amber-100 border border-amber-400 text-amber-800 px-4 py-2 rounded-lg text-sm">
-        <strong>Admin Tool</strong> - For testing only
+      <div class="flex items-center gap-3">
+        <button id="reset-all-btn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg shadow transition">
+          Reset All Elections
+        </button>
+        <div class="bg-amber-100 border border-amber-400 text-amber-800 px-4 py-2 rounded-lg text-sm">
+          <strong>Admin Tool</strong> - For testing only
+        </div>
+      </div>
+    </div>
+
+    <!-- Admin Access Check Warning -->
+    <div id="admin-warning" class="hidden bg-red-50 border-l-4 border-red-400 p-4 rounded mb-6">
+      <div class="flex items-start">
+        <span class="text-red-400 text-xl mr-3">&#9888;</span>
+        <div>
+          <h3 class="font-semibold text-red-800">Access Denied</h3>
+          <p class="text-red-700 text-sm">This page is only accessible to program administrators.</p>
+          <a href="console.html" class="text-legend-blue font-semibold hover:underline text-sm">Return to Console &rarr;</a>
+        </div>
       </div>
     </div>
 
@@ -38,9 +54,192 @@
     <div id="errorBox" class="hidden bg-red-100 text-red-700 px-4 py-3 rounded-xl mb-4 shadow"></div>
     <div id="successBox" class="hidden bg-green-100 text-green-700 px-4 py-3 rounded-xl mb-4 shadow"></div>
 
-    <!-- Step 1: Select Election -->
+    <!-- Main Content (hidden until admin check passes) -->
+    <div id="main-content" class="hidden">
+
+    <!-- Nominations Section -->
+    <div id="nominations-section" class="bg-white rounded-2xl shadow-lg p-6 mb-6 border-t-4 border-purple-500">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h2 class="text-xl font-bold text-legend-blue">Step 1: Create Nominations</h2>
+          <p class="text-sm text-gray-600">Select an election accepting nominations and add candidates</p>
+        </div>
+        <span id="nomination-count" class="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm font-semibold">0 elections open for nominations</span>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <div>
+          <label for="nom-year-select" class="block text-sm font-medium text-gray-700 mb-1">Program Year</label>
+          <select id="nom-year-select" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500">
+            <option value="">Loading years...</option>
+          </select>
+        </div>
+        <div>
+          <label for="nom-election-select" class="block text-sm font-medium text-gray-700 mb-1">Election (Nomination Open)</label>
+          <select id="nom-election-select" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500">
+            <option value="">Select year first...</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Nomination Form -->
+      <div id="nomination-form" class="hidden bg-gray-50 rounded-lg p-4">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-lg font-semibold text-gray-800">Add Candidate</h3>
+          <div id="nomination-stats" class="text-sm text-gray-600">
+            <span id="nom-candidates-count">0</span> candidates | <span id="nom-eligible-count">0</span> eligible
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+          <div class="md:col-span-2">
+            <label for="nom-delegate-select" class="block text-sm font-medium text-gray-700 mb-1">Select Delegate</label>
+            <select id="nom-delegate-select" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500">
+              <option value="">Select a delegate...</option>
+            </select>
+          </div>
+          <div class="flex items-end">
+            <button id="add-nomination-btn" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg shadow transition">
+              Add Nomination
+            </button>
+          </div>
+        </div>
+
+        <!-- Current Candidates -->
+        <div id="current-nominees" class="mt-4">
+          <h4 class="text-sm font-semibold text-gray-700 mb-2">Current Candidates</h4>
+          <div id="nominees-list" class="space-y-2 max-h-40 overflow-y-auto">
+            <p class="text-gray-500 italic text-sm">No candidates yet</p>
+          </div>
+        </div>
+
+        <!-- Quick Fill -->
+        <div class="mt-4 pt-4 border-t border-gray-200">
+          <div class="flex items-center justify-between">
+            <span class="text-sm text-gray-600">Auto-nominate random eligible delegates:</span>
+            <div class="flex items-center gap-2">
+              <input type="number" id="auto-nom-count" min="1" max="10" value="3" class="w-16 border border-gray-300 rounded px-2 py-1 text-sm">
+              <button id="auto-nominate-btn" class="bg-gray-600 hover:bg-gray-700 text-white font-semibold py-1 px-3 rounded-lg text-sm transition">
+                Auto-Nominate
+              </button>
+              <label class="flex items-center gap-1 text-sm text-gray-600 ml-2">
+                <input type="checkbox" id="auto-close-after-nom" class="rounded border-gray-300">
+                <span>Close after</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Close This Nomination -->
+        <div class="mt-3 pt-3 border-t border-gray-200">
+          <div class="flex items-center justify-between">
+            <span class="text-sm text-gray-600">Close nominations for this election (changes status to Scheduled):</span>
+            <button id="close-nomination-btn" class="bg-orange-500 hover:bg-orange-600 text-white font-semibold py-1 px-3 rounded-lg text-sm transition">
+              Close This Nomination
+            </button>
+          </div>
+        </div>
+
+        <!-- Clear Nominees -->
+        <div class="mt-3 pt-3 border-t border-gray-200">
+          <div class="flex items-center justify-between">
+            <span class="text-sm text-gray-600">Remove all nominees from this election:</span>
+            <button id="clear-nominees-btn" class="bg-red-500 hover:bg-red-600 text-white font-semibold py-1 px-3 rounded-lg text-sm transition">
+              Clear Nominees
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bulk Operations -->
+      <div id="bulk-operations" class="mt-4 bg-blue-50 rounded-lg p-4 border border-blue-200">
+        <h3 class="text-md font-semibold text-blue-800 mb-3">Bulk Operations</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Row 1: Open Nominations at Level -->
+          <div class="flex items-center justify-between bg-white rounded-lg p-3 shadow-sm">
+            <div>
+              <span class="text-sm font-medium text-gray-700">Open nominations at level</span>
+              <p class="text-xs text-gray-500">Create primaries (partisan) or generals (non-partisan)</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <select id="bulk-grouping-type" class="w-24 border border-gray-300 rounded px-2 py-1 text-sm">
+                <option value="">Level...</option>
+              </select>
+              <select id="bulk-election-type" class="w-20 border border-gray-300 rounded px-2 py-1 text-sm">
+                <option value="primary">Primary</option>
+                <option value="general">General</option>
+              </select>
+              <button id="open-elections-btn" class="bg-green-600 hover:bg-green-700 text-white font-semibold py-1 px-3 rounded-lg text-sm transition whitespace-nowrap">
+                Open
+              </button>
+            </div>
+          </div>
+          <!-- Row 1: Auto-nominate -->
+          <div class="flex items-center justify-between bg-white rounded-lg p-3 shadow-sm">
+            <div>
+              <span class="text-sm font-medium text-gray-700">Auto-nominate ALL open elections</span>
+              <p class="text-xs text-gray-500">1 per seat + 0 to N extra</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <input type="number" id="bulk-nom-count" min="0" max="10" value="3" class="w-12 border border-gray-300 rounded px-2 py-1 text-sm" title="Max extra candidates">
+              <button id="auto-nominate-all-btn" class="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-1 px-3 rounded-lg text-sm transition whitespace-nowrap">
+                Nominate All
+              </button>
+            </div>
+          </div>
+          <!-- Row 2: Close nominations -->
+          <div class="flex items-center justify-between bg-white rounded-lg p-3 shadow-sm">
+            <div>
+              <span class="text-sm font-medium text-gray-700">Close ALL nominations</span>
+              <p class="text-xs text-gray-500">Move to Scheduled status</p>
+            </div>
+            <button id="close-all-nominations-btn" class="bg-orange-500 hover:bg-orange-600 text-white font-semibold py-1 px-3 rounded-lg text-sm transition whitespace-nowrap">
+              Close All
+            </button>
+          </div>
+          <!-- Row 2: Start all elections -->
+          <div class="flex items-center justify-between bg-white rounded-lg p-3 shadow-sm">
+            <div>
+              <span class="text-sm font-medium text-gray-700">Start ALL scheduled elections</span>
+              <p class="text-xs text-gray-500">Begin voting on all</p>
+            </div>
+            <button id="start-all-elections-btn" class="bg-green-600 hover:bg-green-700 text-white font-semibold py-1 px-3 rounded-lg text-sm transition whitespace-nowrap">
+              Start All
+            </button>
+          </div>
+        </div>
+
+        <!-- Bulk Operation Progress -->
+        <div id="bulk-progress" class="hidden mt-4 bg-white rounded-lg p-3 border border-blue-200">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-sm font-medium text-gray-700">Progress</span>
+            <span id="bulk-progress-count" class="text-sm text-gray-600">0 / 0 elections</span>
+          </div>
+          <div class="w-full bg-gray-200 rounded-full h-2 mb-3">
+            <div id="bulk-progress-bar" class="bg-purple-600 h-2 rounded-full transition-all duration-200 w-0"></div>
+          </div>
+          <div id="bulk-progress-log" class="bg-gray-900 text-green-400 font-mono text-xs p-3 rounded max-h-32 overflow-y-auto">
+            <p>Ready...</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- No Nominations Open Warning -->
+      <div id="no-nominations-warning" class="hidden bg-gray-50 border-l-4 border-gray-400 p-4 rounded">
+        <div class="flex items-start">
+          <span class="text-gray-400 text-xl mr-3">&#9432;</span>
+          <div>
+            <h3 class="font-semibold text-gray-700">No Elections Open for Nominations</h3>
+            <p class="text-gray-600 text-sm">Open elections at a grouping level to start accepting nominations.</p>
+            <a href="elections-management.html" class="text-legend-blue font-semibold hover:underline text-sm">Go to Elections Management &rarr;</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 2: Select Election for Voting -->
     <div class="bg-white rounded-2xl shadow-lg p-6 mb-6 border-t-4 border-legend-gold">
-      <h2 class="text-xl font-bold text-legend-blue mb-4">Step 1: Select an Active Election</h2>
+      <h2 class="text-xl font-bold text-legend-blue mb-4">Step 2: Select an Active Election</h2>
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
         <div>
@@ -231,10 +430,34 @@
         </div>
       </div>
     </div>
+
+    </div><!-- End main-content -->
+
+    <!-- Reset Confirmation Modal -->
+    <div id="reset-modal" class="hidden fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+      <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 p-6">
+        <h3 class="text-xl font-bold text-red-600 mb-4">Confirm Reset</h3>
+        <p class="text-gray-700 mb-4">
+          This will <strong>permanently delete</strong> all elections, candidates, and votes for the selected program year.
+          This action cannot be undone.
+        </p>
+        <div class="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+          <p class="text-red-800 text-sm font-semibold">Year to reset: <span id="reset-year-display">-</span></p>
+        </div>
+        <div class="flex justify-end gap-3">
+          <button id="reset-cancel-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-2 px-4 rounded-lg transition">
+            Cancel
+          </button>
+          <button id="reset-confirm-btn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg shadow transition">
+            Yes, Delete Everything
+          </button>
+        </div>
+      </div>
+    </div>
   </main>
 
   <footer class="bg-legend-blue text-white border-t mt-8 py-4 text-center text-xs">
-    &copy; 2025 Boys State App Admin Portal. Not affiliated with or endorsed by the American Legion.
+    &copy; 2025 State Forge Admin. Not affiliated with or endorsed by the American Legion.
   </footer>
 
   <!-- Vote Audit Modal -->
@@ -274,6 +497,11 @@
 
   <script src="js/config.js"></script>
   <script src="js/authHelper.js"></script>
+  <!-- Vote simulation modules - load in dependency order -->
+  <script src="js/vote-simulation-utils.js"></script>
+  <script src="js/vote-simulation-nominations.js"></script>
+  <script src="js/vote-simulation-voting.js"></script>
+  <script src="js/vote-simulation-results.js"></script>
   <script src="js/vote-simulation.js"></script>
 </body>
 </html>

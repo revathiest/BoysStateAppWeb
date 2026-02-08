@@ -1,4 +1,4 @@
-# Boys State App – Web Admin Portal
+# State Forge – Web Admin Portal
 
 > **Disclaimer:**
 >
@@ -6,7 +6,7 @@
 
 ## Overview
 
-This repository contains the **web-based admin portal** for Boys State App. The portal enables program administrators to manage programs, configure application forms, review applicants, and prepare for program execution.
+This repository contains the **web-based admin portal** for State Forge. The portal enables program administrators to manage programs, configure application forms, review applicants, and prepare for program execution.
 
 **Key Features:**
 - Program creation and configuration
@@ -53,7 +53,7 @@ This repository contains the **web-based admin portal** for Boys State App. The 
 1. **Clone the repository:**
    ```bash
    git clone <repository-url>
-   cd BoysStateAppWeb
+   cd StateForgeWeb
    ```
 
 2. **Install dependencies:**
@@ -135,7 +135,7 @@ All authenticated requests include JWT token via `Authorization: Bearer <token>`
 ## Project Structure
 
 ```
-BoysStateAppWeb/
+StateForgeWeb/
 ├── public/              # Static files (HTML, CSS, JS)
 │   ├── css/            # Compiled Tailwind CSS
 │   ├── js/             # JavaScript modules

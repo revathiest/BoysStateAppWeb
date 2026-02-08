@@ -1,4 +1,4 @@
-# Boys State App - Web Admin Portal
+# State Forge - Web Admin Portal
 ## Project Overview & Specification
 
 **Last Updated**: 2026-01-27
@@ -24,7 +24,7 @@
 
 ## Executive Summary
 
-The Boys State App Web Admin Portal is a comprehensive management system for American Legion Boys State programs. It enables program administrators to:
+The State Forge Web Admin Portal is a comprehensive management system for American Legion Boys State programs. It enables program administrators to:
 
 - Configure and manage their Boys State programs year-over-year
 - Create and distribute application forms for delegates and staff

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Boys State App Web Admin Portal - A web-based administrative portal for Boys State programs. This is a static HTML/JavaScript frontend with a lightweight Node.js development server. In production, static files are served via Netlify while the backend API (separate repository) handles all business logic and data persistence.
+State Forge Web Admin Portal - A web-based administrative portal for Boys State programs. This is a static HTML/JavaScript frontend with a lightweight Node.js development server. In production, static files are served via Netlify while the backend API (separate repository) handles all business logic and data persistence.
 
 **Important**: This project is NOT affiliated with or endorsed by the American Legion.
 

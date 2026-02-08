@@ -1172,7 +1172,7 @@ describe('saveVotingMethod', () => {
     global.window = { API_URL: 'http://api.test' };
     global.document = {
       getElementById: id => {
-        if (id === 'voting-method-status') return statusDiv;
+        if (id === 'election-settings-status') return statusDiv;
         return null;
       },
       addEventListener: jest.fn()
@@ -1210,7 +1210,7 @@ describe('saveVotingMethod', () => {
     }));
     const funcs = require('../public/js/programs-config.js');
     await funcs.saveVotingMethod('p1', 'invalid');
-    expect(statusDiv.textContent).toBe('Failed to save voting method');
+    expect(statusDiv.textContent).toBe('Failed to save setting');
   });
 
   test('saveVotingMethod shows error on network failure', async () => {
@@ -1239,7 +1239,7 @@ describe('setupElectionSettings', () => {
     global.document = {
       getElementById: id => {
         if (id === 'voting-method-select') return votingMethodSelect;
-        if (id === 'voting-method-status') return {
+        if (id === 'election-settings-status') return {
           textContent: '',
           classList: { add: jest.fn(), remove: jest.fn() }
         };

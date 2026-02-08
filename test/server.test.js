@@ -20,7 +20,7 @@ test('GET / returns index page', async () => {
   const text = await res.text();
 
   expect(res.status).toBe(200);
-  expect(text).toContain('Boys State App');
+  expect(text).toContain('State Forge');
 
   await stopServer(app);
 });

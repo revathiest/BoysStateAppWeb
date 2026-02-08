@@ -595,8 +595,32 @@ function renderElectionCard(election) {
       </div>
     `;
 
-    // Show leader/winner if available
-    if (election.leader && election.leader.voteCount > 0) {
+    // Show leader/winner if available, or tie indicator
+    if (election.hasTie && election.status === 'completed') {
+      // Show tie indicator for completed elections with unresolved ties
+      leaderHtml = `
+        <div class="mt-1 flex items-center gap-1 text-xs">
+          <span>⚖️</span>
+          <span class="font-medium text-amber-700">Tie - Resolution Required</span>
+        </div>
+      `;
+    } else if (election.winners && election.winners.length > 1 && election.status === 'completed') {
+      // Multi-seat election with multiple winners
+      const seatCount = election.position?.position?.seatCount || election.winners.length;
+      leaderHtml = `
+        <div class="mt-1 text-xs">
+          <div class="flex items-center gap-1 mb-1">
+            <span>🏆</span>
+            <span class="text-gray-500">Winners (${election.winners.length} of ${seatCount} seats):</span>
+          </div>
+          <div class="ml-5 space-y-0.5">
+            ${election.winners.map(w => `
+              <div class="font-medium text-gray-700">${escapeHtml(w.name)} <span class="text-gray-500 font-normal">(${w.voteCount} votes, ${w.percentage}%)</span></div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    } else if (election.leader && election.leader.voteCount > 0) {
       const leaderIcon = election.status === 'completed' ? '🏆' : '📊';
       const leaderLabel = election.status === 'completed' ? 'Winner' : 'Leading';
       // For RCV, indicate this is the final result after instant runoff
@@ -982,8 +1006,33 @@ function renderElectionResultsModal(data) {
     </div>
   `;
 
-  // Winner/leader display
-  if (data.winner) {
+  // Winner/leader display - support multiple winners for multi-seat elections
+  // Build a set of winner delegateIds for multi-seat support
+  const winnerIds = new Set((data.winners || []).map(w => w.delegateId));
+
+  // Only show winners if there's no unresolved tie
+  if (!data.hasTie && data.winners && data.winners.length > 0) {
+    const seatCount = data.seatCount || 1;
+    const winnerLabel = seatCount > 1 ? `Winners (${data.winners.length} of ${seatCount} seats)` : 'Winner';
+    html += `
+      <div class="bg-green-50 border border-green-200 rounded-lg p-3 mb-4">
+        <div class="flex items-center gap-2 text-green-800 mb-2">
+          <span class="text-green-600 text-lg">🏆</span>
+          <span class="font-semibold">${winnerLabel}</span>
+        </div>
+        ${data.winners.map(w => {
+          const winnerName = `${w.delegate?.firstName || ''} ${w.delegate?.lastName || ''}`.trim();
+          return `
+            <div class="flex items-center gap-2 ml-6 text-green-700">
+              <span class="font-medium">${escapeHtml(winnerName)}</span>
+              <span>(${w.voteCount} votes, ${w.percentage?.toFixed(1) || 0}%)</span>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    `;
+  } else if (!data.hasTie && data.winner) {
+    // Backwards compatibility for single winner
     const winnerName = `${data.winner.delegate?.firstName || ''} ${data.winner.delegate?.lastName || ''}`.trim();
     html += `
       <div class="bg-green-50 border border-green-200 rounded-lg p-3 mb-4">
@@ -994,7 +1043,41 @@ function renderElectionResultsModal(data) {
         </div>
       </div>
     `;
-  } else if (data.requiresRunoff && currentElection.method === 'majority' && !['runoff', 'primary_runoff'].includes(currentElection.electionType)) {
+  }
+
+  // Show "Advance Winners" button for completed primaries with winners
+  const hasWinners = (data.winners && data.winners.length > 0) || data.winner;
+  const isCompletedPrimary = currentElection.status === 'completed' &&
+    currentElection.electionType === 'primary' &&
+    !data.hasTie;
+  if (isCompletedPrimary && hasWinners) {
+    // Get the advancement model from the party
+    const advancementModel = currentElection.party?.party?.advancementModel || 'traditional';
+    const advancementLabels = {
+      'traditional': 'Traditional (winner advances)',
+      'top_2': 'Top 2 (top 2 advance)',
+      'top_4_irv': 'Top 4 IRV (top 4 advance to RCV general)',
+    };
+    html += `
+      <div class="bg-purple-50 border border-purple-200 rounded-lg p-3 mb-4">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="text-purple-600 text-lg">🚀</span>
+            <div>
+              <span class="font-semibold text-purple-800">Ready to Advance</span>
+              <span class="text-purple-600 text-sm ml-2">(${advancementLabels[advancementModel] || advancementModel})</span>
+            </div>
+          </div>
+          <button id="advance-winners-btn" class="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-1.5 px-4 rounded-lg shadow transition text-sm">
+            Advance to General
+          </button>
+        </div>
+        <p class="text-sm text-purple-700 mt-2">Advance winning candidates from this primary to the general election.</p>
+      </div>
+    `;
+  }
+
+  if (data.requiresRunoff && currentElection.method === 'majority' && !['runoff', 'primary_runoff'].includes(currentElection.electionType)) {
     // Show runoff needed warning with action button for majority elections
     html += `
       <div class="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4">
@@ -1017,6 +1100,69 @@ function renderElectionResultsModal(data) {
         <div class="flex items-center gap-2">
           <span class="text-amber-600 text-lg">⚠️</span>
           <span class="font-semibold text-amber-800">No winner determined - special action needed</span>
+        </div>
+      </div>
+    `;
+  }
+
+  // Tie warning for plurality elections
+  if (data.hasTie && data.tiedCandidates && data.tiedCandidates.length > 0) {
+    const seatsToResolve = data.seatsToResolve || 1;
+    const clearWinners = data.clearWinners || [];
+
+    // Show clear winners first if any
+    let clearWinnersHtml = '';
+    if (clearWinners.length > 0) {
+      clearWinnersHtml = `
+        <div class="mb-3 p-3 bg-green-50 border border-green-200 rounded">
+          <p class="text-sm font-medium text-green-800 mb-2">✓ Clear Winners (${clearWinners.length} of ${data.seatCount} seats filled):</p>
+          ${clearWinners.map(w => `
+            <p class="text-sm text-green-700 ml-4">• ${escapeHtml((w.delegate?.firstName || '') + ' ' + (w.delegate?.lastName || ''))} (${w.voteCount} votes)</p>
+          `).join('')}
+        </div>
+      `;
+    }
+
+    html += `
+      <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="text-yellow-600 text-lg">⚖️</span>
+          <span class="font-semibold text-yellow-800">Tie Detected - Admin Resolution Required</span>
+        </div>
+        ${clearWinnersHtml}
+        <p class="text-sm text-yellow-700 mb-3">
+          ${data.tiedCandidates.length} candidates are tied with ${data.tiedCandidates[0]?.voteCount || 0} votes each.
+          Select ${seatsToResolve} winner${seatsToResolve !== 1 ? 's' : ''} to fill the remaining seat${seatsToResolve !== 1 ? 's' : ''}.
+        </p>
+        <div class="space-y-2 mb-3" id="tie-candidates-list">
+          ${data.tiedCandidates.map(c => `
+            <label class="flex items-center gap-2 p-2 bg-white rounded border border-yellow-200 cursor-pointer hover:bg-yellow-100">
+              <input type="checkbox" name="tie-winner" value="${c.delegateId}" class="tie-winner-checkbox rounded border-gray-300 text-legend-blue focus:ring-legend-blue">
+              <span class="font-medium">${escapeHtml((c.delegate?.firstName || '') + ' ' + (c.delegate?.lastName || ''))}</span>
+              <span class="text-gray-500">(${c.voteCount} votes, ${c.percentage?.toFixed(1) || 0}%)</span>
+            </label>
+          `).join('')}
+        </div>
+        <div class="flex items-center justify-between">
+          <span id="tie-selection-count" class="text-sm text-yellow-700">Select ${seatsToResolve} candidate${seatsToResolve !== 1 ? 's' : ''}</span>
+          <button id="resolve-tie-btn" class="bg-yellow-600 hover:bg-yellow-700 text-white font-semibold py-1.5 px-4 rounded-lg shadow transition text-sm disabled:opacity-50 disabled:cursor-not-allowed" disabled data-seats-to-resolve="${seatsToResolve}">
+            Resolve Tie
+          </button>
+        </div>
+      </div>
+    `;
+  } else if (data.tieResolution) {
+    // Show that a tie was resolved
+    html += `
+      <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="text-blue-600 text-lg">✓</span>
+            <span class="font-medium text-blue-800">Tie resolved by admin (${data.tieResolution.method || 'manual choice'})</span>
+          </div>
+          <button id="clear-tie-resolution-btn" class="text-blue-600 hover:text-blue-800 text-sm underline">
+            Clear Resolution
+          </button>
         </div>
       </div>
     `;
@@ -1087,12 +1233,12 @@ function renderElectionResultsModal(data) {
         return c;
       });
 
-      // Sort: winner first, then by final vote count, eliminated last (by round desc)
+      // Sort: winners first, then by final vote count, eliminated last (by round desc)
       allCandidates.sort((a, b) => {
-        const aIsWinner = data.winner && data.winner.delegateId === a.delegateId;
-        const bIsWinner = data.winner && data.winner.delegateId === b.delegateId;
-        if (aIsWinner) return -1;
-        if (bIsWinner) return 1;
+        const aIsWinner = winnerIds.has(a.delegateId);
+        const bIsWinner = winnerIds.has(b.delegateId);
+        if (aIsWinner && !bIsWinner) return -1;
+        if (bIsWinner && !aIsWinner) return 1;
         if (a.isEliminated && !b.isEliminated) return 1;
         if (!a.isEliminated && b.isEliminated) return -1;
         if (a.isEliminated && b.isEliminated) {
@@ -1124,7 +1270,7 @@ function renderElectionResultsModal(data) {
       const percentage = totalVotes > 0 ? ((r.voteCount / totalVotes) * 100).toFixed(1) : 0;
       const barWidth = maxVotes > 0 ? Math.round((r.voteCount / maxVotes) * 100) : 0;
       const isLeader = index === 0 && r.voteCount > 0 && !r.isEliminated;
-      const isWinner = data.winner && data.winner.delegateId === r.delegateId;
+      const isWinner = winnerIds.has(r.delegateId);
       const isEliminated = r.isEliminated;
 
       // Determine styling based on status
@@ -1187,6 +1333,41 @@ function renderElectionResultsModal(data) {
   const resultsRunoffBtn = resultsContent.querySelector('#results-runoff-btn');
   if (resultsRunoffBtn) {
     resultsRunoffBtn.addEventListener('click', createRunoff);
+  }
+
+  // Attach advance winners button handler if present
+  const advanceWinnersBtn = resultsContent.querySelector('#advance-winners-btn');
+  if (advanceWinnersBtn) {
+    advanceWinnersBtn.addEventListener('click', advanceWinners);
+  }
+
+  // Attach tie resolution handlers if present
+  const tieCheckboxes = resultsContent.querySelectorAll('.tie-winner-checkbox');
+  const resolveTieBtn = resultsContent.querySelector('#resolve-tie-btn');
+  const selectionCountEl = resultsContent.querySelector('#tie-selection-count');
+
+  if (tieCheckboxes.length > 0 && resolveTieBtn) {
+    // Use seatsToResolve from button data attribute (number of seats that need tie resolution)
+    const seatsToResolve = parseInt(resolveTieBtn.dataset.seatsToResolve) || 1;
+
+    // Update selection count and button state when checkboxes change
+    tieCheckboxes.forEach(cb => {
+      cb.addEventListener('change', () => {
+        const selected = resultsContent.querySelectorAll('.tie-winner-checkbox:checked').length;
+        if (selectionCountEl) {
+          selectionCountEl.textContent = `${selected} of ${seatsToResolve} selected`;
+        }
+        resolveTieBtn.disabled = selected !== seatsToResolve;
+      });
+    });
+
+    resolveTieBtn.addEventListener('click', resolveTie);
+  }
+
+  // Attach clear tie resolution handler if present
+  const clearTieBtn = resultsContent.querySelector('#clear-tie-resolution-btn');
+  if (clearTieBtn) {
+    clearTieBtn.addEventListener('click', clearTieResolution);
   }
 }
 
@@ -2011,6 +2192,189 @@ async function createRunoff() {
       }
     },
     'success'
+  );
+}
+
+// Advance winners from primary to general election
+async function advanceWinners() {
+  if (!currentElection) return;
+
+  const advancementModel = currentElection.party?.party?.advancementModel || 'traditional';
+  const advancementDescriptions = {
+    'traditional': 'The winner will advance to the general election.',
+    'top_2': 'The top 2 vote-getters will advance to the general election.',
+    'top_4_irv': 'The top 4 vote-getters will advance to a ranked choice (IRV) general election.',
+  };
+
+  showConfirmation(
+    'Advance to General Election',
+    `${advancementDescriptions[advancementModel] || 'Winners will advance to the general election.'} Continue?`,
+    'Advance Winners',
+    async () => {
+      // Clear any previous error in election modal
+      const electionModalError = document.getElementById('election-modal-error');
+      if (electionModalError) {
+        electionModalError.classList.add('hidden');
+        electionModalError.textContent = '';
+      }
+
+      try {
+        const headers = {
+          'Content-Type': 'application/json',
+          ...(typeof getAuthHeaders === 'function' ? getAuthHeaders() : {}),
+        };
+
+        const response = await fetch(`${apiBase}/elections/${currentElection.id}/advance`, {
+          method: 'POST',
+          headers,
+          credentials: 'include',
+          body: JSON.stringify({}),
+        });
+
+        if (!response.ok) {
+          const error = await response.json().catch(() => ({}));
+          throw new Error(error.error || 'Failed to advance winners');
+        }
+
+        const result = await response.json();
+
+        // Handle business logic rejections (200 with success: false)
+        if (result.success === false) {
+          throw new Error(result.error || 'Advancement was rejected');
+        }
+
+        // Success - close election modal and refresh
+        showSuccess(result.message || 'Winners advanced to general election!');
+        closeElectionModal();
+        await loadElections();
+
+      } catch (err) {
+        // Show error in the election modal
+        if (electionModalError) {
+          electionModalError.textContent = err.message || 'Failed to advance winners';
+          electionModalError.classList.remove('hidden');
+        } else {
+          showError(err.message || 'Failed to advance winners');
+        }
+      }
+    },
+    'success'
+  );
+}
+
+// Resolve a tie by selecting winners
+async function resolveTie() {
+  if (!currentElection) return;
+
+  const resultsContent = document.getElementById('election-results-content');
+  const selectedCheckboxes = resultsContent.querySelectorAll('.tie-winner-checkbox:checked');
+  const selectedWinnerIds = Array.from(selectedCheckboxes).map(cb => parseInt(cb.value));
+
+  if (selectedWinnerIds.length === 0) {
+    showError('Please select at least one winner');
+    return;
+  }
+
+  // Get seatsToResolve from the button data attribute
+  const resolveTieBtn = resultsContent.querySelector('#resolve-tie-btn');
+  const seatsToResolve = resolveTieBtn ? parseInt(resolveTieBtn.dataset.seatsToResolve) || 1 : 1;
+  if (selectedWinnerIds.length !== seatsToResolve) {
+    showError(`Please select exactly ${seatsToResolve} winner${seatsToResolve !== 1 ? 's' : ''} to fill remaining seats`);
+    return;
+  }
+
+  const electionModalError = document.getElementById('election-modal-error');
+  if (electionModalError) {
+    electionModalError.classList.add('hidden');
+    electionModalError.textContent = '';
+  }
+
+  try {
+    const headers = {
+      'Content-Type': 'application/json',
+      ...(typeof getAuthHeaders === 'function' ? getAuthHeaders() : {}),
+    };
+
+    const response = await fetch(`${apiBase}/elections/${currentElection.id}/resolve-tie`, {
+      method: 'POST',
+      headers,
+      credentials: 'include',
+      body: JSON.stringify({ selectedWinnerIds }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.error || 'Failed to resolve tie');
+    }
+
+    const result = await response.json();
+    showSuccess(result.message || 'Tie resolved successfully!');
+
+    // Refresh results to show updated winners
+    await loadElectionResults();
+
+    // Refresh elections list to update the card
+    await loadElections();
+
+  } catch (err) {
+    if (electionModalError) {
+      electionModalError.textContent = err.message || 'Failed to resolve tie';
+      electionModalError.classList.remove('hidden');
+    } else {
+      showError(err.message || 'Failed to resolve tie');
+    }
+  }
+}
+
+// Clear a previously set tie resolution
+async function clearTieResolution() {
+  if (!currentElection) return;
+
+  showConfirmation(
+    'Clear Tie Resolution',
+    'This will clear the manual tie resolution and return the election to an unresolved tie state. Continue?',
+    'Clear Resolution',
+    async () => {
+      const electionModalError = document.getElementById('election-modal-error');
+      if (electionModalError) {
+        electionModalError.classList.add('hidden');
+        electionModalError.textContent = '';
+      }
+
+      try {
+        const headers = {
+          ...(typeof getAuthHeaders === 'function' ? getAuthHeaders() : {}),
+        };
+
+        const response = await fetch(`${apiBase}/elections/${currentElection.id}/resolve-tie`, {
+          method: 'DELETE',
+          headers,
+          credentials: 'include',
+        });
+
+        if (!response.ok) {
+          const error = await response.json().catch(() => ({}));
+          throw new Error(error.error || 'Failed to clear tie resolution');
+        }
+
+        showSuccess('Tie resolution cleared');
+
+        // Refresh results
+        await loadElectionResults();
+
+        // Refresh elections list to update the card
+        await loadElections();
+
+      } catch (err) {
+        if (electionModalError) {
+          electionModalError.textContent = err.message || 'Failed to clear tie resolution';
+          electionModalError.classList.remove('hidden');
+        } else {
+          showError(err.message || 'Failed to clear tie resolution');
+        }
+      }
+    },
+    'warning'
   );
 }
 

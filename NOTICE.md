@@ -1,4 +1,4 @@
-Boys State App
+State Forge
 Copyright 2025 Kenneth Hart
 
 This software is provided under the Apache License, Version 2.0.

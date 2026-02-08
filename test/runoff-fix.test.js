@@ -71,14 +71,26 @@ describe('Runoff POST request fix verification', () => {
     });
   });
 
-  describe('vote-simulation.js', () => {
+  describe('vote-simulation.js (split into modules)', () => {
     let code;
+    let utilsCode;
+    let resultsCode;
 
     beforeAll(() => {
-      code = fs.readFileSync(
+      // Read all vote-simulation modules and concatenate
+      const mainCode = fs.readFileSync(
         path.resolve(__dirname, '../public/js/vote-simulation.js'),
         'utf8'
       );
+      utilsCode = fs.readFileSync(
+        path.resolve(__dirname, '../public/js/vote-simulation-utils.js'),
+        'utf8'
+      );
+      resultsCode = fs.readFileSync(
+        path.resolve(__dirname, '../public/js/vote-simulation-results.js'),
+        'utf8'
+      );
+      code = mainCode + utilsCode + resultsCode;
     });
 
     test('runoff request includes empty JSON body', () => {
@@ -100,7 +112,8 @@ describe('Runoff POST request fix verification', () => {
     });
 
     test('createRunoffElection checks for currentElection', () => {
-      expect(code).toContain("if (!currentElection)");
+      // After refactoring, state is accessed via state.currentElection
+      expect(code).toContain("if (!state.currentElection)");
       expect(code).toContain("showError('No election selected')");
     });
 

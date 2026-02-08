@@ -1,6 +1,6 @@
-# Contributing to Boys State App – Web Admin Portal
+# Contributing to State Forge – Web Admin Portal
 
-Thank you for your interest in contributing to the Boys State App web admin portal! Whether you’re fixing UI bugs, adding admin features, improving resource management, or strengthening security, your help is appreciated.
+Thank you for your interest in contributing to the State Forge web admin portal! Whether you’re fixing UI bugs, adding admin features, improving resource management, or strengthening security, your help is appreciated.
 
 ---
 
