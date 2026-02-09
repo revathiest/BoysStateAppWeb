@@ -784,6 +784,53 @@ function renderAutoAssignPreview(data) {
   document.getElementById('assign-pending').textContent = data.toBeAssigned;
   document.getElementById('assign-groupings').textContent = data.groupings;
 
+  // Show gaps info if any delegates have gaps
+  const gapsInfo = document.getElementById('gaps-info');
+  const missingGrouping = data.missingGrouping || 0;
+  const missingParty = data.missingParty || 0;
+  const missingVoterId = data.missingVoterId || 0;
+
+  if (gapsInfo) {
+    const hasAnyGaps = missingGrouping > 0 || missingParty > 0 || missingVoterId > 0;
+    if (hasAnyGaps) {
+      gapsInfo.classList.remove('hidden');
+
+      // Show/hide individual gap rows
+      const groupingRow = document.getElementById('gap-grouping-row');
+      const partyRow = document.getElementById('gap-party-row');
+      const voterIdRow = document.getElementById('gap-voter-id-row');
+
+      if (groupingRow) {
+        if (missingGrouping > 0) {
+          document.getElementById('assign-missing-groupings').textContent = missingGrouping;
+          groupingRow.classList.remove('hidden');
+        } else {
+          groupingRow.classList.add('hidden');
+        }
+      }
+
+      if (partyRow) {
+        if (missingParty > 0) {
+          document.getElementById('assign-missing-parties').textContent = missingParty;
+          partyRow.classList.remove('hidden');
+        } else {
+          partyRow.classList.add('hidden');
+        }
+      }
+
+      if (voterIdRow) {
+        if (missingVoterId > 0) {
+          document.getElementById('assign-missing-voter-ids').textContent = missingVoterId;
+          voterIdRow.classList.remove('hidden');
+        } else {
+          voterIdRow.classList.add('hidden');
+        }
+      }
+    } else {
+      gapsInfo.classList.add('hidden');
+    }
+  }
+
   // Render distribution
   const distributionEl = document.getElementById('assign-distribution');
   if (data.summary && data.summary.length > 0) {
@@ -868,6 +915,9 @@ async function executeAutoAssign() {
     successEl.classList.remove('hidden');
 
     let message = `Successfully assigned ${results.assigned} delegate${results.assigned !== 1 ? 's' : ''} to groupings and parties.`;
+    if (results.voterIdsGenerated > 0) {
+      message += ` ${results.voterIdsGenerated} voter ID${results.voterIdsGenerated !== 1 ? 's' : ''} generated.`;
+    }
     if (results.failed > 0) {
       message += ` ${results.failed} failed.`;
     }

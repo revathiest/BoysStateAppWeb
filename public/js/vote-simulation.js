@@ -82,9 +82,19 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   document.getElementById('run-simulation-btn').addEventListener('click', runSimulation);
-  document.getElementById('refresh-stats-btn').addEventListener('click', () => loadElectionData(state.currentElection.id));
+  document.getElementById('refresh-stats-btn').addEventListener('click', () => {
+    // For combined primaries, reload all elections to preserve combined state
+    if (state.isCombinedPrimary && state.combinedElections) {
+      loadCombinedPrimaryData(state.combinedElections.map(e => e.id));
+    } else {
+      loadElectionData(state.currentElection.id);
+    }
+  });
   document.getElementById('view-full-results-btn')?.addEventListener('click', () => {
-    if (state.currentElection) {
+    // For combined primaries (open/semi-open), show combined results for both parties
+    if (state.combinedElections && state.combinedElections.length > 1) {
+      loadCombinedResults(state.combinedElections);
+    } else if (state.currentElection) {
       openAuditModal(state.currentElection.id);
     }
   });
@@ -100,6 +110,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('start-all-elections-btn').addEventListener('click', startAllElections);
   document.getElementById('open-elections-btn').addEventListener('click', openElectionsAtLevel);
   document.getElementById('auto-nominate-all-btn').addEventListener('click', autoNominateAll);
+  document.getElementById('verify-all-candidates-btn').addEventListener('click', verifyAllCandidates);
 
   // Event listeners - Reset
   document.getElementById('reset-all-btn').addEventListener('click', showResetModal);

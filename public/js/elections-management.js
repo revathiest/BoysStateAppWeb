@@ -575,6 +575,12 @@ function renderElectionCard(election) {
     ? '<span class="bg-orange-100 text-orange-700 text-xs px-2 py-0.5 rounded font-semibold">Needs Runoff</span>'
     : '';
 
+  // Unverified candidates badge (shown for nomination/scheduled/active elections)
+  const unverifiedCount = election.unverifiedCandidates || 0;
+  const unverifiedBadge = unverifiedCount > 0 && ['nomination', 'scheduled', 'active'].includes(election.status)
+    ? `<span class="bg-red-100 text-red-700 text-xs px-2 py-0.5 rounded" title="${unverifiedCount} candidate${unverifiedCount !== 1 ? 's' : ''} missing declaration or petition verification">${unverifiedCount} unverified</span>`
+    : '';
+
   // Vote progress for active elections
   let voteProgressHtml = '';
   let leaderHtml = '';
@@ -602,6 +608,25 @@ function renderElectionCard(election) {
         <div class="mt-1 flex items-center gap-1 text-xs">
           <span>⚖️</span>
           <span class="font-medium text-amber-700">Tie - Resolution Required</span>
+        </div>
+      `;
+    } else if (election.isBlanketPrimary && election.advancers && election.advancers.length > 0) {
+      // Blanket primary - show who advances (or would advance) to general
+      const isCompleted = election.status === 'completed';
+      const advanceLabel = isCompleted ? 'Advancing to General' : 'Would Advance';
+      const icon = isCompleted ? '🎯' : '📊';
+      const textColor = isCompleted ? 'purple' : 'blue';
+      leaderHtml = `
+        <div class="mt-1 text-xs">
+          <div class="flex items-center gap-1 mb-1">
+            <span>${icon}</span>
+            <span class="text-${textColor}-600 font-medium">${advanceLabel} (Top ${election.advancers.length}):</span>
+          </div>
+          <div class="ml-5 space-y-0.5">
+            ${election.advancers.map(a => `
+              <div class="font-medium text-gray-700">${escapeHtml(a.name)}${a.partyName ? ` <span class="text-xs px-1.5 py-0.5 rounded bg-gray-200 text-gray-600">${escapeHtml(a.partyName)}</span>` : ''} <span class="text-gray-500 font-normal">(${a.voteCount} votes, ${a.percentage}%)</span></div>
+            `).join('')}
+          </div>
         </div>
       `;
     } else if (election.winners && election.winners.length > 1 && election.status === 'completed') {
@@ -646,6 +671,7 @@ function renderElectionCard(election) {
           ${statusBadge}
           ${warningBadge}
           ${runoffBadge}
+          ${unverifiedBadge}
         </div>
         <p class="text-sm text-gray-600">${escapeHtml(groupingName)} - ${candidateCount} candidate${candidateCount !== 1 ? 's' : ''}</p>
         ${voteProgressHtml}
@@ -912,6 +938,20 @@ async function loadCandidates() {
       });
     });
 
+    // Show/hide "Verify All" button based on unverified candidates
+    const verifyAllBtn = document.getElementById('verify-all-candidates-btn');
+    if (verifyAllBtn) {
+      const position = currentElection.position?.position;
+      const requiresVerification = position?.requiresDeclaration || position?.requiresPetition;
+      const activeCandidates = candidates.filter(c => ['nominated', 'qualified'].includes(c.status));
+      const hasUnverified = activeCandidates.some(c =>
+        (position?.requiresDeclaration && !c.declarationReceived) ||
+        (position?.requiresPetition && !c.petitionVerified)
+      );
+      // Show button if position requires verification and there are unverified active candidates
+      verifyAllBtn.classList.toggle('hidden', !requiresVerification || !hasUnverified || activeCandidates.length === 0);
+    }
+
   } catch (err) {
     console.error('Error loading candidates:', err);
     candidatesList.innerHTML = '<p class="text-red-500">Failed to load candidates</p>';
@@ -1045,11 +1085,51 @@ function renderElectionResultsModal(data) {
     `;
   }
 
-  // Show "Advance Winners" button for completed primaries with winners
+  // For blanket primaries, show advancers instead of traditional winners
+  if (data.isBlanketPrimary && data.advancers && data.advancers.length > 0) {
+    // Use blanketAdvancementCount from API to show target (e.g., "Top 4")
+    const advancementTarget = data.blanketAdvancementCount || data.advancers.length;
+    const isElectionClosed = currentElection.status === 'completed' || currentElection.status === 'closed';
+    // Show "Would Advance" when voting is in progress, "Advancing" when completed
+    const advanceLabel = isElectionClosed
+      ? `Advancing to General (Top ${advancementTarget})`
+      : `Would Advance to General (Top ${advancementTarget})`;
+    const bgColor = isElectionClosed ? 'purple' : 'blue';
+    const icon = isElectionClosed ? '🎯' : '▲';
+    const statusBadge = !isElectionClosed
+      ? '<span class="text-xs bg-blue-200 text-blue-800 px-2 py-0.5 rounded ml-2">Voting in progress</span>'
+      : '';
+
+    html += `
+      <div class="bg-${bgColor}-50 border border-${bgColor}-200 rounded-lg p-3 mb-4">
+        <div class="flex items-center gap-2 text-${bgColor}-800 mb-2">
+          <span class="text-${bgColor}-600 text-lg">${icon}</span>
+          <span class="font-semibold">${advanceLabel}</span>
+          ${statusBadge}
+        </div>
+        ${data.advancers.map(a => {
+          const advancerName = a.name || `${a.delegate?.firstName || ''} ${a.delegate?.lastName || ''}`.trim();
+          const partyBadge = a.partyName
+            ? `<span class="text-xs px-1.5 py-0.5 rounded bg-${bgColor}-200 text-${bgColor}-700 ml-1">${escapeHtml(a.partyName)}</span>`
+            : '';
+          return `
+            <div class="flex items-center gap-2 ml-6 text-${bgColor}-700">
+              <span class="font-medium">${escapeHtml(advancerName)}</span>
+              ${partyBadge}
+              <span>(${a.voteCount} votes, ${a.percentage || 0}%)</span>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    `;
+  }
+
+  // Show "Advance Winners" button for completed primaries with winners (not blanket - those have advancers)
   const hasWinners = (data.winners && data.winners.length > 0) || data.winner;
   const isCompletedPrimary = currentElection.status === 'completed' &&
     currentElection.electionType === 'primary' &&
-    !data.hasTie;
+    !data.hasTie &&
+    !data.isBlanketPrimary; // Skip for blanket primaries (they use advancers)
   if (isCompletedPrimary && hasWinners) {
     // Get the advancement model from the party
     const advancementModel = currentElection.party?.party?.advancementModel || 'traditional';
@@ -1777,6 +1857,58 @@ function closeCandidateModal() {
 // ============================================================
 // ELECTION ACTIONS
 // ============================================================
+
+/**
+ * Verify all candidates for the current election (mark declaration and petition as verified)
+ * This is a testing convenience function.
+ */
+async function verifyAllCandidates() {
+  if (!currentElection) return;
+
+  const verifyBtn = document.getElementById('verify-all-candidates-btn');
+  if (verifyBtn) {
+    verifyBtn.disabled = true;
+    verifyBtn.textContent = 'Verifying...';
+  }
+
+  try {
+    const headers = typeof getAuthHeaders === 'function' ? getAuthHeaders() : {};
+    headers['Content-Type'] = 'application/json';
+
+    const response = await fetch(`${apiBase}/elections/${currentElection.id}/candidates/verify-all`, {
+      method: 'POST',
+      headers,
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      const errData = await response.json().catch(() => ({}));
+      throw new Error(errData.error || 'Failed to verify candidates');
+    }
+
+    const result = await response.json();
+    console.log(`Verified ${result.verified} candidates`);
+
+    // Reload candidates to show updated status
+    await loadCandidates();
+
+    // Refresh elections list to update the unverified badge
+    await loadElections();
+
+  } catch (err) {
+    console.error('Error verifying candidates:', err);
+    const errorEl = document.getElementById('election-modal-error');
+    if (errorEl) {
+      errorEl.textContent = err.message || 'Failed to verify candidates';
+      errorEl.classList.remove('hidden');
+    }
+  } finally {
+    if (verifyBtn) {
+      verifyBtn.disabled = false;
+      verifyBtn.textContent = '✓ Verify All';
+    }
+  }
+}
 
 async function closeNominations() {
   if (!currentElection) return;
@@ -2645,6 +2777,17 @@ function setupEventListeners() {
   // Year selector
   document.getElementById('year-select').addEventListener('change', async (e) => {
     currentProgramYearId = e.target.value ? parseInt(e.target.value) : null;
+
+    // Update admin portal link with new programYearId
+    const adminPortalLink = document.getElementById('admin-voting-portal-link');
+    if (adminPortalLink && currentProgramId) {
+      if (currentProgramYearId) {
+        adminPortalLink.href = `voting-portal-admin.html?programId=${encodeURIComponent(currentProgramId)}&programYearId=${currentProgramYearId}`;
+      } else {
+        adminPortalLink.href = `voting-portal-admin.html?programId=${encodeURIComponent(currentProgramId)}`;
+      }
+    }
+
     await loadElections();
   });
 
@@ -2691,6 +2834,7 @@ function setupEventListeners() {
 
   // Election actions
   document.getElementById('add-candidate-btn').addEventListener('click', openAddCandidateModal);
+  document.getElementById('verify-all-candidates-btn').addEventListener('click', verifyAllCandidates);
   document.getElementById('close-nominations-btn').addEventListener('click', closeNominations);
   document.getElementById('archive-election-btn').addEventListener('click', archiveElection);
   document.getElementById('refresh-results-btn').addEventListener('click', loadElectionResults);
@@ -2724,6 +2868,19 @@ function setupEventListeners() {
     logoutBtn.addEventListener('click', () => {
       if (typeof clearAuthToken === 'function') clearAuthToken();
       window.location.href = 'login.html';
+    });
+  }
+
+  // Voting portal launch button - opens public portal in new tab
+  const launchPortalBtn = document.getElementById('launch-voting-portal-btn');
+  if (launchPortalBtn) {
+    launchPortalBtn.addEventListener('click', () => {
+      if (!currentProgramId || !currentProgramYearId) {
+        showError('Please select a program year first.');
+        return;
+      }
+      const url = `voting-portal.html?programId=${encodeURIComponent(currentProgramId)}&programYearId=${currentProgramYearId}`;
+      window.open(url, '_blank');
     });
   }
 }
@@ -2767,6 +2924,17 @@ document.addEventListener('DOMContentLoaded', async () => {
   const voteSimLink = document.getElementById('vote-simulation-link');
   if (voteSimLink) {
     voteSimLink.href = `vote-simulation.html?programId=${encodeURIComponent(currentProgramId)}`;
+  }
+
+  // Update admin voting portal link with programId (programYearId added later when selected)
+  const adminPortalLink = document.getElementById('admin-voting-portal-link');
+  if (adminPortalLink) {
+    adminPortalLink.href = `voting-portal-admin.html?programId=${encodeURIComponent(currentProgramId)}`;
+  }
+
+  // Apply permission-based visibility
+  if (typeof applyPermissions === 'function') {
+    await applyPermissions(currentProgramId);
   }
 
   setupEventListeners();

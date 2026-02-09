@@ -43,12 +43,10 @@ async function onNomYearChange() {
   const nomYearSelect = document.getElementById('nom-year-select');
   const nomElectionSelect = document.getElementById('nom-election-select');
   const nominationForm = document.getElementById('nomination-form');
-  const noNominationsWarning = document.getElementById('no-nominations-warning');
 
   state.nomProgramYearId = nomYearSelect.value;
   nomElectionSelect.innerHTML = '<option value="">Loading elections...</option>';
   nominationForm.classList.add('hidden');
-  noNominationsWarning.classList.add('hidden');
 
   if (!state.nomProgramYearId) {
     nomElectionSelect.innerHTML = '<option value="">Select year first...</option>';
@@ -75,7 +73,6 @@ async function onNomYearChange() {
 
     if (elections.length === 0) {
       nomElectionSelect.innerHTML = '<option value="">No elections open for nominations</option>';
-      noNominationsWarning.classList.remove('hidden');
       return;
     }
 
@@ -253,9 +250,41 @@ async function autoNominate() {
       return;
     }
 
-    // Shuffle and pick random delegates
-    const shuffled = [...available].sort(() => Math.random() - 0.5);
-    const toNominate = shuffled.slice(0, Math.min(count, shuffled.length));
+    // Group available delegates by party
+    const byParty = new Map();
+    for (const d of available) {
+      const partyId = d.partyId || d.party?.partyId || 'none';
+      if (!byParty.has(partyId)) byParty.set(partyId, []);
+      byParty.get(partyId).push(d);
+    }
+
+    // For blanket primaries (multiple parties in eligible list), each party needs N nominees (N = seat count)
+    let toNominate = [];
+    const seatCount = 1; // Single election autoNominate assumes 1 seat (use autoNominateAll for multi-seat)
+
+    if (byParty.size > 1) {
+      // Each party needs seatCount nominees minimum
+      for (const [partyId, delegates] of byParty) {
+        if (delegates.length > 0) {
+          const shuffled = [...delegates].sort(() => Math.random() - 0.5);
+          // Add up to seatCount from this party
+          const fromThisParty = shuffled.slice(0, Math.min(seatCount, shuffled.length));
+          toNominate.push(...fromThisParty);
+        }
+      }
+      // Then add 0-N random extras from remaining
+      const selectedIds = new Set(toNominate.map(d => d.id));
+      const remaining = available.filter(d => !selectedIds.has(d.id));
+      const shuffledRemaining = [...remaining].sort(() => Math.random() - 0.5);
+      const extraCount = Math.floor(Math.random() * (count + 1)); // 0 to count extras
+      toNominate = [...toNominate, ...shuffledRemaining.slice(0, extraCount)];
+    } else {
+      // Single party - seatCount per seat + 0-N extras
+      const shuffled = [...available].sort(() => Math.random() - 0.5);
+      const extraCount = Math.floor(Math.random() * (count + 1));
+      const total = seatCount + extraCount;
+      toNominate = shuffled.slice(0, Math.min(total, shuffled.length));
+    }
 
     let successCount = 0;
     let errors = [];
@@ -503,6 +532,59 @@ async function startAllElections() {
   }
 }
 
+// Verify all candidates across all elections (testing shortcut)
+async function verifyAllCandidates() {
+  const state = getNomState();
+  if (!state.nomProgramYearId) {
+    showError('Please select a program year first');
+    return;
+  }
+
+  const btn = document.getElementById('verify-all-candidates-btn');
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = 'Verifying...';
+  }
+
+  // Show progress
+  clearBulkProgressLog();
+  updateBulkProgress(0, 1, 'Verifying all candidate declarations and petitions...');
+
+  try {
+    const headers = {
+      'Content-Type': 'application/json',
+      ...(typeof getAuthHeaders === 'function' ? getAuthHeaders() : {}),
+    };
+
+    const res = await fetch(`${window.API_URL}/program-years/${state.nomProgramYearId}/candidates/verify-all`, {
+      method: 'POST',
+      headers,
+      credentials: 'include',
+    });
+
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({}));
+      throw new Error(error.error || 'Failed to verify candidates');
+    }
+
+    const result = await res.json();
+    const message = `Verified ${result.verified} candidates across ${result.elections} elections`;
+    updateBulkProgress(1, 1, `✓ ${message}`);
+    showSuccess(message);
+
+    // Refresh the nominations list
+    await onNomYearChange();
+  } catch (err) {
+    updateBulkProgress(0, 1, `✗ Error: ${err.message}`);
+    showError(err.message);
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = '✓ Verify All';
+    }
+  }
+}
+
 async function loadGroupingTypes() {
   const state = getNomState();
   const groupingTypeSelect = document.getElementById('bulk-grouping-type');
@@ -723,8 +805,14 @@ async function autoNominateAll() {
           continue;
         }
 
-        // Shuffle available delegates
-        const shuffled = [...available].sort(() => Math.random() - 0.5);
+        // For blanket primaries (partyId=null), ensure at least one nominee from each party
+        // Group available delegates by party
+        const byParty = new Map();
+        for (const d of available) {
+          const partyId = d.partyId || d.party?.partyId || 'none';
+          if (!byParty.has(partyId)) byParty.set(partyId, []);
+          byParty.get(partyId).push(d);
+        }
 
         // Determine how many to nominate:
         // - Need at least 1 candidate per seat
@@ -735,10 +823,33 @@ async function autoNominateAll() {
         const extraCount = Math.floor(Math.random() * (maxExtra + 1));
         let countToNominate = neededForMin + extraCount;
 
-        // Cap at available delegates
-        countToNominate = Math.min(countToNominate, shuffled.length);
+        // Build nominee list - for blanket/general elections (no partyId), each party needs seatCount nominees
+        let toNominate = [];
+        const isBlanketOrGeneral = !election.partyId;
 
-        const toNominate = shuffled.slice(0, countToNominate);
+        if (isBlanketOrGeneral && byParty.size > 1) {
+          // Each party needs seatCount nominees minimum
+          for (const [partyId, delegates] of byParty) {
+            if (delegates.length > 0) {
+              const shuffled = [...delegates].sort(() => Math.random() - 0.5);
+              // Add up to seatCount from this party
+              const fromThisParty = shuffled.slice(0, Math.min(seatCount, shuffled.length));
+              toNominate.push(...fromThisParty);
+            }
+          }
+          // Then add 0-maxExtra random extras from remaining
+          const selectedIds = new Set(toNominate.map(d => d.id));
+          const remaining = available.filter(d => !selectedIds.has(d.id));
+          const shuffledRemaining = [...remaining].sort(() => Math.random() - 0.5);
+          const extrasToAdd = Math.min(extraCount, shuffledRemaining.length);
+          toNominate = [...toNominate, ...shuffledRemaining.slice(0, extrasToAdd)];
+        } else {
+          // Regular shuffle for party-specific primaries (seatCount + 0-maxExtra)
+          const shuffled = [...available].sort(() => Math.random() - 0.5);
+          // Cap at available delegates
+          countToNominate = Math.min(countToNominate, shuffled.length);
+          toNominate = shuffled.slice(0, countToNominate);
+        }
         let nominatedThisElection = 0;
 
         for (const delegate of toNominate) {
@@ -883,6 +994,7 @@ if (typeof module !== 'undefined' && module.exports) {
     clearNominees,
     closeAllNominations,
     startAllElections,
+    verifyAllCandidates,
     loadGroupingTypes,
     openElectionsAtLevel,
     autoNominateAll,
@@ -902,6 +1014,7 @@ if (typeof module !== 'undefined' && module.exports) {
   window.clearNominees = clearNominees;
   window.closeAllNominations = closeAllNominations;
   window.startAllElections = startAllElections;
+  window.verifyAllCandidates = verifyAllCandidates;
   window.loadGroupingTypes = loadGroupingTypes;
   window.openElectionsAtLevel = openElectionsAtLevel;
   window.autoNominateAll = autoNominateAll;

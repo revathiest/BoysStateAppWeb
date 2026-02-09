@@ -278,6 +278,88 @@ Features documented in PROJECT_OVERVIEW.md but not yet implemented:
 - **Top 2**: Top 2 vote-getters from primary advance to general election (regardless of party)
 - **Top 4 with IRV**: Top 4 from primary advance, general election uses Instant Runoff Voting
 
+### Election Lifecycle Features (Planned)
+
+The following features are needed to complete the election lifecycle:
+
+#### 1. Elected Officials Tracking
+**Purpose**: Track who was elected to which office after elections complete.
+
+**Schema Changes**:
+```prisma
+model ElectedOfficial {
+  id                    Int                   @id @default(autoincrement())
+  programYearId         Int
+  programYear           ProgramYear           @relation(fields: [programYearId], references: [id])
+  programYearPositionId Int
+  programYearPosition   ProgramYearPosition   @relation(fields: [programYearPositionId], references: [id])
+  delegateId            Int
+  delegate              Delegate              @relation(fields: [delegateId], references: [id])
+  groupingId            Int?                  // For positions scoped to groupings (Mayor of City X)
+  grouping              ProgramYearGrouping?  @relation(fields: [groupingId], references: [id])
+  electionId            Int?                  // Election that resulted in this (null for appointments)
+  election              Election?             @relation(fields: [electionId], references: [id])
+  appointedById         Int?                  // If appointed, who appointed them
+  appointedBy           ElectedOfficial?      @relation("Appointments", fields: [appointedById], references: [id])
+  appointments          ElectedOfficial[]     @relation("Appointments")
+  electedAt             DateTime              @default(now())
+  vacatedAt             DateTime?
+  vacationReason        String?               // "elected_to_higher_office", "resigned", "removed", etc.
+  status                String                @default("active") // active, vacated
+
+  @@unique([programYearId, programYearPositionId, groupingId, status]) // Only one active holder per position/grouping
+}
+```
+
+#### 2. Terminal Positions
+**Purpose**: Positions where once elected, the delegate cannot run for any other office.
+
+**Schema Changes**:
+- Add `isTerminal Boolean @default(false)` to `Position` model
+- Add `isTerminal Boolean?` to `ProgramYearPosition` for year-specific override
+
+**Examples**: Governor, Lieutenant Governor (once elected, you hold that office for the program)
+
+**Backend Logic**:
+- When checking nomination eligibility, if delegate holds a terminal position, reject nomination
+- Show in UI: "This delegate currently holds Governor and cannot run for other offices"
+
+#### 3. Vacate Upon Nomination vs Election (Program Setting)
+**Purpose**: Control when office holders must vacate their current position when seeking higher office.
+
+**Schema Changes**:
+- Add `vacatePolicy String @default("upon_election")` to `Program` model
+- Values: `upon_nomination`, `upon_election`
+
+**Behavior**:
+- `upon_nomination`: When a current office holder is nominated for another position, their current position becomes vacant immediately
+- `upon_election`: Current position only vacates if/when they WIN the new election
+
+**UI**: Program-wide setting in Program Configuration
+
+#### 4. Appointment Authority Configuration
+**Purpose**: Define which office/position handles appointments when a position becomes vacant.
+
+**Schema Changes**:
+- Add `appointmentAuthorityId Int?` to `Position` model (references another Position)
+- Add `appointmentAuthorityId Int?` to `ProgramYearPosition` for year-specific override
+
+**Examples**:
+- City Council vacancy → Remaining City Council appoints
+- Sheriff vacancy → County Commission appoints
+- Governor vacancy → Lieutenant Governor succeeds (special case: succession)
+
+**Future: Succession vs Appointment**:
+- Some positions have automatic succession (Lt Gov → Gov)
+- Others require appointment by an authority
+- May need `successionPositionId` vs `appointmentAuthorityId`
+
+#### Implementation Priority
+1. **Elected Officials Tracking** - Foundation for everything else
+2. **Terminal Positions** - Simple flag, immediate value
+3. **Vacate Policy** - Enables realistic election flow
+4. **Appointment Authority** - Needed for appointment workflow
+
 ### Architecture Note: Year-Specific Tables
 
 **CRITICAL**: The base `Position`, `Grouping`, and `Party` tables should ONLY be used as templates when initially setting up a year's configuration. All runtime logic MUST use year-specific tables:

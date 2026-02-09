@@ -135,21 +135,117 @@ async function loadResults(electionId) {
       `;
     }
 
-    // Only show winners if there's no unresolved tie
-    if (!data.hasTie && data.winners && data.winners.length > 0) {
-      // Multi-seat election support
-      const seatCount = data.seatCount || 1;
-      const winnerLabel = seatCount > 1 ? `Winners (${data.winners.length} of ${seatCount} seats)` : 'Winner';
+    // Only show winners/leaders if there's no unresolved tie
+    // Check election status - only show "Winner" for closed elections, "Leading" for active
+    const electionStatus = data.election?.status || 'active';
+    const isElectionClosed = electionStatus === 'closed' || electionStatus === 'completed';
+
+    // For blanket primaries, show advancers instead of winners
+    // Handle ties at the advancement cutoff (e.g., positions 4 and 5 tied in a top-4 scenario)
+    if (data.isBlanketPrimary && data.blanketPrimaryHasTie && data.blanketTiedCandidates && data.blanketTiedCandidates.length > 0) {
+      // Show clear advancers first if any
+      let clearAdvancersHtml = '';
+      if (data.blanketClearAdvancers && data.blanketClearAdvancers.length > 0) {
+        clearAdvancersHtml = `
+          <div class="mb-3 p-3 bg-purple-50 border border-purple-200 rounded">
+            <p class="text-sm font-medium text-purple-800 mb-2">&#10003; Clear Advancers (${data.blanketClearAdvancers.length} of ${data.blanketAdvancementCount} spots):</p>
+            ${data.blanketClearAdvancers.map(a => {
+              const advancerName = a.name || `${a.delegate?.firstName || ''} ${a.delegate?.lastName || ''}`.trim();
+              const partyBadge = a.partyName
+                ? `<span class="bg-purple-200 text-purple-700 text-xs px-1.5 py-0.5 rounded ml-1">${a.partyName}</span>`
+                : '';
+              return `<p class="text-sm text-purple-700 ml-4">• ${advancerName}${partyBadge} (${a.voteCount} votes)</p>`;
+            }).join('')}
+          </div>
+        `;
+      }
 
       headerHtml += `
-        <div class="mt-3 bg-green-50 border border-green-200 rounded-lg p-3">
-          <div class="flex items-center gap-2 text-green-800 mb-2">
-            <span class="text-lg">&#127942;</span>
+        <div class="mt-3 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+          <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">&#9878;</span>
+            <span class="font-semibold text-yellow-800">Tie at Advancement Cutoff - Resolution Required</span>
+          </div>
+          ${clearAdvancersHtml}
+          <p class="text-sm text-yellow-700 mb-3">
+            ${data.blanketTiedCandidates.length} candidates tied with ${data.blanketTiedCandidates[0]?.voteCount || 0} votes each.
+            Select ${data.blanketSlotsToResolve} to fill the remaining advancement spot${data.blanketSlotsToResolve !== 1 ? 's' : ''}.
+          </p>
+          <div class="space-y-2 mb-3" id="sim-blanket-tie-candidates-list">
+            ${data.blanketTiedCandidates.map(c => {
+              const candidateName = c.name || `${c.delegate?.firstName || ''} ${c.delegate?.lastName || ''}`.trim();
+              const partyBadge = c.partyName
+                ? `<span class="bg-yellow-200 text-yellow-700 text-xs px-1.5 py-0.5 rounded ml-1">${c.partyName}</span>`
+                : '';
+              return `
+                <label class="flex items-center gap-2 p-2 bg-white rounded border border-yellow-200 cursor-pointer hover:bg-yellow-100">
+                  <input type="checkbox" name="sim-blanket-tie-winner" value="${c.delegateId}" class="sim-blanket-tie-checkbox rounded border-gray-300 text-legend-blue focus:ring-legend-blue">
+                  <span class="font-medium">${escapeHtml(candidateName)}</span>
+                  ${partyBadge}
+                  <span class="text-gray-500">(${c.voteCount} votes, ${c.percentage || 0}%)</span>
+                </label>
+              `;
+            }).join('')}
+          </div>
+          <div class="flex items-center justify-between">
+            <span id="sim-blanket-tie-selection-count" class="text-sm text-yellow-700">Select ${data.blanketSlotsToResolve}</span>
+            <button id="sim-resolve-blanket-tie-btn" class="bg-yellow-600 hover:bg-yellow-700 text-white font-semibold py-1 px-3 rounded-lg shadow transition text-sm disabled:opacity-50 disabled:cursor-not-allowed" disabled data-slots-to-resolve="${data.blanketSlotsToResolve}">
+              Resolve Tie
+            </button>
+          </div>
+        </div>
+      `;
+    } else if (data.isBlanketPrimary && data.advancers && data.advancers.length > 0) {
+      // No tie - show advancers normally
+      // Use blanketAdvancementCount from API to show target (e.g., "Top 4")
+      const advancementTarget = data.blanketAdvancementCount || data.advancers.length;
+      // Show "Would Advance" when voting is in progress, "Advancing" when completed
+      const advanceLabel = isElectionClosed
+        ? `Advancing to General (Top ${advancementTarget})`
+        : `Would Advance to General (Top ${advancementTarget})`;
+      const bgColor = isElectionClosed ? 'purple' : 'blue';
+      const icon = isElectionClosed ? '&#127919;' : '&#9650;'; // Target vs up arrow
+      const statusBadge = !isElectionClosed
+        ? '<span class="text-xs bg-blue-200 text-blue-800 px-2 py-0.5 rounded ml-2">Voting in progress</span>'
+        : '';
+
+      headerHtml += `
+        <div class="mt-3 bg-${bgColor}-50 border border-${bgColor}-200 rounded-lg p-3">
+          <div class="flex items-center gap-2 text-${bgColor}-800 mb-2">
+            <span class="text-lg">${icon}</span>
+            <span class="font-semibold">${advanceLabel}</span>
+            ${statusBadge}
+          </div>
+          ${data.advancers.map(a => {
+            const advancerName = a.name || `${a.delegate?.firstName || ''} ${a.delegate?.lastName || ''}`.trim();
+            const partyBadge = a.partyName
+              ? `<span class="bg-${bgColor}-200 text-${bgColor}-700 text-xs px-1.5 py-0.5 rounded ml-1">${a.partyName}</span>`
+              : '';
+            return `<p class="text-sm text-${bgColor}-700">
+              ${advancerName}${partyBadge} - ${a.voteCount} votes (${a.percentage || 0}%)
+            </p>`;
+          }).join('')}
+        </div>
+      `;
+    } else if (!data.hasTie && data.winners && data.winners.length > 0) {
+      // Multi-seat election support
+      const seatCount = data.seatCount || 1;
+      const winnerLabel = isElectionClosed
+        ? (seatCount > 1 ? `Winners (${data.winners.length} of ${seatCount} seats)` : 'Winner')
+        : (seatCount > 1 ? `Leading (${data.winners.length} of ${seatCount} seats)` : 'Current Leader');
+      const bgColor = isElectionClosed ? 'green' : 'blue';
+      const icon = isElectionClosed ? '&#127942;' : '&#9650;'; // Trophy vs up arrow
+
+      headerHtml += `
+        <div class="mt-3 bg-${bgColor}-50 border border-${bgColor}-200 rounded-lg p-3">
+          <div class="flex items-center gap-2 text-${bgColor}-800 mb-2">
+            <span class="text-lg">${icon}</span>
             <span class="font-semibold">${winnerLabel}</span>
+            ${!isElectionClosed ? '<span class="text-xs bg-blue-200 text-blue-800 px-2 py-0.5 rounded ml-2">Voting in progress</span>' : ''}
           </div>
           ${data.winners.map(w => {
             const winnerParty = w.party?.party?.name || 'Independent';
-            return `<p class="text-sm text-green-700">
+            return `<p class="text-sm text-${bgColor}-700">
               ${w.delegate?.firstName} ${w.delegate?.lastName} (${winnerParty}) - ${w.voteCount} votes (${w.percentage?.toFixed(1) || ((w.voteCount / (data.totalVotes || data.totalVoters || 1)) * 100).toFixed(1)}%)
             </p>`;
           }).join('')}
@@ -158,13 +254,18 @@ async function loadResults(electionId) {
     } else if (!data.hasTie && data.winner) {
       // Backwards compatibility for single winner
       const winnerParty = data.winner.party?.party?.name || 'Independent';
+      const bgColor = isElectionClosed ? 'green' : 'blue';
+      const icon = isElectionClosed ? '&#127942;' : '&#9650;';
+      const label = isElectionClosed ? 'Winner' : 'Current Leader';
+
       headerHtml += `
-        <div class="mt-3 bg-green-50 border border-green-200 rounded-lg p-3">
-          <div class="flex items-center gap-2 text-green-800">
-            <span class="text-lg">&#127942;</span>
-            <span class="font-semibold">Winner: ${data.winner.delegate?.firstName} ${data.winner.delegate?.lastName}</span>
+        <div class="mt-3 bg-${bgColor}-50 border border-${bgColor}-200 rounded-lg p-3">
+          <div class="flex items-center gap-2 text-${bgColor}-800">
+            <span class="text-lg">${icon}</span>
+            <span class="font-semibold">${label}: ${data.winner.delegate?.firstName} ${data.winner.delegate?.lastName}</span>
+            ${!isElectionClosed ? '<span class="text-xs bg-blue-200 text-blue-800 px-2 py-0.5 rounded ml-2">Voting in progress</span>' : ''}
           </div>
-          <p class="text-sm text-green-700 mt-1">
+          <p class="text-sm text-${bgColor}-700 mt-1">
             ${winnerParty} - ${data.winner.voteCount} votes (${data.winner.percentage?.toFixed(1) || ((data.winner.voteCount / (data.totalVotes || data.totalVoters || 1)) * 100).toFixed(1)}%)
           </p>
         </div>
@@ -285,6 +386,34 @@ async function loadResults(electionId) {
       clearTieBtn.addEventListener('click', () => clearSimTieResolution(data.election.id));
     }
 
+    // Add blanket primary tie resolution handlers if present
+    const blanketTieCheckboxes = resultsContainer.querySelectorAll('.sim-blanket-tie-checkbox');
+    const resolveBlanketTieBtn = resultsContainer.querySelector('#sim-resolve-blanket-tie-btn');
+    const blanketSelectionCountEl = resultsContainer.querySelector('#sim-blanket-tie-selection-count');
+
+    if (blanketTieCheckboxes.length > 0 && resolveBlanketTieBtn) {
+      const slotsToResolve = parseInt(resolveBlanketTieBtn.dataset.slotsToResolve) || 1;
+
+      blanketTieCheckboxes.forEach(cb => {
+        cb.addEventListener('change', () => {
+          const selected = resultsContainer.querySelectorAll('.sim-blanket-tie-checkbox:checked').length;
+          if (blanketSelectionCountEl) {
+            blanketSelectionCountEl.textContent = `${selected} of ${slotsToResolve} selected`;
+          }
+          resolveBlanketTieBtn.disabled = selected !== slotsToResolve;
+        });
+      });
+
+      // Reuse the same tie resolution endpoint - it works for blanket primaries too
+      // Pass blanket-specific selectors
+      resolveBlanketTieBtn.addEventListener('click', () => resolveSimTie(
+        data.election.id,
+        slotsToResolve,
+        '.sim-blanket-tie-checkbox:checked',
+        '#sim-resolve-blanket-tie-btn'
+      ));
+    }
+
     document.getElementById('results-section').classList.remove('hidden');
   } catch (err) {
     console.error('Failed to load results:', err);
@@ -345,17 +474,18 @@ async function createRunoffElection() {
 }
 
 // Resolve a tie in simulation results
-async function resolveSimTie(electionId, seatsToResolve) {
+// checkboxSelector defaults to regular tie checkboxes, but can be overridden for blanket ties
+async function resolveSimTie(electionId, seatsToResolve, checkboxSelector = '.sim-tie-winner-checkbox:checked', btnSelector = '#sim-resolve-tie-btn') {
   const resultsContainer = document.getElementById('results-list');
-  const selectedCheckboxes = resultsContainer.querySelectorAll('.sim-tie-winner-checkbox:checked');
+  const selectedCheckboxes = resultsContainer.querySelectorAll(checkboxSelector);
   const selectedWinnerIds = Array.from(selectedCheckboxes).map(cb => parseInt(cb.value));
 
   if (selectedWinnerIds.length !== seatsToResolve) {
-    showError(`Please select exactly ${seatsToResolve} winner${seatsToResolve !== 1 ? 's' : ''} to fill remaining seats`);
+    showError(`Please select exactly ${seatsToResolve} candidate${seatsToResolve !== 1 ? 's' : ''} to fill remaining spots`);
     return;
   }
 
-  const btn = resultsContainer.querySelector('#sim-resolve-tie-btn');
+  const btn = resultsContainer.querySelector(btnSelector);
   if (btn) {
     btn.disabled = true;
     btn.textContent = 'Resolving...';
@@ -534,10 +664,154 @@ function closeAuditModal() {
   document.getElementById('audit-modal').classList.add('hidden');
 }
 
+/**
+ * Load and display results for combined primaries (multiple elections)
+ * Shows results for each party side-by-side or stacked
+ * @param {Array} elections - Array of election objects with _resolvedPartyName
+ */
+async function loadCombinedResults(elections) {
+  const resultsContainer = document.getElementById('results-list');
+  if (!elections || elections.length === 0) {
+    resultsContainer.innerHTML = '<p class="text-gray-500 italic">No elections to display</p>';
+    return;
+  }
+
+  try {
+    const headers = typeof getAuthHeaders === 'function' ? getAuthHeaders() : {};
+
+    // Load results for all elections in parallel
+    const resultsPromises = elections.map(async (election) => {
+      const res = await fetch(`${window.API_URL}/elections/${election.id}/results`, { headers });
+      if (!res.ok) throw new Error(`Failed to load results for election ${election.id}`);
+      const data = await res.json();
+      return {
+        election,
+        partyName: election._resolvedPartyName || election.party?.party?.name || election.party?.name || 'Party',
+        data
+      };
+    });
+
+    const allResults = await Promise.all(resultsPromises);
+
+    // Build combined results HTML
+    let html = `
+      <div class="mb-4 pb-3 border-b">
+        <div class="flex items-center justify-between">
+          <span class="text-sm font-semibold text-legend-blue">Combined Primary Results</span>
+          <span class="text-sm text-gray-500">Showing ${elections.length} party primaries</span>
+        </div>
+      </div>
+    `;
+
+    // Create a grid for side-by-side display on larger screens
+    html += '<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">';
+
+    for (const { election, partyName, data } of allResults) {
+      const partyColor = partyName.toLowerCase().includes('federalist') ? 'blue' :
+                         partyName.toLowerCase().includes('nationalist') ? 'red' : 'gray';
+
+      const method = data.election?.method || 'plurality';
+      const methodLabels = {
+        'plurality': 'Plurality',
+        'majority': 'Majority',
+        'ranked': 'Ranked Choice'
+      };
+
+      html += `
+        <div class="bg-${partyColor}-50 border-2 border-${partyColor}-200 rounded-xl p-4">
+          <div class="flex items-center justify-between mb-3 pb-2 border-b border-${partyColor}-200">
+            <h3 class="font-bold text-${partyColor}-800 text-lg">${escapeHtml(partyName)}</h3>
+            <span class="text-xs bg-${partyColor}-100 text-${partyColor}-700 px-2 py-1 rounded">
+              ${methodLabels[method] || method}
+            </span>
+          </div>
+      `;
+
+      if (!data.results || data.results.length === 0) {
+        html += '<p class="text-gray-500 italic text-sm">No votes yet</p>';
+      } else {
+        const totalVotes = data.totalVotes || data.totalVoters || 1;
+        const maxVotes = Math.max(...data.results.map(r => r.voteCount));
+        const electionStatus = data.election?.status || 'active';
+        const isElectionClosed = electionStatus === 'closed' || electionStatus === 'completed';
+
+        // Show winner/leader info
+        const winnerIds = new Set((data.winners || []).map(w => w.delegateId));
+        if (winnerIds.size === 0 && data.winner) {
+          winnerIds.add(data.winner.delegateId);
+        }
+
+        if (winnerIds.size > 0) {
+          const bgColor = isElectionClosed ? 'green' : 'blue';
+          const label = isElectionClosed ? 'Winner' : 'Leading';
+          const winners = data.winners || (data.winner ? [data.winner] : []);
+          html += `
+            <div class="bg-${bgColor}-100 border border-${bgColor}-200 rounded-lg p-2 mb-3">
+              <div class="flex items-center gap-2 text-${bgColor}-800">
+                <span class="text-sm">${isElectionClosed ? '🏆' : '▲'}</span>
+                <span class="font-semibold text-sm">${label}: ${winners.map(w => `${w.delegate?.firstName} ${w.delegate?.lastName}`).join(', ')}</span>
+              </div>
+            </div>
+          `;
+        }
+
+        html += `<p class="text-sm text-gray-600 mb-2">Total votes: ${totalVotes}</p>`;
+        html += '<div class="space-y-2">';
+
+        // Render each candidate
+        for (const r of data.results) {
+          const percentage = totalVotes > 0 ? ((r.voteCount / totalVotes) * 100).toFixed(1) : 0;
+          const barWidth = maxVotes > 0 ? ((r.voteCount / maxVotes) * 100) : 0;
+          const isWinner = winnerIds.has(r.delegateId);
+
+          html += `
+            <div class="bg-white rounded-lg p-2 ${isWinner ? 'ring-2 ring-legend-gold' : ''}">
+              <div class="flex items-center justify-between mb-1">
+                <div class="flex items-center gap-1">
+                  ${isWinner ? '<span class="text-legend-gold text-xs">★</span>' : ''}
+                  <span class="font-medium text-sm">${r.delegate?.firstName} ${r.delegate?.lastName}</span>
+                </div>
+                <div class="text-right">
+                  <span class="font-bold">${r.voteCount}</span>
+                  <span class="text-xs text-gray-500 ml-1">(${percentage}%)</span>
+                </div>
+              </div>
+              <div class="w-full bg-gray-200 rounded-full h-2">
+                <div class="result-bar bg-${partyColor}-500 h-2 rounded-full" data-width="${barWidth}"></div>
+              </div>
+            </div>
+          `;
+        }
+
+        html += '</div>';
+      }
+
+      html += '</div>';
+    }
+
+    html += '</div>';
+
+    resultsContainer.innerHTML = html;
+
+    // Apply widths via JavaScript to avoid CSP inline style issues
+    const bars = resultsContainer.querySelectorAll('.result-bar');
+    bars.forEach(bar => {
+      const width = bar.getAttribute('data-width');
+      bar.style.width = width + '%';
+    });
+
+    document.getElementById('results-section').classList.remove('hidden');
+  } catch (err) {
+    console.error('Failed to load combined results:', err);
+    resultsContainer.innerHTML = `<p class="text-red-500">Failed to load results: ${err.message}</p>`;
+  }
+}
+
 // Export for Node testing and browser global
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
     loadResults,
+    loadCombinedResults,
     createRunoffElection,
     resolveSimTie,
     clearSimTieResolution,
@@ -546,6 +820,7 @@ if (typeof module !== 'undefined' && module.exports) {
   };
 } else {
   window.loadResults = loadResults;
+  window.loadCombinedResults = loadCombinedResults;
   window.createRunoffElection = createRunoffElection;
   window.resolveSimTie = resolveSimTie;
   window.clearSimTieResolution = clearSimTieResolution;

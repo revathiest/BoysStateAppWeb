@@ -3,3 +3,5 @@ coverage/
 API_ENDPOINTS.md
 .claude/settings.local.json
 claude.local.md
+# Test data files
+test-delegates-200.csv

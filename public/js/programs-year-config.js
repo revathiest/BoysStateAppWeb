@@ -610,6 +610,10 @@ async function saveGroupingActivations() {
   }
 }
 
+// Store year position data globally for modal editing
+let yearPositionData = new Map(); // Map of positionId -> { pypId, isElected (year override), baseIsElected }
+let currentProgramYearId = null;
+
 // Load positions and their activation status
 async function loadPositions(programId, year) {
   const loadingDiv = document.getElementById('positions-loading');
@@ -674,9 +678,11 @@ async function loadPositions(programId, year) {
     if (!programYearId) {
       throw new Error('Failed to get program year ID');
     }
+    currentProgramYearId = programYearId;
 
-    // Get activated positions for this year
-    let activatedPositionIds = [];
+    // Get activated positions for this year (with full data including isElected override)
+    let activatedPositions = [];
+    yearPositionData.clear();
     try {
       const activatedResponse = await fetch(`${apiBase}/program-years/${programYearId}/positions`, {
         headers,
@@ -684,12 +690,22 @@ async function loadPositions(programId, year) {
       });
 
       if (activatedResponse.ok) {
-        const activatedPositions = await activatedResponse.json();
-        activatedPositionIds = activatedPositions.map(p => p.positionId);
+        activatedPositions = await activatedResponse.json();
+        // Build map of year position data for quick lookup
+        activatedPositions.forEach(pyp => {
+          yearPositionData.set(pyp.positionId, {
+            pypId: pyp.id,
+            isElected: pyp.isElected, // Year-specific override (null = inherit)
+            baseIsElected: pyp.position?.isElected ?? false,
+            name: pyp.position?.name || 'Unknown',
+          });
+        });
       }
     } catch (err) {
       console.warn('No activated positions yet:', err);
     }
+
+    const activatedPositionIds = activatedPositions.map(p => p.positionId);
 
     // Group positions by grouping type
     const groupedByType = {};
@@ -715,25 +731,70 @@ async function loadPositions(programId, year) {
         <h4 class="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-2">${escapeHtml(typeName)} Positions</h4>
         <div class="space-y-2">`;
       positions.forEach(position => {
+        const yearData = yearPositionData.get(position.id);
+        const isActivated = activatedPositionIds.includes(position.id);
+
+        // Determine effective isElected status and whether there's a year override
+        const baseIsElected = position.isElected;
+        const yearOverride = yearData?.isElected; // null = inherit, true/false = override
+        const hasOverride = yearOverride !== null && yearOverride !== undefined;
+        const effectiveIsElected = hasOverride ? yearOverride : baseIsElected;
+
+        // Build badge showing effective status
+        let statusBadge;
+        if (hasOverride) {
+          // Show override indicator with different styling
+          if (yearOverride) {
+            statusBadge = '<span class="ml-2 text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded border border-orange-400">Elected (year override)</span>';
+          } else {
+            statusBadge = '<span class="ml-2 text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded border border-orange-400">Appointed (year override)</span>';
+          }
+        } else {
+          // Show base status
+          if (baseIsElected) {
+            statusBadge = '<span class="ml-2 text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">Elected</span>';
+          } else {
+            statusBadge = '<span class="ml-2 text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">Appointed</span>';
+          }
+        }
+
+        // Edit button (only show if position is activated for this year)
+        const editButton = isActivated
+          ? `<button type="button" class="year-position-edit-btn text-xs text-legend-blue hover:underline" data-position-id="${position.id}">Edit</button>`
+          : '';
+
         html += `
-          <label class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200 hover:border-legend-blue transition cursor-pointer">
+          <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200 hover:border-legend-blue transition ${hasOverride ? 'border-l-4 border-l-orange-400' : ''}">
             <input
               type="checkbox"
-              class="position-checkbox w-5 h-5 text-legend-blue focus:ring-2 focus:ring-legend-blue rounded"
+              class="position-checkbox w-5 h-5 text-legend-blue focus:ring-2 focus:ring-legend-blue rounded cursor-pointer"
               data-position-id="${position.id}"
-              ${activatedPositionIds.includes(position.id) ? 'checked' : ''}
+              ${isActivated ? 'checked' : ''}
             />
             <div class="flex-1">
-              <span class="font-semibold text-legend-blue">${escapeHtml(position.name)}</span>
-              ${position.isElected ? '<span class="ml-2 text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">Elected</span>' : '<span class="ml-2 text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">Appointed</span>'}
+              <div class="flex items-center flex-wrap gap-1">
+                <span class="font-semibold text-legend-blue">${escapeHtml(position.name)}</span>
+                ${statusBadge}
+              </div>
               ${position.description ? `<p class="text-sm text-gray-500 mt-1">${escapeHtml(position.description)}</p>` : ''}
             </div>
-          </label>`;
+            ${editButton}
+          </div>`;
       });
       html += `</div></div>`;
     });
 
     listDiv.innerHTML = html;
+
+    // Attach event listeners for edit buttons
+    listDiv.querySelectorAll('.year-position-edit-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const positionId = parseInt(btn.dataset.positionId);
+        openYearPositionModal(positionId, activePositions);
+      });
+    });
 
     loadingDiv.classList.add('hidden');
     listDiv.classList.remove('hidden');
@@ -743,6 +804,108 @@ async function loadPositions(programId, year) {
     showError(err.message || 'Failed to load positions');
     loadingDiv.classList.add('hidden');
     console.error('Error loading positions:', err);
+  }
+}
+
+// Store the base positions for modal use
+let basePositionsCache = [];
+
+// Open the year position edit modal
+function openYearPositionModal(positionId, basePositions) {
+  basePositionsCache = basePositions;
+  const yearData = yearPositionData.get(positionId);
+  const basePosition = basePositions.find(p => p.id === positionId);
+
+  if (!yearData || !basePosition) {
+    showError('Position data not found');
+    return;
+  }
+
+  const modal = document.getElementById('year-position-modal');
+  const titleEl = document.getElementById('year-position-modal-title');
+  const baseSettingEl = document.getElementById('year-position-base-setting');
+  const selectEl = document.getElementById('year-position-elected-select');
+  const warningEl = document.getElementById('year-position-override-warning');
+
+  // Set modal title
+  titleEl.textContent = `Edit Year Settings: ${basePosition.name}`;
+
+  // Show base setting
+  baseSettingEl.textContent = basePosition.isElected ? 'Elected' : 'Appointed';
+
+  // Set current value in dropdown
+  if (yearData.isElected === null || yearData.isElected === undefined) {
+    selectEl.value = 'inherit';
+  } else {
+    selectEl.value = yearData.isElected ? 'true' : 'false';
+  }
+
+  // Show warning if there's a "false" override (converted to appointed)
+  if (yearData.isElected === false && basePosition.isElected === true) {
+    warningEl.classList.remove('hidden');
+  } else {
+    warningEl.classList.add('hidden');
+  }
+
+  // Store the position ID for saving
+  modal.dataset.positionId = positionId;
+  modal.dataset.pypId = yearData.pypId;
+
+  modal.classList.remove('hidden');
+}
+
+// Close the year position modal
+function closeYearPositionModal() {
+  const modal = document.getElementById('year-position-modal');
+  modal.classList.add('hidden');
+}
+
+// Save year position settings
+async function saveYearPositionSettings() {
+  const modal = document.getElementById('year-position-modal');
+  const pypId = modal.dataset.pypId;
+  const selectEl = document.getElementById('year-position-elected-select');
+  const selectedValue = selectEl.value;
+
+  // Convert selection to API value
+  let isElectedValue;
+  if (selectedValue === 'inherit') {
+    isElectedValue = null;
+  } else if (selectedValue === 'true') {
+    isElectedValue = true;
+  } else {
+    isElectedValue = false;
+  }
+
+  try {
+    const headers = { 'Content-Type': 'application/json' };
+    if (typeof getAuthHeaders === 'function') {
+      Object.assign(headers, getAuthHeaders());
+    }
+
+    const response = await fetch(`${apiBase}/program-year-positions/${pypId}`, {
+      method: 'PUT',
+      headers,
+      credentials: 'include',
+      body: JSON.stringify({ isElected: isElectedValue }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.error || 'Failed to save year position settings');
+    }
+
+    closeYearPositionModal();
+    showSuccess('Year position settings saved successfully');
+
+    // Reload positions to show updated status
+    const programId = getProgramId();
+    const year = parseInt(document.getElementById('year-select').value);
+    await loadPositions(programId, year);
+
+  } catch (err) {
+    showError(err.message || 'Failed to save year position settings');
+    console.error('Error saving year position settings:', err);
   }
 }
 
@@ -896,6 +1059,31 @@ function setupEventListeners() {
   // Save positions button
   document.getElementById('save-positions-btn').addEventListener('click', savePositionActivations);
 
+  // Year position modal buttons
+  const yearPositionModalClose = document.getElementById('year-position-modal-close');
+  const yearPositionCancelBtn = document.getElementById('year-position-cancel-btn');
+  const yearPositionSaveBtn = document.getElementById('year-position-save-btn');
+
+  if (yearPositionModalClose) {
+    yearPositionModalClose.addEventListener('click', closeYearPositionModal);
+  }
+  if (yearPositionCancelBtn) {
+    yearPositionCancelBtn.addEventListener('click', closeYearPositionModal);
+  }
+  if (yearPositionSaveBtn) {
+    yearPositionSaveBtn.addEventListener('click', saveYearPositionSettings);
+  }
+
+  // Close modal on background click
+  const yearPositionModal = document.getElementById('year-position-modal');
+  if (yearPositionModal) {
+    yearPositionModal.addEventListener('click', (e) => {
+      if (e.target === yearPositionModal) {
+        closeYearPositionModal();
+      }
+    });
+  }
+
   // Logout button
   const logoutBtn = document.getElementById('logoutBtn');
   if (logoutBtn) {
@@ -922,10 +1110,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
+    getUsername,
     getProgramId,
     getSelectedYear,
     getProgramYearId,
     updateNavLinks,
+    showError,
+    showSuccess,
+    clearMessages,
+    escapeHtml,
     loadYears,
     loadYearConfiguration,
     loadParties,
@@ -937,6 +1130,10 @@ if (typeof module !== 'undefined' && module.exports) {
     buildGroupingTree,
     renderGroupingTree,
     getAncestorIds,
-    getDescendantIds
+    getDescendantIds,
+    openYearPositionModal,
+    closeYearPositionModal,
+    saveYearPositionSettings,
+    renderProgramSelector
   };
 }

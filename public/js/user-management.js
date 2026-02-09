@@ -35,6 +35,11 @@ function updateNavLinks() {
   if (parentsLink) {
     parentsLink.href = `programs-parents.html?programId=${encodeURIComponent(programId)}`;
   }
+
+  const rolesLink = document.getElementById('roles-link');
+  if (rolesLink) {
+    rolesLink.href = `programs-roles.html?programId=${encodeURIComponent(programId)}`;
+  }
 }
 
 document.addEventListener('DOMContentLoaded', async () => {

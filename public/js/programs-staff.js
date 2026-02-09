@@ -827,6 +827,7 @@ if (typeof module !== 'undefined' && module.exports) {
     loadStaff,
     loadGroupings,
     loadProgramRoles,
+    loadProgramYears,
     assignPermissionRole,
     saveStaff,
     removeStaff,
@@ -836,6 +837,10 @@ if (typeof module !== 'undefined' && module.exports) {
     openPasswordModal,
     closePasswordModal,
     savePassword,
+    displayProgramContext,
+    confirmRemoveStaff,
+    updateGroupingSelect,
+    updatePermissionRoleSelect,
   };
 }
 

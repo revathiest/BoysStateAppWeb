@@ -579,3 +579,127 @@ test('calls applyConsoleParentVisibility when function exists and programId is s
 
   delete global.applyConsoleParentVisibility;
 });
+
+test('shows error message when applyConsoleParentVisibility returns error', async () => {
+  let ready;
+  const logoutBtn = { addEventListener: jest.fn() };
+  const gridElement = { prepend: jest.fn() };
+  const mainContent = {
+    classList: { remove: jest.fn() },
+    querySelector: jest.fn(() => gridElement)
+  };
+  const applyConsoleParentVisibilityMock = jest.fn().mockResolvedValue({ error: 'Permission denied' });
+  const document = {
+    getElementById: jest.fn(id => {
+      if (id === 'user-management-link') return { href: '' };
+      if (id === 'programs-config-link') return { href: '' };
+      if (id === 'logoutBtn') return logoutBtn;
+      if (id === 'main-content') return mainContent;
+      return null;
+    }),
+    addEventListener: jest.fn((ev, fn) => { if (ev === 'DOMContentLoaded') ready = fn; }),
+    createElement: jest.fn(() => ({ className: '', innerHTML: '' }))
+  };
+  const fetchMock = jest.fn().mockResolvedValue({
+    ok: true,
+    json: () => Promise.resolve({ programs: [{ programId: 'p1', programName: 'Test' }] })
+  });
+  global.window = { API_URL: 'http://api.test', logToServer: jest.fn(), location: { href: '' } };
+  global.document = document;
+  global.localStorage = { getItem: jest.fn((key) => key === 'lastSelectedProgramId' ? 'p1' : null), setItem: jest.fn() };
+  global.fetch = fetchMock;
+  global.console = { log: jest.fn(), error: jest.fn() };
+  global.alert = jest.fn();
+  global.applyConsoleParentVisibility = applyConsoleParentVisibilityMock;
+
+  require('../public/js/console.js');
+  await ready();
+
+  // Should create and prepend an error div
+  expect(document.createElement).toHaveBeenCalledWith('div');
+  expect(gridElement.prepend).toHaveBeenCalled();
+
+  delete global.applyConsoleParentVisibility;
+});
+
+test('shows no features message when hasVisibleCards is false', async () => {
+  let ready;
+  const logoutBtn = { addEventListener: jest.fn() };
+  const gridElement = { prepend: jest.fn() };
+  const mainContent = {
+    classList: { remove: jest.fn() },
+    querySelector: jest.fn(() => gridElement)
+  };
+  const applyConsoleParentVisibilityMock = jest.fn().mockResolvedValue({ hasVisibleCards: false });
+  const document = {
+    getElementById: jest.fn(id => {
+      if (id === 'user-management-link') return { href: '' };
+      if (id === 'programs-config-link') return { href: '' };
+      if (id === 'logoutBtn') return logoutBtn;
+      if (id === 'main-content') return mainContent;
+      return null;
+    }),
+    addEventListener: jest.fn((ev, fn) => { if (ev === 'DOMContentLoaded') ready = fn; }),
+    createElement: jest.fn(() => ({ className: '', innerHTML: '' }))
+  };
+  const fetchMock = jest.fn().mockResolvedValue({
+    ok: true,
+    json: () => Promise.resolve({ programs: [{ programId: 'p1', programName: 'Test' }] })
+  });
+  global.window = { API_URL: 'http://api.test', logToServer: jest.fn(), location: { href: '' } };
+  global.document = document;
+  global.localStorage = { getItem: jest.fn((key) => key === 'lastSelectedProgramId' ? 'p1' : null), setItem: jest.fn() };
+  global.fetch = fetchMock;
+  global.console = { log: jest.fn(), error: jest.fn() };
+  global.alert = jest.fn();
+  global.applyConsoleParentVisibility = applyConsoleParentVisibilityMock;
+
+  require('../public/js/console.js');
+  await ready();
+
+  // Should create and prepend a "no features" message div
+  expect(document.createElement).toHaveBeenCalledWith('div');
+  expect(gridElement.prepend).toHaveBeenCalled();
+
+  delete global.applyConsoleParentVisibility;
+});
+
+test('does nothing when grid element is not found', async () => {
+  let ready;
+  const logoutBtn = { addEventListener: jest.fn() };
+  const mainContent = {
+    classList: { remove: jest.fn() },
+    querySelector: jest.fn(() => null) // No grid element
+  };
+  const applyConsoleParentVisibilityMock = jest.fn().mockResolvedValue({ error: 'Some error' });
+  const document = {
+    getElementById: jest.fn(id => {
+      if (id === 'user-management-link') return { href: '' };
+      if (id === 'programs-config-link') return { href: '' };
+      if (id === 'logoutBtn') return logoutBtn;
+      if (id === 'main-content') return mainContent;
+      return null;
+    }),
+    addEventListener: jest.fn((ev, fn) => { if (ev === 'DOMContentLoaded') ready = fn; }),
+    createElement: jest.fn(() => ({ className: '', innerHTML: '' }))
+  };
+  const fetchMock = jest.fn().mockResolvedValue({
+    ok: true,
+    json: () => Promise.resolve({ programs: [{ programId: 'p1', programName: 'Test' }] })
+  });
+  global.window = { API_URL: 'http://api.test', logToServer: jest.fn(), location: { href: '' } };
+  global.document = document;
+  global.localStorage = { getItem: jest.fn((key) => key === 'lastSelectedProgramId' ? 'p1' : null), setItem: jest.fn() };
+  global.fetch = fetchMock;
+  global.console = { log: jest.fn(), error: jest.fn() };
+  global.alert = jest.fn();
+  global.applyConsoleParentVisibility = applyConsoleParentVisibilityMock;
+
+  require('../public/js/console.js');
+  await ready();
+
+  // Should not call createElement when grid is null
+  expect(document.createElement).not.toHaveBeenCalled();
+
+  delete global.applyConsoleParentVisibility;
+});

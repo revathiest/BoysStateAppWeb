@@ -1325,3 +1325,171 @@ describe('updateConfigLinks with additional link elements', () => {
     expect(rolesLink.href).toBe('programs-roles.html?programId=test-prog');
   });
 });
+
+describe('loadElectionSettings with primaryModel and advancementModel', () => {
+  let votingMethodSelect, primaryModelSelect, advancementModelSelect, advancementModelContainer;
+
+  beforeEach(() => {
+    jest.resetModules();
+    votingMethodSelect = { value: '' };
+    primaryModelSelect = { value: '' };
+    advancementModelSelect = { value: '' };
+    advancementModelContainer = {
+      classList: { add: jest.fn(), remove: jest.fn() }
+    };
+    global.window = { API_URL: 'http://api.test' };
+    global.document = {
+      getElementById: id => {
+        if (id === 'voting-method-select') return votingMethodSelect;
+        if (id === 'primary-model-select') return primaryModelSelect;
+        if (id === 'advancement-model-select') return advancementModelSelect;
+        if (id === 'advancement-model-container') return advancementModelContainer;
+        return null;
+      },
+      addEventListener: jest.fn()
+    };
+    global.localStorage = { getItem: jest.fn(() => null), setItem: jest.fn() };
+    global.sessionStorage = { getItem: jest.fn(() => null) };
+    global.console = { log: jest.fn(), error: jest.fn() };
+    global.getAuthHeaders = () => ({});
+  });
+
+  test('loadElectionSettings sets primaryModel and shows advancementModel for blanket', async () => {
+    global.fetch = jest.fn(() => Promise.resolve({
+      ok: true,
+      json: () => Promise.resolve({
+        defaultVotingMethod: 'plurality',
+        defaultPrimaryModel: 'blanket',
+        defaultAdvancementModel: 'top_2'
+      })
+    }));
+    const funcs = require('../public/js/programs-config.js');
+    await funcs.loadElectionSettings('p1');
+    expect(primaryModelSelect.value).toBe('blanket');
+    expect(advancementModelContainer.classList.remove).toHaveBeenCalledWith('hidden');
+    expect(advancementModelSelect.value).toBe('top_2');
+  });
+
+  test('loadElectionSettings hides advancementModel for closed primary', async () => {
+    global.fetch = jest.fn(() => Promise.resolve({
+      ok: true,
+      json: () => Promise.resolve({
+        defaultVotingMethod: 'plurality',
+        defaultPrimaryModel: 'closed'
+      })
+    }));
+    const funcs = require('../public/js/programs-config.js');
+    await funcs.loadElectionSettings('p1');
+    expect(primaryModelSelect.value).toBe('closed');
+    expect(advancementModelContainer.classList.add).toHaveBeenCalledWith('hidden');
+  });
+
+  test('loadElectionSettings handles missing advancementModelContainer', async () => {
+    global.document.getElementById = id => {
+      if (id === 'voting-method-select') return votingMethodSelect;
+      if (id === 'primary-model-select') return primaryModelSelect;
+      if (id === 'advancement-model-select') return null;
+      if (id === 'advancement-model-container') return null;
+      return null;
+    };
+    global.fetch = jest.fn(() => Promise.resolve({
+      ok: true,
+      json: () => Promise.resolve({
+        defaultVotingMethod: 'plurality',
+        defaultPrimaryModel: 'blanket'
+      })
+    }));
+    const funcs = require('../public/js/programs-config.js');
+    // Should not throw
+    await funcs.loadElectionSettings('p1');
+    expect(primaryModelSelect.value).toBe('blanket');
+  });
+});
+
+describe('setupElectionSettings with primaryModel and advancementModel', () => {
+  let votingMethodSelect, primaryModelSelect, advancementModelSelect, advancementModelContainer;
+  let primaryChangeHandler, advancementChangeHandler;
+
+  beforeEach(() => {
+    jest.resetModules();
+    primaryChangeHandler = null;
+    advancementChangeHandler = null;
+    votingMethodSelect = {
+      value: 'plurality',
+      addEventListener: jest.fn()
+    };
+    primaryModelSelect = {
+      value: 'closed',
+      addEventListener: jest.fn((event, handler) => {
+        if (event === 'change') primaryChangeHandler = handler;
+      })
+    };
+    advancementModelSelect = {
+      value: 'top_2',
+      addEventListener: jest.fn((event, handler) => {
+        if (event === 'change') advancementChangeHandler = handler;
+      })
+    };
+    advancementModelContainer = {
+      classList: { add: jest.fn(), remove: jest.fn() }
+    };
+    global.window = { API_URL: 'http://api.test', selectedProgramId: 'p1' };
+    global.document = {
+      getElementById: id => {
+        if (id === 'voting-method-select') return votingMethodSelect;
+        if (id === 'primary-model-select') return primaryModelSelect;
+        if (id === 'advancement-model-select') return advancementModelSelect;
+        if (id === 'advancement-model-container') return advancementModelContainer;
+        if (id === 'election-settings-status') return {
+          textContent: '',
+          classList: { add: jest.fn(), remove: jest.fn() }
+        };
+        if (id === 'current-program-id') return { value: 'p1' };
+        return null;
+      },
+      addEventListener: jest.fn()
+    };
+    global.localStorage = { getItem: jest.fn(() => null), setItem: jest.fn() };
+    global.sessionStorage = { getItem: jest.fn(() => null) };
+    global.console = { log: jest.fn(), error: jest.fn() };
+    global.getAuthHeaders = () => ({});
+    global.fetch = jest.fn(() => Promise.resolve({ ok: true }));
+  });
+
+  test('setupElectionSettings registers primaryModel change handler', () => {
+    const funcs = require('../public/js/programs-config.js');
+    funcs.setupElectionSettings();
+    expect(primaryModelSelect.addEventListener).toHaveBeenCalledWith('change', expect.any(Function));
+  });
+
+  test('primaryModelSelect change handler shows advancementModel for blanket', () => {
+    const funcs = require('../public/js/programs-config.js');
+    funcs.setupElectionSettings();
+    expect(primaryChangeHandler).toBeDefined();
+    primaryModelSelect.value = 'blanket';
+    primaryChangeHandler();
+    expect(advancementModelContainer.classList.remove).toHaveBeenCalledWith('hidden');
+    expect(advancementModelSelect.value).toBe('top_2');
+  });
+
+  test('primaryModelSelect change handler hides advancementModel for non-blanket', () => {
+    const funcs = require('../public/js/programs-config.js');
+    funcs.setupElectionSettings();
+    expect(primaryChangeHandler).toBeDefined();
+    primaryModelSelect.value = 'open';
+    primaryChangeHandler();
+    expect(advancementModelContainer.classList.add).toHaveBeenCalledWith('hidden');
+  });
+
+  test('advancementModelSelect change handler saves setting', () => {
+    const funcs = require('../public/js/programs-config.js');
+    funcs.setupElectionSettings();
+    expect(advancementChangeHandler).toBeDefined();
+    advancementModelSelect.value = 'jungle';
+    advancementChangeHandler();
+    expect(global.fetch).toHaveBeenCalledWith(
+      expect.stringContaining('/programs/p1'),
+      expect.objectContaining({ method: 'PUT' })
+    );
+  });
+});

@@ -363,3 +363,98 @@ test('dashboard handles program with id instead of programId', async () => {
   expect(localStorageMock.setItem).toHaveBeenCalledWith('lastSelectedProgramId', 'alt-prog-456');
   expect(global.window.selectedProgramId).toBe('alt-prog-456');
 });
+
+test('dashboard redirects on non-200 status without clearAuthToken', async () => {
+  let ready;
+  const doc = {
+    getElementById: jest.fn(id => {
+      if (id === 'main-content') return { classList: { remove: jest.fn() }, innerHTML: '' };
+      if (id === 'programList') return { appendChild: jest.fn() };
+      if (id === 'features') return { classList: { remove: jest.fn(), add: jest.fn() } };
+      if (id === 'userRole') return { textContent: '' };
+      if (id === 'logoutBtn') return { addEventListener: jest.fn() };
+      return null;
+    }),
+    querySelectorAll: jest.fn(() => []),
+    createElement: jest.fn(() => ({ addEventListener: jest.fn() })),
+    addEventListener: jest.fn((ev, fn) => { if (ev === 'DOMContentLoaded') ready = fn; })
+  };
+  const fetchMock = jest.fn().mockResolvedValue({ status: 403 });
+  // No clearAuthToken defined
+  global.window = { API_URL: 'http://api.test', logToServer: jest.fn(), location: { href: '' } };
+  global.document = doc;
+  global.fetch = fetchMock;
+  global.console = { error: jest.fn() };
+  global.alert = jest.fn();
+
+  require('../public/js/dashboard.js');
+  await ready();
+  expect(global.window.location.href).toBe('login.html');
+});
+
+test('dashboard handles array response format', async () => {
+  let ready;
+  const features = { classList: { remove: jest.fn(), add: jest.fn() } };
+  const listEl = { appendChild: jest.fn() };
+  const doc = {
+    getElementById: jest.fn(id => {
+      if (id === 'logoutBtn') return { addEventListener: jest.fn() };
+      if (id === 'main-content') return { classList: { remove: jest.fn() } };
+      if (id === 'programList') return listEl;
+      if (id === 'features') return features;
+      if (id === 'userRole') return { textContent: '' };
+      return null;
+    }),
+    querySelectorAll: jest.fn(() => []),
+    createElement: jest.fn(() => ({ addEventListener: jest.fn() })),
+    addEventListener: jest.fn((ev, fn) => { if (ev === 'DOMContentLoaded') ready = fn; })
+  };
+  // Return array directly instead of { programs: [...] }
+  const fetchMock = jest.fn().mockResolvedValue({
+    status: 200,
+    json: () => [{ programName: 'P1', role: 'admin' }, { programName: 'P2', role: 'counselor' }]
+  });
+  global.window = { API_URL: 'http://api.test', logToServer: jest.fn(), location: { href: '' } };
+  global.document = doc;
+  global.fetch = fetchMock;
+  global.console = { log: jest.fn(), error: jest.fn() };
+  global.alert = jest.fn();
+
+  require('../public/js/dashboard.js');
+  await ready();
+
+  // Should handle array format - createElement called for each program
+  expect(doc.createElement).toHaveBeenCalledTimes(2);
+});
+
+test('dashboard handles invalid JSON without logToServer', async () => {
+  let ready;
+  const mainContent = { classList: { remove: jest.fn() }, innerHTML: '' };
+  const doc = {
+    getElementById: jest.fn(id => {
+      if (id === 'main-content') return mainContent;
+      if (id === 'programList') return { appendChild: jest.fn() };
+      if (id === 'features') return { classList: { remove: jest.fn(), add: jest.fn() } };
+      if (id === 'userRole') return { textContent: '' };
+      if (id === 'logoutBtn') return { addEventListener: jest.fn() };
+      return null;
+    }),
+    querySelectorAll: jest.fn(() => []),
+    createElement: jest.fn(() => ({ addEventListener: jest.fn() })),
+    addEventListener: jest.fn((ev, fn) => { if (ev === 'DOMContentLoaded') ready = fn; })
+  };
+  const fetchMock = jest.fn().mockResolvedValue({
+    status: 200,
+    json: () => { throw new Error('bad'); }
+  });
+  // No logToServer defined
+  global.window = { API_URL: 'http://api.test' };
+  global.document = doc;
+  global.fetch = fetchMock;
+  global.console = { log: jest.fn(), error: jest.fn() };
+  global.alert = jest.fn();
+
+  require('../public/js/dashboard.js');
+  await ready();
+  expect(mainContent.innerHTML).toContain('Unexpected');
+});

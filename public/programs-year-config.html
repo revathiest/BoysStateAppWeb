@@ -109,6 +109,48 @@
     </div>
   </main>
 
+  <!-- Year Position Edit Modal -->
+  <div id="year-position-modal" class="hidden fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 p-6 relative">
+      <button id="year-position-modal-close" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-2xl font-bold">&times;</button>
+      <h3 id="year-position-modal-title" class="text-xl font-bold text-legend-blue mb-2">Edit Year Settings</h3>
+      <p id="year-position-modal-subtitle" class="text-sm text-gray-600 mb-4">Override settings for this position for the selected year only.</p>
+
+      <div class="space-y-4">
+        <div class="p-3 bg-gray-50 rounded-lg">
+          <p class="text-sm text-gray-700 mb-2"><strong>Base Position Setting:</strong></p>
+          <p id="year-position-base-setting" class="text-sm text-gray-600">-</p>
+        </div>
+
+        <div>
+          <label for="year-position-elected-select" class="block text-sm font-medium text-gray-700 mb-1">Year Override for Elected/Appointed</label>
+          <select id="year-position-elected-select" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-legend-blue">
+            <option value="inherit">Inherit from base position</option>
+            <option value="true">Elected (override)</option>
+            <option value="false">Appointed (override)</option>
+          </select>
+          <p class="text-xs text-gray-500 mt-1">Choose "Inherit" to use the base position setting, or override for this year only.</p>
+        </div>
+
+        <div id="year-position-override-warning" class="hidden p-3 bg-orange-50 rounded-lg border border-orange-200">
+          <p class="text-sm text-orange-800">
+            <strong>Note:</strong> This position was marked as appointed because an election was skipped (no candidates).
+            Select "Inherit" or "Elected" to restore it for future elections.
+          </p>
+        </div>
+      </div>
+
+      <div class="flex gap-3 justify-end mt-6">
+        <button id="year-position-cancel-btn" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold rounded-lg transition">
+          Cancel
+        </button>
+        <button id="year-position-save-btn" class="px-4 py-2 bg-legend-blue hover:bg-blue-800 text-white font-semibold rounded-lg shadow transition">
+          Save
+        </button>
+      </div>
+    </div>
+  </div>
+
   <footer class="bg-legend-blue text-white border-t mt-8 py-4 text-center text-xs">
     &copy; 2025 State Forge Admin. Not affiliated with or endorsed by the American Legion.
   </footer>
